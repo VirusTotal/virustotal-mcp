@@ -4,7 +4,9 @@ These fragments configure the VirusTotal MCP server: seven common tools with the
 
 These files are included in the `v0.8.0` source distribution and the [versioned configuration directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs). The wheel does not install them as client settings. Select the configuration matching your verified release and check [client validation levels](../../docs/clients.md) before choosing a setup.
 
-| File | Client / destination | Historical configuration evidence; new 0.8 workflows pending |
+The corporate source at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp) is currently private preparation. The linked public v0.8.0 source and release remain under king-tero until the distribution moves; the package name and VTAI endpoint do not change. See [discovery status](../../docs/discovery.md).
+
+| File | Client / destination | Historical v0.7.0 configuration evidence |
 |---|---|---|
 | [stdio.json](stdio.json) | Antigravity CLI (`agy`) `~/.gemini/config/mcp_config.json`; Claude Code project `.mcp.json` or file passed to `--mcp-config` | All five tools validated separately in agy 1.1.27 and Claude Code 2.1.263 |
 | [claude-http.json](claude-http.json) | Claude Code project `.mcp.json` | Header expansion and all five tools validated in production with 2.1.263 |
@@ -17,7 +19,7 @@ These files are included in the `v0.8.0` source distribution and the [versioned 
 
 For stdio, install the verified wheel first. `vt-mcp` must be on the PATH used by the host; otherwise replace it with the absolute path reported by `command -v vt-mcp`. The token path is an example. vt-mcp expands `~` itself; no shell expansion of arbitrary JSON values is assumed. Declare `VTAI_TOKEN_FILE` explicitly, especially in Gemini, which filters sensitive inherited environment names. Gemini CLI no longer serves Code Assist individual, Google AI Pro or Ultra accounts through Google login; use [Antigravity CLI (`agy`)](../../docs/clients.md#antigravity-cli-agy) for those accounts.
 
-For HTTP, no vt-mcp or Python installation is required. VTAI authenticates only the **`x-apikey`** header. The variable `VTAI_MCP_TOKEN` contains the credential and is expanded by the host; it is not an OAuth access flow. Never replace the reference in these files with the credential itself. Load the variable outside chat using the [access guide](../../docs/access.md#remote-client-environment). Do not substitute a client's generic Bearer-token option: VTAI does not authenticate that header.
+For HTTP, no vt-mcp or Python installation is required. These fragments use **`x-apikey`**. VTAI 0.8.1 also accepts **`Authorization: Bearer`** with the same VTAI token; use only one header. The variable `VTAI_MCP_TOKEN` contains the credential and is expanded by the host; this is static token authentication, not OAuth. Never replace the reference in these files with the credential itself. Load the variable outside chat using the [access guide](../../docs/access.md#remote-client-environment). For the Bearer alternative, use the client's protected environment mapping documented in the [client guide](../../docs/clients.md#bearer-authentication-validation), without adding a second credential header.
 
 With v0.7.0, Antigravity CLI (`agy`), Claude Code and Codex completed the five tools at the transport levels above. See the [native-client evidence](../../docs/client-validation-2026-09-07.md) for the same selected analysis, agy's auxiliary output-file read and protocol limits. This does not validate other hosts or a different installed artifact. For an authorized test deployment, replace the URL with that deployment's exact `/mcp` URL and prefix. The REST base ending `/api/v3` is not the MCP endpoint.
 
@@ -38,4 +40,6 @@ Claude Code uses the seven exact `mcp__virustotal__...` grants in the
 `mcp__virustotal__submit_local_file` only for stdio. Codex uses the same server entry
 and its normal host policy for the specific tool names. Do not substitute broad
 permission bypasses. Host policies and native login remain separate from VTAI.
-New 0.8 workflow validation is pending; historical 0.7 calls keep their recorded scope.
+The [0.8 submission-workflow evidence](../../docs/clients.md#version-08-submission-evidence)
+records the native sessions, asynchronous results and separate public SDK checks.
+The historical 0.7 configuration evidence above keeps its recorded scope.

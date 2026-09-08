@@ -16,8 +16,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://ai.virustotal.com"
-Repository = "https://github.com/king-tero/vt-mcp"
-Issues = "https://github.com/king-tero/vt-mcp/issues"
+Repository = "https://github.com/VirusTotal/virustotal-mcp"
+Issues = "https://github.com/VirusTotal/virustotal-mcp/issues"
 
 [project.scripts]
 vt-mcp = "vt_mcp.__main__:main"
