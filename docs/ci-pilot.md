@@ -151,8 +151,9 @@ configuration fails before their identity can be established. There is no empty
 successful model.
 
 - `artifact`: fixed name, fixture version/SHA/size, manifest SHA256.
-- `provenance`: repository, actual Git commit, run ID/attempt, installed client
-  version, and the already verified candidate manifest hash (null for synthetic).
+- `provenance`: repository, repository ID (null for synthetic), actual Git commit,
+  run ID/attempt, installed client version, and the already verified candidate
+  manifest hash (null for synthetic).
 - `evidence`: kind `analysis|file_report|receipt|none`, UTC observation time, owned
   analysis ID or null, and the existing formatted AnalysisResponse, FileResponse,
   SubmissionResponse or null. Analysis `wait` metadata is retained as validated;
