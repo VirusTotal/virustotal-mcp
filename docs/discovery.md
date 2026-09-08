@@ -40,13 +40,21 @@ remains the local installation channel.
 
 ### Maintaining the entry
 
-Corporate publication requires the workflow to be bound to the new repository
-identity. Metadata validation and that exact main commit's CI must pass before
-manual publication with its full SHA in `reviewed_sha`. Publication uses GitHub
-Actions OIDC and a publisher binary fixed by version and SHA-256; it needs no
-permanent registry secret. The publication check reads the exact published
-version anonymously and compares the manifest and active status. These are
-requirements for the corporate entry, not evidence that it has been published.
+The `MCP Registry` workflow is bound to the corporate repository ID and main
+branch. After metadata validation and that exact main commit's CI pass, dispatch
+the workflow with its full SHA in `reviewed_sha`.
+
+The default `verify-identity` operation checks the GitHub Actions OIDC exchange
+and the issued corporate namespace permission, then removes the temporary
+credential. It can run while this repository is private and publishes nothing.
+It inspects the claims received through the authenticated HTTPS exchange; it
+does not independently verify the token's cryptographic signature locally.
+
+The `publish` operation additionally requires a public repository. It uses the
+publisher fixed by version and SHA-256, then reads the exact published version
+anonymously and compares its manifest and active status. Neither operation needs
+a permanent registry secret or a VTAI token. These capabilities do not establish
+that the corporate entry has already been published.
 
 The publisher does not overwrite an existing name/version. Check the exact entry
 before retrying a failed run: publication may have succeeded before a later step
