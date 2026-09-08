@@ -1,6 +1,7 @@
 """Offline policy/orchestration checks: only inert fixtures and isolated child processes."""
 
 import copy
+import hashlib
 import importlib.util
 import json
 import shutil
@@ -424,6 +425,116 @@ def test_evidence_is_exclusive_private_and_does_not_contain_error_text(tmp_path)
     assert "inert untrusted message" not in path.read_text()
     with pytest.raises(FileExistsError):
         gate.write_evidence(path, {})
+
+
+@pytest.fixture
+def live_provenance(monkeypatch, tmp_path):
+    commit = "a" * 40
+    manifest = tmp_path / "dist/SHA256SUMS"
+    manifest.parent.mkdir()
+    manifest.write_bytes(b"synthetic candidate manifest\n")
+    checksum = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    monkeypatch.setattr(gate, "ROOT", tmp_path)
+    monkeypatch.setattr(gate.subprocess, "check_output", lambda *a, **kw: commit.encode())
+    for key, value in {
+        "GITHUB_REPOSITORY": "VirusTotal/virustotal-mcp",
+        "GITHUB_REPOSITORY_ID": "1361592455",
+        "GITHUB_SHA": commit,
+        "GITHUB_RUN_ID": "123456",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "MANIFEST_SHA256": checksum,
+    }.items():
+        monkeypatch.setenv(key, value)
+    return commit, manifest, checksum
+
+
+def test_live_provenance_accepts_exact_corporate_identity(live_provenance):
+    commit, _, checksum = live_provenance
+    value = gate.provenance("live")
+    assert value["repository"] == "VirusTotal/virustotal-mcp"
+    assert value["repository_id"] == 1361592455
+    assert value["commit"] == commit
+    assert value["candidate_manifest_sha256"] == checksum
+    assert value["workflow_run_id"] == "123456" and value["run_attempt"] == 1
+
+
+@pytest.mark.parametrize(
+    "repository,repository_id",
+    [
+        ("king-tero/vt-mcp", "1359828317"),
+        ("VirusTotal/other", "1361592455"),
+        ("VirusTotal/virustotal-mcp", "1359828317"),
+        ("VirusTotal/virustotal-mcp", None),
+    ],
+)
+def test_live_provenance_rejects_other_repository_or_id(
+    monkeypatch, live_provenance, repository, repository_id
+):
+    monkeypatch.setenv("GITHUB_REPOSITORY", repository)
+    if repository_id is None:
+        monkeypatch.delenv("GITHUB_REPOSITORY_ID")
+    else:
+        monkeypatch.setenv("GITHUB_REPOSITORY_ID", repository_id)
+    with pytest.raises(gate.GateError, match="configuration_error"):
+        gate.provenance("live")
+
+
+@pytest.mark.parametrize("field", ["commit", "manifest_format", "manifest_bytes"])
+def test_corporate_provenance_keeps_commit_and_manifest_binding(
+    monkeypatch, live_provenance, field
+):
+    _, manifest, _ = live_provenance
+    if field == "commit":
+        monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    elif field == "manifest_format":
+        monkeypatch.setenv("MANIFEST_SHA256", "not-a-checksum")
+    else:
+        manifest.write_bytes(b"changed candidate manifest\n")
+    with pytest.raises(gate.GateError, match="configuration_error"):
+        gate.provenance("live")
+
+
+def test_synthetic_provenance_needs_no_github_identity_or_manifest(monkeypatch):
+    for key in (
+        "GITHUB_REPOSITORY",
+        "GITHUB_REPOSITORY_ID",
+        "GITHUB_SHA",
+        "MANIFEST_SHA256",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_ATTEMPT",
+        "VTAI_TOKEN",
+        "VTAI_TOKEN_FILE",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    value = gate.provenance("evaluate")
+    assert value["repository"] == "VirusTotal/virustotal-mcp"
+    assert value["repository_id"] is None
+    assert value["candidate_manifest_sha256"] is None
+    assert value["workflow_run_id"] is None
+
+
+def test_wrong_live_repository_stops_before_cli(monkeypatch, live_provenance, tmp_path):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "king-tero/vt-mcp")
+    monkeypatch.setattr(gate, "fixture", lambda version: (ITEM, "f" * 64))
+    monkeypatch.setattr(gate, "live", lambda *a, **kw: pytest.fail("untrusted repo called CLI"))
+    evidence = tmp_path / "evidence.json"
+    assert (
+        gate.main(
+            [
+                "live",
+                "--fixture-version",
+                "1.0.0",
+                "--state-dir",
+                str(tmp_path / "state"),
+                "--evidence",
+                str(evidence),
+            ]
+        )
+        == 2
+    )
+    saved = json.loads(evidence.read_text())
+    assert saved["provenance"] is None
+    assert saved["decision"]["reason"] == "configuration_error"
 
 
 def test_evaluate_main_never_calls_cli_or_uses_a_token(monkeypatch, tmp_path, capsys):

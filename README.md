@@ -2,7 +2,7 @@
 
 VirusTotal intelligence for MCP clients, powered by **VTAI**.
 
-Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.1**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under MIT until the corporate distribution is public. Version 0.8.1 updates licensing and corporate package metadata; tool behavior and the VTAI endpoint are unchanged. See the [0.8.1 release notes](docs/releases/v0.8.1.md) and [discovery status](docs/discovery.md).
+Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.2**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under MIT until the corporate distribution is public. Version 0.8.2 completes the Apache-2.0 corporate distribution and fixes the release gate’s repository identity check; tool behavior and the VTAI endpoint are unchanged. See the [0.8.2 release notes](docs/releases/v0.8.2.md) and [discovery status](docs/discovery.md).
 
 Look up file, URL, domain and IP reports, submit authorized files and recover their analyses from your assistant. Connect to VTAI over HTTP without installing vt-mcp or Python, or run the MCP server locally over stdio with an additional local-file tool. Basic use requires a free, revocable **VTAI token**; you do not need your own VirusTotal API key.
 
@@ -119,7 +119,7 @@ Remove the connection using the [Antigravity CLI (`agy`)](docs/clients.md#antigr
 
 ## Develop and embed
 
-VTAI integrations can reuse the [factory and presentation API](docs/embedding.md). For development, use a source checkout containing `uv.lock`, scripts and tests, rather than the installation sdist. Select the [versioned v0.8.0 source tree](https://github.com/king-tero/vt-mcp/tree/v0.8.0) and verify its release provenance before running the development commands.
+VTAI integrations can reuse the [factory and presentation API](docs/embedding.md). For development, use a source checkout containing `uv.lock`, scripts and tests, rather than the installation sdist. Select the [versioned v0.8.2 corporate source tree](https://github.com/VirusTotal/virustotal-mcp/tree/v0.8.2), which requires repository access while private, and verify its release provenance before running the development commands.
 
 ```bash
 uv sync --locked
