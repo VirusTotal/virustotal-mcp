@@ -314,6 +314,24 @@ def test_publish_rerun_forbidden_but_verify_allowed(release):
         publish.context(environ, selected)
 
 
+@pytest.mark.parametrize(
+    "path,endpoint",
+    [
+        ("", "repos/VirusTotal/virustotal-mcp"),
+        ("git/ref/heads/main", "repos/VirusTotal/virustotal-mcp/git/ref/heads/main"),
+    ],
+)
+def test_github_repository_and_child_routes(monkeypatch, path, endpoint):
+    def run(args, **kwargs):
+        # GitHub returns 404 for the repository endpoint with a trailing slash.
+        if endpoint not in args:
+            return subprocess.CompletedProcess(args, 1, b"", b"Not Found")
+        return subprocess.CompletedProcess(args, 0, b'{"id": 1361592455}', b"")
+
+    monkeypatch.setattr(publish.subprocess, "run", run)
+    assert publish.github(path) == {"id": 1361592455}
+
+
 def test_github_reader_only_get_and_sanitizes_failures(monkeypatch):
     observed = []
 
