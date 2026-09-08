@@ -25,6 +25,8 @@ from vt_mcp.analyses import (
 from vt_mcp.reports import VTAIError
 
 ROOT = Path(__file__).resolve().parents[1]
+REPOSITORY = "VirusTotal/virustotal-mcp"
+REPOSITORY_ID = 1361592455
 SERVICE = "https://ai.virustotal.com/api/v3"
 POLICY = "public-fixture-v1"
 MINIMUM_COMPLETED_ENGINES = 1
@@ -481,7 +483,8 @@ def provenance(mode):
     candidate_hash = os.environ.get("MANIFEST_SHA256") if mode == "live" else None
     if mode == "live":
         if (
-            os.environ.get("GITHUB_REPOSITORY") != "king-tero/vt-mcp"
+            os.environ.get("GITHUB_REPOSITORY") != REPOSITORY
+            or os.environ.get("GITHUB_REPOSITORY_ID") != str(REPOSITORY_ID)
             or os.environ.get("GITHUB_SHA") != commit
             or not re.fullmatch(r"[a-f0-9]{64}", candidate_hash or "")
         ):
@@ -499,7 +502,8 @@ def provenance(mode):
     ):
         raise GateError("configuration_error")
     return {
-        "repository": "king-tero/vt-mcp",
+        "repository": REPOSITORY,
+        "repository_id": REPOSITORY_ID if mode == "live" else None,
         "commit": commit,
         "workflow_run_id": run_id,
         "run_attempt": int(attempt),
