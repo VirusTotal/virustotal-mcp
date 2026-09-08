@@ -1,13 +1,13 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.king-tero/vt-mcp",
+  "name": "io.github.VirusTotal/virustotal-mcp",
   "title": "VirusTotal",
   "description": "VirusTotal reports for files, URLs, domains and IPs, plus file submission and analysis recovery.",
   "version": "0.8.0",
   "repository": {
-    "url": "https://github.com/king-tero/vt-mcp",
+    "url": "https://github.com/VirusTotal/virustotal-mcp",
     "source": "github",
-    "id": "1359828317"
+    "id": "1361592455"
   },
   "websiteUrl": "https://ai.virustotal.com/connect/mcp",
   "remotes": [

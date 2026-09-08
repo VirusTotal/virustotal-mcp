@@ -2,14 +2,16 @@
 
 VirusTotal intelligence for MCP clients, powered by **VTAI**.
 
+Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under king-tero until the distribution moves. The Python package stays **vt-mcp 0.8.0** and the VTAI endpoint is unchanged. See the [discovery status](docs/discovery.md) for the current and prepared registry identities.
+
 Look up file, URL, domain and IP reports, submit authorized files and recover their analyses from your assistant. Connect to VTAI over HTTP without installing vt-mcp or Python, or run the MCP server locally over stdio with an additional local-file tool. Basic use requires a free, revocable **VTAI token**; you do not need your own VirusTotal API key.
 
 Version **0.8.0** adds autonomous MCP submission and receipt recovery over the existing VTAI service: **seven common tools over HTTP or stdio, plus one local-file tool over stdio**. Submission tools have no per-call confirmation or consent argument; configure your host to permit only the operations and files you authorize for standard public sharing. The existing CLI, report queries, opt-in guard and public-fixture release gates remain available. See the [release notes](docs/releases/v0.8.0.md) and [submission-workflow evidence](docs/clients.md#version-08-submission-evidence); five native-client sessions exercised the new cycle in staging and another five against a production candidate with zero public traffic. The public rollout is accepted, with separate direct SDK checks; the native sessions retain their candidate-route scope. The historical 0.7 sessions retain their read-only scope.
 
 ## Connect your client
 
-The [directory and discovery guide](docs/discovery.md) identifies the canonical
-MCP Registry manifest and Glama listing, with their connection requirements.
+The [directory and discovery guide](docs/discovery.md) distinguishes the active
+MCP Registry entry from the prepared corporate metadata and explains connection requirements.
 
 1. Reuse existing access or register explicitly at [Connect to VirusTotal MCP](https://ai.virustotal.com/connect/mcp), following the [access guide](docs/access.md). Keep the token in protected storage outside chat and project files.
 2. Choose a connection below and follow [client setup](docs/clients.md). Configure the credential outside the model conversation.
@@ -64,7 +66,7 @@ For URL intelligence, **the full URL, including query and fragment, is shared wi
 
 ## Install for local stdio
 
-Use Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/). Download the wheel and `SHA256SUMS` together from the [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0). Verify that the manifest contains the exact wheel filename, then check and install from the download directory:
+Use Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/). Download the wheel and `SHA256SUMS` together from the [current public v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0). Verify that the manifest contains the exact wheel filename, then check and install from the download directory:
 
 ```bash
 sha256sum --check --ignore-missing SHA256SUMS

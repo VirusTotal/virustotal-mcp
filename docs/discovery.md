@@ -1,14 +1,26 @@
 # Find and connect to VirusTotal MCP
 
-The canonical source is [king-tero/vt-mcp](https://github.com/king-tero/vt-mcp).
+The corporate source is being prepared at
+[VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), currently
+a private repository. It is a new repository with the existing public source
+history copied into it, not a transfer of the original repository ID. The
+[public source](https://github.com/king-tero/vt-mcp) and its
+[v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain the
+available distribution until the corporate cutover. No corporate release or
+registry publication is claimed here.
+
 Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), or [Codex](clients.md#codex-cli--remote-http).
 
 ## MCP Registry
 
-[`server.json`](../server.json) describes `io.github.king-tero/vt-mcp`: the existing
-Streamable HTTP endpoint at `https://ai.virustotal.com/mcp`. It includes the source
-repository ID and a link to [free VTAI registration](https://ai.virustotal.com/connect/mcp).
+The active entry is still
+[`io.github.king-tero/vt-mcp` version 0.8.0](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/0.8.0).
+[`server.json`](../server.json) prepares the corporate name
+`io.github.VirusTotal/virustotal-mcp`, bound to GitHub repository ID `1361592455`.
+Both describe the same Streamable HTTP endpoint at `https://ai.virustotal.com/mcp`
+and [free VTAI registration](https://ai.virustotal.com/connect/mcp). Preparing this
+file does not move or publish the active entry.
 
 The manifest requests one secret VTAI token and constructs `Authorization: Bearer`
 for the client. Use the host's protected credential settings; no token belongs in
@@ -28,29 +40,39 @@ remains the local installation channel.
 
 ### Maintaining the entry
 
-The `MCP Registry` workflow validates metadata on pull requests and main. After
-independent review, merge the change and wait for that exact main commit's CI to
-succeed. Dispatch the workflow on main with its full SHA in `reviewed_sha`. Only
-the canonical repository can publish, using GitHub Actions OIDC and a publisher
-binary fixed by version and SHA-256. It needs no permanent registry secret.
-The final step reads the published version anonymously and checks the full manifest
-and active status.
+The `MCP Registry` workflow is bound to the corporate repository ID and main
+branch. After metadata validation and that exact main commit's CI pass, dispatch
+the workflow with its full SHA in `reviewed_sha`.
 
-Published versions are immutable. Check the [registry API](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/latest)
+The default `verify-identity` operation checks the GitHub Actions OIDC exchange
+and the issued corporate namespace permission, then removes the temporary
+credential. It can run while this repository is private and publishes nothing.
+It inspects the claims received through the authenticated HTTPS exchange; it
+does not independently verify the token's cryptographic signature locally.
+
+The `publish` operation additionally requires a public repository. It uses the
+publisher fixed by version and SHA-256, then reads the exact published version
+anonymously and compares its manifest and active status. Neither operation needs
+a permanent registry secret or a VTAI token. These capabilities do not establish
+that the corporate entry has already been published.
+
+The publisher does not overwrite an existing name/version. Check the exact entry
 before retrying a failed run: publication may have succeeded before a later step
-failed. Update metadata with a new version; never overwrite a published release
-or relabel an existing package. Package publication and backend deployment remain
-separate operations.
+failed. A new name using the same endpoint also requires an explicit registry
+cutover; changing this manifest alone does not retire the old name. Preserve
+published release bytes and their source history. Registry metadata, package
+publication and backend deployment remain separate operations.
 
 See the official [remote server format](https://modelcontextprotocol.io/registry/remote-servers)
 and [GitHub Actions publication guide](https://modelcontextprotocol.io/registry/github-actions).
 
 ## Glama
 
-[`glama.json`](../glama.json) identifies `king-tero` as the GitHub maintainer using
-Glama's documented schema. The [Glama directory entry](https://glama.ai/mcp/servers/king-tero/vt-mcp)
-is maintained by Glama; committing metadata does not by itself prove that its
-crawler has refreshed the entry, verified ownership, or enabled managed hosting.
+[`glama.json`](../glama.json) names the GitHub account `bernardoquintero` as the
+maintainer for the prepared corporate source, using Glama's documented schema.
+This identifies a user account, not an organization or an email address. No
+corporate listing, ownership verification, crawler refresh or managed hosting is
+claimed. Committing metadata does not establish any of those states.
 
 Use the setup links above for the working connection. Do not put a VTAI token in
 a shareable inspector or installation URL. Glama's listing status is distinct
