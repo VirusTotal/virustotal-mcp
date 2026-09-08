@@ -95,7 +95,8 @@ Allow is a decision under this limited policy, never a claim that a file is safe
 
 ## Reference driver and JSON
 
-Use the complete [v0.8.0 source checkout](https://github.com/king-tero/vt-mcp/tree/v0.8.0),
+Use the complete [v0.8.2 corporate source checkout](https://github.com/VirusTotal/virustotal-mcp/tree/v0.8.2),
+which requires repository access while it is private,
 with that version's verified wheel installed in its Python environment. The wheel
 and sdist do **not** contain the driver, fixtures or workflows; downloading the
 installation sdist alone is insufficient. Select the actual tag and verify its
@@ -106,6 +107,12 @@ options, not new `vt-mcp` commands:
 python scripts/ci_vtai_fixture.py evaluate --fixture-version 1.0.0 --input CASE.json --evidence /absolute/evidence.json
 python scripts/ci_vtai_fixture.py live --fixture-version 1.0.0 --wait 180 --state-dir /absolute/private-state --evidence /absolute/evidence.json
 ```
+
+Live execution is bound to `VirusTotal/virustotal-mcp`, repository ID
+`1361592455`. It requires the checked-out commit to match `GITHUB_SHA` and the
+verified candidate manifest to match `MANIFEST_SHA256`. A fork or the previous
+personal repository cannot pass this corporate driver’s live identity check.
+Synthetic evaluation needs no GitHub repository identity or VTAI credential.
 
 The driver uses the installed package's public formatters and CLI, invoking
 `python -m vt_mcp` with an argument vector, no shell, and no inherited stdin or
