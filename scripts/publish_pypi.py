@@ -84,7 +84,7 @@ def github(path: str, *, binary: bool = False):
             "github.com",
             "--method",
             "GET",
-            f"repos/{REPOSITORY}/{path}",
+            f"repos/{REPOSITORY}" + (f"/{path}" if path else ""),
             "-H",
             "Accept: application/octet-stream" if binary else "Accept: application/vnd.github+json",
         ],
