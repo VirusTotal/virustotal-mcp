@@ -52,6 +52,8 @@ source-include = [
     "docs/discovery.md",
     "docs/access.md",
     "docs/clients.md",
+    "docs/hosted-clients.md",
+    "docs/publishing.md",
     "docs/client-validation-2026-09-07.md",
     "docs/analysis.md",
     "docs/control.md",
