@@ -81,3 +81,11 @@ claimed. Committing metadata does not establish any of those states.
 Use the setup links above for the working connection. Do not put a VTAI token in
 a shareable inspector or installation URL. Glama's listing status is distinct
 from the availability of the live MCP endpoint.
+
+## Distribution preparation
+
+The [PyPI publishing guide](publishing.md) describes verification of existing
+release assets and the separate Trusted Publisher setup. No PyPI publication is
+established by this preparation. The [hosted-client guide](hosted-clients.md)
+records account and authentication requirements without claiming a validated
+ChatGPT or Claude hosted connection.

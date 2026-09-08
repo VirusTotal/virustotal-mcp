@@ -36,7 +36,7 @@ Claude Code and Codex have each used Bearer for one report query in staging and 
 
 With **v0.7.0**, Antigravity CLI (`agy`) 1.1.27 completed all five tools through stdio. Claude Code 2.1.263 and Codex CLI 0.153.4 have each completed all five through both stdio and public HTTP. The [native-client validation](docs/client-validation-2026-09-07.md) records 25 MCP calls, the same selected analysis across sessions, and agy's auxiliary read of its generated analysis output. agy HTTP remains unvalidated: its tested header variables were sent literally. These observations are separate from guard behavior and release verification.
 
-[Client setup](docs/clients.md) also covers Antigravity IDE, remaining Gemini CLI authentication routes, Qwen, Kimi, OpenCode and applications using Z.ai or DeepSeek, with their actual validation levels. Antigravity IDE has completed the four report queries through stdio in a separate session. ChatGPT and Claude hosted connectors require separate authentication/account integration and are not provided by these settings. The [configuration fragments](examples/client-configs/README.md) reuse one MCP server across clients.
+[Client setup](docs/clients.md) also covers Antigravity IDE, remaining Gemini CLI authentication routes, Qwen, Kimi, OpenCode and applications using Z.ai or DeepSeek, with their actual validation levels. Antigravity IDE has completed the four report queries through stdio in a separate session. ChatGPT and Claude hosted connectors have a separate [setup and readiness guide](docs/hosted-clients.md), including Claude’s organization request-header beta; hosted connections remain unvalidated. The [configuration fragments](examples/client-configs/README.md) reuse one MCP server across clients.
 
 ## Tools
 

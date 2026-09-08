@@ -249,7 +249,7 @@ OpenAI documents OAuth 2.1 for authenticated hosted MCP. VTAI's static token hea
 
 Claude remote connectors are separate from Claude Code and local Claude Desktop MCP. Documented remote plans include Free, Pro, Max, Team and Enterprise; Free has one custom connector, and Team/Enterprise require an Owner to add one. Requests originate from Anthropic infrastructure even when using Desktop. Account permissions and connectivity still need testing. [Claude remote connector requirements](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
-Claude's fixed-header organization beta shares a credential across the organization. It does not meet this product's individual VTAI identity/quota model. Hosted Claude therefore remains pending individual OAuth integration and account validation. An OAuth client secret is not universally required. [Claude authentication](https://claude.com/docs/connectors/building/authentication), [request-header beta](https://claude.com/docs/connectors/custom/remote-mcp#authenticating-with-request-headers).
+Claude's fixed-header organization beta can use VTAI Bearer when an eligible organization deliberately shares one identity, quota and submission ownership. The [hosted setup guide](hosted-clients.md) documents that option and its acceptance query; it has not been tested in a hosted account. Individual OAuth and account validation remain pending. An OAuth client secret is not universally required. [Claude authentication](https://claude.com/docs/connectors/building/authentication), [request-header beta](https://claude.com/docs/connectors/custom/remote-mcp#authenticating-with-request-headers).
 
 ## Try the tools
 
@@ -441,7 +441,8 @@ The following rows and session descriptions retain their original scope and vers
 | OpenCode V1 | Not installed | stdio / proposed HTTP | Public schema checked | Pending | Pending |
 | OpenCode + Z.ai | Client/account untested | Proposed stdio / HTTP | Same MCP fragment; provider setup documented | Pending | Pending |
 | OpenCode + DeepSeek | Client/account untested | Proposed stdio / HTTP | Same MCP fragment; provider setup documented | Pending | Pending |
-| ChatGPT / Claude hosted | Account/interface untested | Individual OAuth pending | Requirements reviewed | Pending | Pending |
+| ChatGPT hosted | Account/interface untested | Public OAuth pending; private tunnel prerequisites documented | Requirements reviewed | Pending | Pending |
+| Claude hosted | Account/interface untested | Organization Bearer beta documented; individual OAuth pending | Requirements reviewed | Pending | Pending |
 | Python MCP SDK | 2.1.1 | stdio | Executable and token file exercised | Four tools discovered and called against synthetic HTTP backend | No model used |
 
 Earlier Claude and Gemini configuration checks used isolated client configuration directories and a synthetic token file; the VTAI base URL pointed to loopback. They did not query production or invoke a model. A listed example or handshake alone is not a claim of full host support. The service and workflow table below records the observed scope; no external catalog publication is claimed.
