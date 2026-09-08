@@ -2,7 +2,7 @@
 
 VirusTotal intelligence for MCP clients, powered by **VTAI**.
 
-Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under king-tero until the distribution moves. The Python package stays **vt-mcp 0.8.0** and the VTAI endpoint is unchanged. See the [discovery status](docs/discovery.md) for the current and prepared registry identities.
+Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.1**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under MIT until the corporate distribution is public. Version 0.8.1 updates licensing and corporate package metadata; tool behavior and the VTAI endpoint are unchanged. See the [0.8.1 release notes](docs/releases/v0.8.1.md) and [discovery status](docs/discovery.md).
 
 Look up file, URL, domain and IP reports, submit authorized files and recover their analyses from your assistant. Connect to VTAI over HTTP without installing vt-mcp or Python, or run the MCP server locally over stdio with an additional local-file tool. Basic use requires a free, revocable **VTAI token**; you do not need your own VirusTotal API key.
 
@@ -133,4 +133,6 @@ The automated suite uses synthetic credentials and mocked or loopback services. 
 
 ## License
 
-[MIT](LICENSE). This license covers the package code; access to VirusTotal intelligence remains subject to service terms and account privileges.
+[Apache-2.0](LICENSE), starting with version 0.8.1. The [NOTICE](NOTICE) retains the existing copyright attribution, and [LICENSES/MIT.txt](LICENSES/MIT.txt) preserves the original notice for material from earlier MIT releases. Published versions through 0.8.0 retain their original license and distribution files; new contributions are not offered under an alternative MIT license. These files are included in both the wheel and source distribution.
+
+This license covers the package code; access to VirusTotal intelligence remains subject to service terms and account privileges. Dependencies retain their own licenses.

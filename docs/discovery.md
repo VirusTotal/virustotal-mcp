@@ -6,8 +6,9 @@ a private repository. It is a new repository with the existing public source
 history copied into it, not a transfer of the original repository ID. The
 [public source](https://github.com/king-tero/vt-mcp) and its
 [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain the
-available distribution until the corporate cutover. No corporate release or
-registry publication is claimed here.
+public distribution until the corporate cutover. Corporate version 0.8.1 uses
+Apache-2.0, while the existing 0.8.0 release retains MIT. The corporate repository
+remains private, and its registry entry has not been published.
 
 Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), or [Codex](clients.md#codex-cli--remote-http).
@@ -17,7 +18,8 @@ Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-ag
 The active entry is still
 [`io.github.king-tero/vt-mcp` version 0.8.0](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/0.8.0).
 [`server.json`](../server.json) prepares the corporate name
-`io.github.VirusTotal/virustotal-mcp`, bound to GitHub repository ID `1361592455`.
+`io.github.VirusTotal/virustotal-mcp` version 0.8.1, bound to GitHub repository ID
+`1361592455`.
 Both describe the same Streamable HTTP endpoint at `https://ai.virustotal.com/mcp`
 and [free VTAI registration](https://ai.virustotal.com/connect/mcp). Preparing this
 file does not move or publish the active entry.
@@ -33,10 +35,12 @@ The eighth tool, `submit_local_file`, requires the local stdio package. Registry
 discovery does not establish support in every client, approval by a model provider,
 or a connection to hosted ChatGPT/Claude. Consult the [client evidence](clients.md).
 
-The registry manifest uses MCP server version **0.8.0**, matching the tool interface
-and published package. Backend VTAI 0.8.1 supplies the Bearer alternative. A remote
-entry needs no PyPI package; the verified [GitHub release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0)
-remains the local installation channel.
+The corporate manifest identifies distribution **0.8.1**. This licensing and
+packaging revision preserves the tool interface introduced in 0.8.0 and does not
+deploy a new hosted server. Backend VTAI 0.8.1 supplies the Bearer alternative. A
+remote entry needs no PyPI package; the verified public
+[0.8.0 GitHub release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0)
+remains the public local-installation channel during the transition.
 
 ### Maintaining the entry
 
