@@ -18,8 +18,9 @@ Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-ag
 The active entry is still
 [`io.github.king-tero/vt-mcp` version 0.8.0](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/0.8.0).
 [`server.json`](../server.json) prepares the corporate name
-`io.github.VirusTotal/virustotal-mcp` version 0.8.2, bound to GitHub repository ID
-`1361592455`.
+`io.github.VirusTotal/virustotal-mcp` version 0.8.2. The remote-only manifest omits `repository` while the corporate
+source remains private; its publication workflow is bound to GitHub repository
+ID `1361592455`.
 Both describe the same Streamable HTTP endpoint at `https://ai.virustotal.com/mcp`
 and [free VTAI registration](https://ai.virustotal.com/connect/mcp). Preparing this
 file does not move or publish the active entry.
@@ -54,18 +55,36 @@ credential. It can run while this repository is private and publishes nothing.
 It inspects the claims received through the authenticated HTTPS exchange; it
 does not independently verify the token's cryptographic signature locally.
 
-The `publish` operation additionally requires a public repository. It uses the
-publisher fixed by version and SHA-256, then reads the exact published version
-anonymously and compares its manifest and active status. Neither operation needs
-a permanent registry secret or a VTAI token. These capabilities do not establish
-that the corporate entry has already been published.
+The `publish` operation accepts this private repository's remote-only manifest:
+no package or private source URL is advertised. It uses the publisher fixed by
+version and SHA-256, then reads the exact published version anonymously and
+compares its manifest and active status. No permanent Registry secret or VTAI
+token is needed. The default identity check does not publish an entry.
+
+The `retire` and `restore` operations change only the reviewed version's status.
+Retirement marks it deleted and preserves its manifest and migration message in
+the Registry's `include_deleted=true` view. Restoration reactivates the same
+version and clears that message; it does not republish or rebuild a package.
+These operations check both namespaces for unexpected versions and metadata.
+The temporary local publisher credential is removed when the operation finishes.
 
 The publisher does not overwrite an existing name/version. Check the exact entry
 before retrying a failed run: publication may have succeeded before a later step
 failed. A new name using the same endpoint also requires an explicit registry
-cutover; changing this manifest alone does not retire the old name. Preserve
-published release bytes and their source history. Registry metadata, package
-publication and backend deployment remain separate operations.
+cutover; changing this manifest alone does not retire the old name. Verify both
+owner identities first, retire the personal entry from its own repository, then
+publish the corporate entry here. The shared URL is freed only by deletion;
+deprecation does not free it. Catalogue replacement is not atomic; the MCP
+endpoint continues serving existing clients during the transition.
+
+If an operation fails or times out, read both exact entries with
+`include_deleted=true` before taking another action. An exact active corporate
+entry establishes publication despite a lost response. To recover the personal
+entry, retire any corporate entry occupying the URL first, then run `restore`
+from the personal repository. The workflow never changes all versions or retries
+a mutation automatically. Preserve published release bytes and their source
+history. Registry metadata, package publication and backend deployment remain
+separate operations.
 
 See the official [remote server format](https://modelcontextprotocol.io/registry/remote-servers)
 and [GitHub Actions publication guide](https://modelcontextprotocol.io/registry/github-actions).
