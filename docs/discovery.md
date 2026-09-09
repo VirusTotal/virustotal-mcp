@@ -6,24 +6,30 @@ a private repository. It is a new repository with the existing public source
 history copied into it, not a transfer of the original repository ID. The
 [public source](https://github.com/king-tero/vt-mcp) and its
 [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain the
-public distribution until the corporate cutover. Corporate version 0.8.2 uses
+public local-installation channel while the corporate source and releases remain
+private. Corporate version 0.8.2 uses
 Apache-2.0, while the existing 0.8.0 release retains MIT. The corporate repository
-remains private, and its registry entry has not been published.
+remains private. Its remote MCP Registry entry is now publicly available.
 
 Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), or [Codex](clients.md#codex-cli--remote-http).
 
 ## MCP Registry
 
-The active entry is still
-[`io.github.king-tero/vt-mcp` version 0.8.0](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/0.8.0).
-[`server.json`](../server.json) prepares the corporate name
-`io.github.VirusTotal/virustotal-mcp` version 0.8.2. The remote-only manifest omits `repository` while the corporate
-source remains private; its publication workflow is bound to GitHub repository
-ID `1361592455`.
-Both describe the same Streamable HTTP endpoint at `https://ai.virustotal.com/mcp`
-and [free VTAI registration](https://ai.virustotal.com/connect/mcp). Preparing this
-file does not move or publish the active entry.
+The active entry is
+[`io.github.VirusTotal/virustotal-mcp` version 0.8.2](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions/0.8.2),
+published on 9 September 2026. [`server.json`](../server.json) contains its exact
+remote manifest. It omits `repository` while the corporate source remains private;
+GitHub Actions OIDC establishes the corporate namespace, and the workflow is bound
+to repository ID `1361592455`.
+
+It connects to `https://ai.virustotal.com/mcp` using
+[free VTAI registration](https://ai.virustotal.com/connect/mcp). The previous
+[`io.github.king-tero/vt-mcp` 0.8.0 entry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.king-tero%2Fvt-mcp/versions/0.8.0?include_deleted=true)
+is retired with a message pointing to the corporate name. Its original manifest
+remains readable with `include_deleted=true`. Select the corporate name in a
+Registry catalogue; existing endpoint-based configurations keep the same URL
+and credential settings.
 
 The manifest requests one secret VTAI token and constructs `Authorization: Bearer`
 for the client. Use the host's protected credential settings; no token belongs in
