@@ -2,7 +2,7 @@
 
 VirusTotal intelligence for MCP clients, powered by **VTAI**.
 
-Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.2**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) remain available under MIT until the corporate distribution is public. Version 0.8.2 completes the Apache-2.0 corporate distribution and fixes the release gate’s repository identity check; tool behavior and the VTAI endpoint are unchanged. See the [0.8.2 release notes](docs/releases/v0.8.2.md) and [discovery status](docs/discovery.md).
+Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.2**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain MIT. They remain the public local-installation channel while the corporate source is private. Version 0.8.2 completes the Apache-2.0 corporate distribution and fixes the release gate’s repository identity check; tool behavior and the VTAI endpoint are unchanged. See the [0.8.2 release notes](docs/releases/v0.8.2.md) and [discovery status](docs/discovery.md).
 
 Look up file, URL, domain and IP reports, submit authorized files and recover their analyses from your assistant. Connect to VTAI over HTTP without installing vt-mcp or Python, or run the MCP server locally over stdio with an additional local-file tool. Basic use requires a free, revocable **VTAI token**; you do not need your own VirusTotal API key.
 
@@ -10,8 +10,9 @@ Version **0.8.0** adds autonomous MCP submission and receipt recovery over the e
 
 ## Connect your client
 
-The [directory and discovery guide](docs/discovery.md) distinguishes the active
-MCP Registry entry from the prepared corporate metadata and explains connection requirements.
+Find the active [VirusTotal MCP Registry entry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions/0.8.2)
+under `io.github.VirusTotal/virustotal-mcp`. The [discovery guide](docs/discovery.md)
+explains the corporate identity, connection requirements and retained public releases.
 
 1. Reuse existing access or register explicitly at [Connect to VirusTotal MCP](https://ai.virustotal.com/connect/mcp), following the [access guide](docs/access.md). Keep the token in protected storage outside chat and project files.
 2. Choose a connection below and follow [client setup](docs/clients.md). Configure the credential outside the model conversation.
