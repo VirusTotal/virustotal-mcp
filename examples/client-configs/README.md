@@ -2,7 +2,7 @@
 
 These fragments configure the VirusTotal MCP server: seven common tools with the compatible VTAI 0.8 backend, plus local stdio `submit_local_file` for eight. Common tools are the four report lookups, `get_analysis`, `submit_file` and `get_submission`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
 
-These files are included in the `v0.8.0` source distribution and the [versioned configuration directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs). The wheel does not install them as client settings. Select the configuration matching your verified release and check [client validation levels](../../docs/clients.md) before choosing a setup.
+The [versioned configuration directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs) contains the fragments shipped in the `v0.8.0` source distribution. This branch also includes later recipes, which are not added retroactively to published archives. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup.
 
 The corporate source at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp) is currently private preparation. The linked public v0.8.0 source and release remain under king-tero until the distribution moves; the package name and VTAI endpoint do not change. See [discovery status](../../docs/discovery.md).
 
@@ -17,9 +17,23 @@ The corporate source at [VirusTotal/virustotal-mcp](https://github.com/VirusTota
 | [opencode-v1-stdio.json](opencode-v1-stdio.json) | OpenCode V1 `~/.config/opencode/opencode.json` | Public schema checked; client binary untested |
 | [opencode-v1-http.json](opencode-v1-http.json) | OpenCode V1 `~/.config/opencode/opencode.json` | Public schema checked; client binary untested |
 
+Additional recipes reviewed on 2026-09-11, with their own evidence:
+
+| File | Client / destination | Validation scope |
+|---|---|---|
+| [cursor-http.json](cursor-http.json) | Cursor `~/.cursor/mcp.json` or project `.cursor/mcp.json` | Official header syntax reviewed; native workflow pending |
+| [vscode-http.json](vscode-http.json) | VS Code `.vscode/mcp.json` or **MCP: Open User Configuration** | Extension Host recipe; [local code checks and limits](../../docs/clients.md#additional-client-validation) |
+| [copilot-cli-stdio.json](copilot-cli-stdio.json) | Copilot CLI `~/.copilot/mcp-config.json` | CLI 1.0.83 saved and recognized the configuration; tool calls pending |
+| [stdio.json](stdio.json) | Devin CLI v3000.3 / Local 3.6 onward, `~/.config/devin/mcp_config.json` | Official configuration reviewed; native workflow pending |
+| [cascade-http.json](cascade-http.json) | Legacy Cascade `~/.codeium/windsurf/mcp_config.json` | Official token-file expansion reviewed; native workflow pending |
+
+The [setup guide](../../docs/clients.md#cursor) explains restart, discovery and
+removal. Do not copy VS Code's `servers`/`inputs` format into Copilot CLI's
+`mcpServers` file. Devin Local and Cascade also have separate recipes.
+
 For stdio, install the verified wheel first. `vt-mcp` must be on the PATH used by the host; otherwise replace it with the absolute path reported by `command -v vt-mcp`. The token path is an example. vt-mcp expands `~` itself; no shell expansion of arbitrary JSON values is assumed. Declare `VTAI_TOKEN_FILE` explicitly, especially in Gemini, which filters sensitive inherited environment names. Gemini CLI no longer serves Code Assist individual, Google AI Pro or Ultra accounts through Google login; use [Antigravity CLI (`agy`)](../../docs/clients.md#antigravity-cli-agy) for those accounts.
 
-For HTTP, no vt-mcp or Python installation is required. These fragments use **`x-apikey`**. VTAI 0.8.1 also accepts **`Authorization: Bearer`** with the same VTAI token; use only one header. The variable `VTAI_MCP_TOKEN` contains the credential and is expanded by the host; this is static token authentication, not OAuth. Never replace the reference in these files with the credential itself. Load the variable outside chat using the [access guide](../../docs/access.md#remote-client-environment). For the Bearer alternative, use the client's protected environment mapping documented in the [client guide](../../docs/clients.md#bearer-authentication-validation), without adding a second credential header.
+For HTTP, no vt-mcp or Python installation is required. The earlier HTTP fragments use **`x-apikey`**; Cursor, VS Code and Cascade recipes use **`Authorization: Bearer`**. VTAI 0.8.1 accepts either with the same VTAI token; use only one header. Credential references are interpreted by each host: an environment variable for Cursor, a password input for VS Code's Extension Host, and a protected file for Cascade. This is static token authentication, not OAuth. Never replace a reference in these files with the credential itself. Load environment variables outside chat using the [access guide](../../docs/access.md#remote-client-environment). The [client guide](../../docs/clients.md#bearer-authentication-validation) documents the Bearer alternatives for earlier clients.
 
 With v0.7.0, Antigravity CLI (`agy`), Claude Code and Codex completed the five tools at the transport levels above. See the [native-client evidence](../../docs/client-validation-2026-09-07.md) for the same selected analysis, agy's auxiliary output-file read and protocol limits. This does not validate other hosts or a different installed artifact. For an authorized test deployment, replace the URL with that deployment's exact `/mcp` URL and prefix. The REST base ending `/api/v3` is not the MCP endpoint.
 
