@@ -32,6 +32,13 @@ Claude Code and Codex have each used Bearer for one report query in staging and 
 | Antigravity CLI (`agy`) | [Local stdio](docs/clients.md#antigravity-cli-agy) |
 | Claude Code | [Client setup](docs/clients.md#claude-code) |
 | Codex CLI | [Remote HTTP](docs/clients.md#codex-cli--remote-http) or [local stdio](docs/clients.md#codex-cli--local-stdio) |
+| Cursor | [HTTP recipe](docs/clients.md#cursor) |
+| VS Code with GitHub Copilot | [HTTP with a password input](docs/clients.md#vs-code-with-github-copilot) |
+| GitHub Copilot CLI | [Local stdio recipe](docs/clients.md#github-copilot-cli) |
+| Devin Local / Windsurf / Devin Desktop | [Choose Local or Cascade](docs/clients.md#devin-local-and-windsurf--devin-desktop) |
+
+The additional recipes have [separate validation levels](docs/clients.md#additional-client-validation).
+They are not yet validated model workflows against VTAI.
 
 `VTAI_MCP_TOKEN` names an environment variable; it is not a token value. Use the [protected-file launch instructions](docs/access.md#remote-client-environment) to supply it for HTTP without putting the credential in arguments, prompts or configuration text.
 

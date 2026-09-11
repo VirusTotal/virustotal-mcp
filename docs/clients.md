@@ -182,6 +182,101 @@ Both per-tool approval fragments were exercised with Codex CLI 0.153.4 in the
 without per-call approval prompts. These native sessions retain their candidate-route
 scope; the accepted public rollout and direct SDK checks are separate observations.
 
+## Cursor
+
+Merge [cursor-http.json](../examples/client-configs/cursor-http.json) into
+`~/.cursor/mcp.json` for your user, or `.cursor/mcp.json` in a trusted project.
+Load `VTAI_MCP_TOKEN` from the protected token file before launching the client,
+using the [environment instructions](access.md#remote-client-environment).
+In that Bash example, replace `exec claude` with your Cursor executable, or
+`exec agent` for Cursor CLI. Close an existing GUI process before relaunching.
+The reference `${env:VTAI_MCP_TOKEN}` belongs in the configuration; the token does
+not. Restart the application through that launch environment and enable the
+server in its MCP settings. Cursor documents this expansion in HTTP headers;
+VS Code's `${input:...}` syntax is not part of this recipe.
+[Cursor MCP documentation](https://cursor.com/docs/mcp).
+
+Cursor CLI uses the editor's MCP configuration. Inspect it with `agent mcp list`
+and `agent mcp list-tools virustotal`. CLI discovery is separate from an IDE
+model session. To disconnect, remove the `virustotal` entry from the file where
+you added it and reload. [Cursor CLI MCP](https://cursor.com/docs/cli/mcp).
+
+**Status:** recipe checked against official documentation on 2026-09-11;
+native header expansion, tool calls and model workflow remain unverified.
+
+## VS Code with GitHub Copilot
+
+Merge [vscode-http.json](../examples/client-configs/vscode-http.json) into
+`.vscode/mcp.json`, or open **MCP: Open User Configuration** for your profile.
+This format uses `servers` and `inputs`. Start `virustotal` through **MCP: List
+Servers** and enter your VTAI Agent Token in the password input, outside chat.
+Keep `${input:vtai-token}` in the JSON. VS Code documents retaining the input for
+later starts. Remove the server entry from the selected configuration and stop
+it through the same command to disconnect.
+[VS Code configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+This input-based recipe targets VS Code's Extension Host. Current VS Code
+documentation says servers requiring interactive inputs are not forwarded to
+the Agent Host. For that runtime or Copilot CLI, use the separate Copilot format
+below; `.vscode/mcp.json` and `~/.copilot/mcp-config.json` are not interchangeable.
+[VS Code MCP setup](https://code.visualstudio.com/docs/agent-customization/mcp-servers).
+
+**Status:** official recipe reviewed; local configuration/transport checks are
+recorded in the [additional-client matrix](#additional-client-validation).
+A native Copilot model workflow against VTAI remains unverified.
+
+## GitHub Copilot CLI
+
+Install the [verified local package](../README.md#install-for-local-stdio), then
+merge [copilot-cli-stdio.json](../examples/client-configs/copilot-cli-stdio.json)
+into `~/.copilot/mcp-config.json`. Alternatively, add it from your terminal:
+
+```bash
+copilot mcp add virustotal --env VTAI_TOKEN_FILE="$HOME/.config/vt-mcp/token" --timeout 180000 -- vt-mcp
+```
+
+This passes a file path, never the credential. The fragment uses `mcpServers`
+and `type: "local"`; `vt-mcp` expands its own token-file path. Use an absolute
+executable path if it is absent from the client's PATH. Inspect with
+`copilot mcp get virustotal`; remove with `copilot mcp remove virustotal`.
+The `tools` list controls availability, while Copilot's permissions control
+execution. Your Copilot login is separate from VTAI access.
+[Copilot CLI MCP documentation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers).
+
+**Status:** CLI 1.0.83 saved and recognized this configuration in an isolated
+profile on 2026-09-11. No tool invocation or model workflow is claimed. Copilot
+also documents remote HTTP; safe header expansion and a VTAI workflow through
+that transport have not been validated here.
+
+## Devin Local and Windsurf / Devin Desktop
+
+Select instructions for the agent running inside the editor. **Devin Local and
+legacy Cascade have different configuration paths.**
+
+For **Devin Local / Devin CLI**, install the verified local package and merge
+[stdio.json](../examples/client-configs/stdio.json) into
+`~/.config/devin/mcp_config.json`, or `.devin/mcp_config.local.json` for a local
+project configuration. These dedicated MCP files apply from CLI v3000.3 /
+Local 3.6; earlier versions used `config*.json`. The fragment supplies the path
+to the token file; `vt-mcp` reads it. This avoids relying on unverified HTTP
+header interpolation in Devin Local.
+[Devin configuration reference](https://docs.devin.ai/cli/reference/configuration/config-file).
+
+For **legacy Cascade** in Windsurf / Devin Desktop, merge
+[cascade-http.json](../examples/client-configs/cascade-http.json) into
+`~/.codeium/windsurf/mcp_config.json` and refresh the MCP settings. Its documented
+`${file:~/.config/vt-mcp/token}` expansion reads and trims the file. Store only
+the VTAI token there, without `Bearer` or dotenv syntax. An unreadable file leaves
+the reference unresolved. Cascade documents both `serverUrl` and `url`; this
+fragment uses `serverUrl`. [Cascade MCP](https://docs.devin.ai/desktop/cascade/mcp).
+
+Devin can also import other editors' MCP configuration. Check the effective
+source to avoid duplicate entries; remove the entry from that source and reload
+to disconnect. [Configuration imports](https://docs.devin.ai/cli/reference/configuration/read-config-from).
+
+**Status:** both recipes checked against their official documentation on
+2026-09-11; neither client has completed a native VTAI workflow in our validation.
+
 ## Gemini CLI
 
 Google retired Gemini CLI access through **Sign in with Google** for Gemini Code Assist for individuals, Google AI Pro and Google AI Ultra on 2026-06-18. Use [Antigravity CLI (`agy`)](#antigravity-cli-agy) for those accounts. Standard and Enterprise are unaffected by that retirement; Gemini API-key authentication is a separate option. These remaining routes require their own account and model checks. [Official retirement notice](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals), [Gemini authentication](https://geminicli.com/docs/get-started/authentication/).
@@ -284,6 +379,47 @@ The optional check on [the connection page](https://ai.virustotal.com/connect/mc
 Use the connection page to revoke the credential when required. Only HTTP 204 confirms revocation; clearing the page or deleting client settings does not. Revocation disables that credential across REST and MCP, while an already admitted request may finish. Keep a protected copy while the revocation outcome is unconfirmed.
 
 ## Validation levels
+
+### Additional-client validation
+
+Checked on 2026-09-11. These recipes use the existing service and do not extend
+the validation of Agy, Claude Code or Codex to another host.
+
+| Client | Configuration evidence | Tool calls / model workflow |
+|---|---|---|
+| Cursor IDE / CLI | Official HTTP configuration reviewed; binary not tested | Pending |
+| VS Code 1.107.1 | Recipe accepted by installed schema; extracted variable/transport code exercised offline | Native VTAI workflow pending |
+| Copilot CLI 1.0.83 | Native add/get commands saved and recognized the stdio configuration in an isolated profile | Pending |
+| Devin Local / CLI | Official stdio configuration and versioned file paths reviewed | Pending |
+| Cascade in Windsurf / Devin Desktop | Official HTTP and token-file syntax reviewed | Pending |
+
+VS Code checks used installed commit `994fd12f8d3a5aa16f17d42c041e5809167e845a`.
+Its extracted code resolved the password input without changing the original
+recipe and directed that input to secret storage through an intercepted interface.
+With synthetic I/O, POST initialization succeeded, one GET returned 405, and
+subsequent POST discovery and tool calls succeeded, both with and without a
+session ID. The GET was not retried and no connection-error event was emitted.
+These checks did not launch the UI, exercise a real keyring, authenticate to VTAI
+or invoke a model; they do not validate later VS Code versions.
+
+The HTTP service does not offer a standalone SSE stream: an authenticated
+`GET /mcp` returns **405**, while MCP requests use POST. A client may omit that
+optional GET. In a client compatibility check, observe whether a GET is sent
+and whether subsequent POST tool calls work; a separate helper's GET does not
+prove the client handled it. Do not select legacy SSE transport for this endpoint.
+[MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
+
+For a complete client check, confirm discovery of seven HTTP tools (eight with
+local stdio), then ask the model to use `get_domain_report` for `virustotal.com`
+and preserve the returned source, analysis date and coverage. Check the actual
+tool result, not only the final answer. Repeat a report lookup after any observed
+GET 405. Validate credential handling without printing its value. A successful
+report lookup does not validate file submission, recovery or analysis completion.
+
+The native tool/model stages above remain pending; configuration examples do not
+establish a production workflow. Removing a client configuration does not revoke
+the VTAI token; use the [revocation instructions](access.md#revoke-access) when
+you intend to disable it across clients.
 
 Evidence reviewed through 2026-09-08 (UTC). Configuration parsing, MCP discovery, an actual tool call and a model-assisted workflow are separate observations. The generic Python SDK test is not evidence of a Claude or Gemini model workflow.
 
