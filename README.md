@@ -1,147 +1,114 @@
-# vt-mcp
+# VirusTotal MCP
 
-VirusTotal intelligence for MCP clients, powered by **VTAI**.
+<!-- mcp-name: io.github.VirusTotal/virustotal-mcp -->
 
-Corporate source is being prepared at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), which is currently private. This source tree identifies **vt-mcp 0.8.2**, licensed under **Apache-2.0**. The [public source history](https://github.com/king-tero/vt-mcp) and [v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain MIT. They remain the public local-installation channel while the corporate source is private. Version 0.8.2 completes the Apache-2.0 corporate distribution and fixes the release gate’s repository identity check; tool behavior and the VTAI endpoint are unchanged. See the [0.8.2 release notes](docs/releases/v0.8.2.md) and [discovery status](docs/discovery.md).
+Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file submission and analysis recovery.
 
-Look up file, URL, domain and IP reports, submit authorized files and recover their analyses from your assistant. Connect to VTAI over HTTP without installing vt-mcp or Python, or run the MCP server locally over stdio with an additional local-file tool. Basic use requires a free, revocable **VTAI token**; you do not need your own VirusTotal API key.
+Use the free VTAI service with its current access limits. You need a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp); you do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
 
-Version **0.8.0** adds autonomous MCP submission and receipt recovery over the existing VTAI service: **seven common tools over HTTP or stdio, plus one local-file tool over stdio**. Submission tools have no per-call confirmation or consent argument; configure your host to permit only the operations and files you authorize for standard public sharing. The existing CLI, report queries, opt-in guard and public-fixture release gates remain available. See the [release notes](docs/releases/v0.8.0.md) and [submission-workflow evidence](docs/clients.md#version-08-submission-evidence); five native-client sessions exercised the new cycle in staging and another five against a production candidate with zero public traffic. The public rollout is accepted, with separate direct SDK checks; the native sessions retain their candidate-route scope. The historical 0.7 sessions retain their read-only scope.
+## Install
 
-## Connect your client
-
-Find the active [VirusTotal MCP Registry entry](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions/0.8.2)
-under `io.github.VirusTotal/virustotal-mcp`. The [discovery guide](docs/discovery.md)
-explains the corporate identity, connection requirements and retained public releases.
-
-1. Reuse existing access or register explicitly at [Connect to VirusTotal MCP](https://ai.virustotal.com/connect/mcp), following the [access guide](docs/access.md). Keep the token in protected storage outside chat and project files.
-2. Choose a connection below and follow [client setup](docs/clients.md). Configure the credential outside the model conversation.
-3. Restart the client, inspect its MCP tools and make one explicit report query.
-
-| Connection | Client configuration | Local requirements |
-|---|---|---|
-| Remote HTTP | `https://ai.virustotal.com/mcp`, with `x-apikey` or the [VTAI 0.8.1 Bearer alternative](docs/access.md#choose-one-authentication-header) read from the host environment | An MCP client supporting the selected credential mapping; no vt-mcp or Python installation |
-| Local stdio | Start `vt-mcp` with `VTAI_TOKEN_FILE` pointing to protected storage | Python 3.12+ and the verified wheel |
-
-Both routes use VTAI's rights and quotas. VTAI 0.8.1 accepts the same VTAI token through **either `x-apikey` or `Authorization: Bearer`**; send only one. This is static token authentication, not OAuth, and needs no vt-mcp package upgrade. Existing `x-apikey` configurations and the local stdio wrapper keep working. Free access is neither anonymous nor unlimited; model-provider charges are separate.
-
-Claude Code and Codex have each used Bearer for one report query in staging and one against a production candidate, through QA proxies. See the [scope and deployment status](docs/clients.md#bearer-authentication-validation); these were not ordinary public-direct sessions. Earlier accepted HTTP workflows used `x-apikey`.
-
-| Client | Setup guide |
-|---|---|
-| Antigravity CLI (`agy`) | [Local stdio](docs/clients.md#antigravity-cli-agy) |
-| Claude Code | [Client setup](docs/clients.md#claude-code) |
-| Codex CLI | [Remote HTTP](docs/clients.md#codex-cli--remote-http) or [local stdio](docs/clients.md#codex-cli--local-stdio) |
-| Cursor | [HTTP recipe](docs/clients.md#cursor) |
-| VS Code with GitHub Copilot | [HTTP with a password input](docs/clients.md#vs-code-with-github-copilot) |
-| GitHub Copilot CLI | [Local stdio recipe](docs/clients.md#github-copilot-cli) |
-| Devin Local / Windsurf / Devin Desktop | [Choose Local or Cascade](docs/clients.md#devin-local-and-windsurf--devin-desktop) |
-
-Copilot CLI has a verified domain lookup workflow with a model through local
-stdio. The other additional clients have [separate validation levels](docs/clients.md#additional-client-validation),
-with model workflows against VTAI still pending.
-
-`VTAI_MCP_TOKEN` names an environment variable; it is not a token value. Use the [protected-file launch instructions](docs/access.md#remote-client-environment) to supply it for HTTP without putting the credential in arguments, prompts or configuration text.
-
-With **v0.7.0**, Antigravity CLI (`agy`) 1.1.27 completed all five tools through stdio. Claude Code 2.1.263 and Codex CLI 0.153.4 have each completed all five through both stdio and public HTTP. The [native-client validation](docs/client-validation-2026-09-07.md) records 25 MCP calls, the same selected analysis across sessions, and agy's auxiliary read of its generated analysis output. agy HTTP remains unvalidated: its tested header variables were sent literally. These observations are separate from guard behavior and release verification.
-
-[Client setup](docs/clients.md) also covers Antigravity IDE, remaining Gemini CLI authentication routes, Qwen, Kimi, OpenCode and applications using Z.ai or DeepSeek, with their actual validation levels. Antigravity IDE has completed the four report queries through stdio in a separate session. ChatGPT and Claude hosted connectors have a separate [setup and readiness guide](docs/hosted-clients.md), including Claude’s organization request-header beta; hosted connections remain unvalidated. The [configuration fragments](examples/client-configs/README.md) reuse one MCP server across clients.
-
-## Tools
-
-The compatible VTAI 0.8 service exposes these seven common tools. The four report queries and `get_analysis` keep their existing read-only behavior.
-
-| Tool | Input |
-|---|---|
-| `get_file_report(hash)` | MD5, SHA-1 or SHA-256 hash |
-| `get_url_report(url)` | HTTP(S) URL |
-| `get_domain_report(domain)` | DNS domain, including Unicode names |
-| `get_ip_report(ip)` | One IPv4 or IPv6 address |
-| `get_analysis(analysis_id)` | One read of an analysis registered to the current VTAI account |
-| `submit_file(sha256, content_base64)` | SHA-256 and base64-encoded authorized bytes, at most **24,000,000 decoded bytes** |
-| `get_submission(sha256)` | Recover the current account’s submission receipt without sending the file again |
-
-Local stdio additionally exposes **`submit_local_file(path, expected_sha256=None)`**: it copies a regular file accessible to the local vt-mcp process and submits at most **32,000,000 bytes**. The optional expected digest must match that copy. This tool is absent from remote HTTP; a remote server cannot read a path on your machine.
-
-Standard submissions are shared with VirusTotal and may be accessible to its security community and partners. Inline file content also passes through your MCP host as tool arguments. Do not supply credentials or content you are not authorized to disclose. See the [submission and recovery guide](docs/analysis.md).
-
-For a file report, ask:
-
-> Use VirusTotal to look up the SHA-256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Explain the source, analysis date, coverage and limitations.
-
-This is the empty-file hash. Report queries do not read local files, visit destinations, resolve DNS, upload samples or start analyses. A missing report remains unknown. VTAI owns intelligence, normalization, authorization and quotas.
-
-For URL intelligence, **the full URL, including query and fragment, is shared with VTAI and VirusTotal**. Query only indicators you may disclose. Use domain scope when private paths are unnecessary; a domain result does not cover every URL it hosts. Domains take no scheme, path or port; IP addresses take no brackets, port, zone or CIDR suffix.
-
-## Install for local stdio
-
-Use Python 3.12+ and [uv](https://docs.astral.sh/uv/getting-started/installation/). Download the wheel and `SHA256SUMS` together from the [current public v0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0). Verify that the manifest contains the exact wheel filename, then check and install from the download directory:
+For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-sha256sum --check --ignore-missing SHA256SUMS
-uv tool install --python 3.12 ./vt_mcp-0.8.0-py3-none-any.whl
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.3'
 vt-mcp --version
 ```
 
-Require an `OK` for that wheel before installing; checking other files does not verify an absent wheel. The package is not published on PyPI. Use the linked release and verified filename rather than a similarly named package from another publisher.
+The command installs the package from the official PyPI index in an isolated tool environment. Python 3.12 or newer is required. Keep `vt-mcp` on the MCP client's PATH, or use its absolute executable path. The package does not modify client configuration.
 
-Keep `vt-mcp` on the client's PATH or configure its absolute path. After saving the VTAI token as described in the access guide, follow the setup for [Antigravity CLI (`agy`)](docs/clients.md#antigravity-cli-agy), [Claude Code](docs/clients.md#claude-code), or [Codex CLI stdio](docs/clients.md#codex-cli--local-stdio).
+For a connection without a local Python process, use **`https://ai.virustotal.com/mcp`** with a supported HTTP client. Supply the VTAI token through either `Authorization: Bearer` or `x-apikey`, using the client's protected credential settings. Send only one authentication header. This is static token authentication; clients that require OAuth need a separate integration.
 
-Restart the selected client and inspect `/mcp`. Running `vt-mcp` without a subcommand starts stdio. The wheel does not modify client settings; the source distribution includes the consumer guides and examples. A [Python application example](examples/README.md) uses the same MCP server without a model account.
+## Connect your client
 
-## Optional workflows
+1. Reuse your existing VTAI access or [create a token](https://ai.virustotal.com/connect/mcp).
+2. For stdio, save the token in a file readable only by your user, such as `~/.config/vt-mcp/token`. Set the MCP server's environment variable `VTAI_TOKEN_FILE` to that path and its command to `vt-mcp`. The file contains only the token; never put the token itself in chat, command arguments or project files.
+3. Follow the client-specific setup, restart or reconnect the client, and inspect its available tools.
 
-| Workflow | Contract and guide |
+| Client | Setup |
 |---|---|
-| Submit and recover through MCP | Use `submit_file` for inline bytes or local stdio `submit_local_file` for a file; recover by SHA-256 with `get_submission`, then read the returned analysis ID with `get_analysis`. There is no per-call human confirmation. [Contract and limits](docs/analysis.md#autonomous-mcp-workflow). |
-| Keep using the submission CLI | The [compatible CLI](docs/analysis.md#cli-authorize-one-copy) retains its explicit interactive confirmation or noninteractive acceptance/digest flags and its durable recovery reference. |
-| Read a selected analysis | `vt-mcp analysis --wait 180 -- OPAQUE_REGISTERED_ID` optionally polls that registered analysis. The MCP `get_analysis` tool performs one read. Neither substitutes a newer file report for the selected analysis. |
-| Check one Python execution in Codex | The [opt-in guard](docs/control.md) checks and executes the same sealed main-script bytes for its exact supported command grammar. It never uploads the script and is not a sandbox or an import/dependency check. |
-| Gate two public CI fixtures | The [reference CI pilot](docs/ci-pilot.md) checks only two allowlisted public files. Non-allow outcomes prevent publication. It does not scan the product wheel, sdist, source, logs or dependencies. Both live fixture gates and evidence retention must succeed before the release workflow can publish. |
+| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) |
+| Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
+| Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
+| Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
+| VS Code with GitHub Copilot | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=vscode&transport=http) |
+| GitHub Copilot CLI | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=copilot&transport=stdio) |
+| Devin Local | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=devin&transport=stdio) |
+| Windsurf / Devin Desktop | [Cascade HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cascade&transport=http) |
+| Antigravity IDE | [Local stdio configuration](#antigravity-ide) |
 
-An uncertain submission is recovered through its receipt without repeating the POST, and can remain unknown permanently. `exists` is an existing file report, not a newly completed analysis; `submitted` only establishes a registered analysis ID. CLI exit 0 can mean pending. None of these states is security approval.
+The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
 
-## Configuration and report results
+For a first query, ask your agent:
 
-These variables configure the local vt-mcp process. Remote clients use their host's header mapping instead.
+> Use VirusTotal to look up the SHA-256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Explain the source, analysis date, coverage and limitations.
+
+This is the empty-file hash. A report lookup does not read or upload local files. A missing report remains unknown, and zero detections do not establish safety.
+
+## Antigravity IDE
+
+In the agent panel, open **MCP Servers → Manage MCP Servers → View raw config** and merge this entry with your existing configuration:
+
+```json
+{
+  "mcpServers": {
+    "virustotal": {
+      "command": "vt-mcp",
+      "args": [],
+      "env": {
+        "VTAI_TOKEN_FILE": "~/.config/vt-mcp/token"
+      }
+    }
+  }
+}
+```
+
+Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation; its HTTP credential expansion was not established. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
+
+The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. Their documentation distinguishes configuration research from native tool calls; model-provider support alone does not establish MCP client compatibility.
+
+## Tools
+
+| Tool | Purpose |
+|---|---|
+| `get_file_report(hash)` | Retrieve an existing report by MD5, SHA-1 or SHA-256. |
+| `get_url_report(url)` | Retrieve an existing report for an HTTP(S) URL. |
+| `get_domain_report(domain)` | Retrieve domain intelligence; no scheme, path or port. |
+| `get_ip_report(ip)` | Retrieve intelligence for one IPv4 or IPv6 address. |
+| `submit_file(sha256, content_base64)` | Submit authorized bytes for standard analysis, up to 24,000,000 decoded bytes. |
+| `get_submission(sha256)` | Recover this account's submission receipt without sending the file again. |
+| `get_analysis(analysis_id)` | Read the selected analysis registered to this VTAI account. |
+| `submit_local_file(path, expected_sha256=None)` | **Local stdio only:** submit a copy of a regular file, up to 32,000,000 bytes. An expected digest must match that copy. |
+
+The seven common tools are available through HTTP and stdio. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
+
+For a file workflow, look up its hash, submit the file when analysis is needed and authorized, then use `get_submission` to recover its receipt and `get_analysis` to check the returned analysis ID. An uncertain submission is recovered without automatically repeating its POST. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
+
+MCP submission tools have no per-call human confirmation parameter. Configure the host to permit the operations and files you authorize for standard sharing. **Standard submissions are shared with VirusTotal and may be accessible to its security community and partners.** Inline content also passes through your MCP host. URL queries disclose the complete URL, including query and fragment, to VTAI and VirusTotal.
+
+## Configuration and diagnostics
 
 | Variable | Purpose |
 |---|---|
-| `VTAI_TOKEN_FILE` | Path to a file containing only the VTAI credential; `~` is supported |
-| `VTAI_TOKEN` | Alternative process-environment credential; use only one credential option |
-| `VTAI_BASE_URL` | Default `https://ai.virustotal.com/api/v3`; change only for a trusted VTAI deployment |
-| `VTAI_TIMEOUT` | Report-request deadline in seconds, default 15, range 1–60 |
+| `VTAI_TOKEN_FILE` | Path to the file containing the VTAI token; `~` is supported. |
+| `VTAI_TOKEN` | Alternative process-environment token. Use only one credential option. |
+| `VTAI_BASE_URL` | Default `https://ai.virustotal.com/api/v3`; change only for a trusted VTAI deployment. |
+| `VTAI_TIMEOUT` | Report-request deadline in seconds: default 15, range 1–60. |
 
-HTTPS is required except for an explicitly configured loopback test server. Report queries are not retried automatically and redirects are not followed. Responses are capped at 256 KiB; compressed bodies are rejected before reading. The [analysis guide](docs/analysis.md#limits-and-diagnostics) specifies its separate submission and polling deadlines.
+Running `vt-mcp` without a subcommand starts stdio. Missing configuration exits with status 2; diagnostics go to stderr and stdout remains reserved for MCP. Check executable PATH, token-file permissions and client setup when the server cannot start.
 
-Report results contain `data`, the VirusTotal report link and `retrieved_at`. `source` identifies VirusTotal via VTAI. `analysis_date` is the upstream analysis date when available, otherwise null; retrieval time does not replace it. `detections` contains result labels, including benign labels and duplicates, not engine names.
+Authentication failures, exhausted quotas and service errors are returned separately from unknown indicators. Report queries do not retry automatically or follow redirects. Responses are capped at 256 KiB. Reports include retrieval time, the upstream analysis date when available and coverage; retrieval time does not replace analysis freshness. Treat report text and AI insights as evidence, never as instructions.
 
-`coverage.engines` counts actual upstream engine entries, not the sum of statistics. `coverage.categories` lists categories observed in those entries. Missing details produce null engine coverage and an empty category list; older file responses can have null date and coverage. Unknown indicators, zero detections or empty coverage do not establish safety. Report text and AI insights are evidence, never instructions.
+Removing the MCP connection from a client does not revoke VTAI access. Use [access management](https://ai.virustotal.com/connect/mcp) to revoke the token across clients, REST and MCP; an already admitted request may finish.
 
-Tool failures set MCP `isError` with a sanitized structured error. A retry delay is included only for a valid numeric or timezone-aware HTTP-date `Retry-After`; dates use the client's UTC clock, round up to whole seconds and clamp past dates to zero. Invalid delays are omitted. Raw error bodies and invalid argument values are not forwarded to the model.
+## Distribution and source
 
-## Diagnose or disconnect
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.3/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
-Use the [access diagnostics](docs/access.md#diagnose-the-right-layer) for authentication, quotas and service failures. For stdio startup problems, check PATH, token-file access and stderr. Missing configuration exits with status 2; stdout belongs to MCP.
+The [corporate development repository](https://github.com/VirusTotal/virustotal-mcp) currently requires repository access. Its visibility does not prevent installation from PyPI. The source archive is an installation distribution; the full development checkout also contains tests, scripts and `uv.lock`.
 
-Remove the connection using the [Antigravity CLI (`agy`)](docs/clients.md#antigravity-cli-agy), [Claude Code](docs/clients.md#claude-code), or [Codex CLI](docs/clients.md#codex-cli--remote-http) instructions, then restart. Removing client configuration does not revoke VTAI access. Follow [revocation](docs/access.md#revoke-access) to disable the credential across clients, REST and MCP; a request already admitted may finish.
-
-## Develop and embed
-
-VTAI integrations can reuse the [factory and presentation API](docs/embedding.md). For development, use a source checkout containing `uv.lock`, scripts and tests, rather than the installation sdist. Select the [versioned v0.8.2 corporate source tree](https://github.com/VirusTotal/virustotal-mcp/tree/v0.8.2), which requires repository access while private, and verify its release provenance before running the development commands.
-
-```bash
-uv sync --locked
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest
-uv build --no-build-isolation
-```
-
-The automated suite uses synthetic credentials and mocked or loopback services. The release workflow separately requires the public-fixture gate and publishes the previously verified CI artifacts without rebuilding. [Release notes](docs/releases/v0.8.0.md) describe the 0.8 changes; the [validation matrix](docs/clients.md#validation-levels) keeps historical evidence separate from the requirements for each release run.
+Version 0.8.3 changes package distribution and discovery. Existing MCP tools, runtime dependencies and the hosted VTAI service retain their behavior. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 
 ## License
 
-[Apache-2.0](LICENSE), starting with version 0.8.1. The [NOTICE](NOTICE) retains the existing copyright attribution, and [LICENSES/MIT.txt](LICENSES/MIT.txt) preserves the original notice for material from earlier MIT releases. Published versions through 0.8.0 retain their original license and distribution files; new contributions are not offered under an alternative MIT license. These files are included in both the wheel and source distribution.
-
-This license covers the package code; access to VirusTotal intelligence remains subject to service terms and account privileges. Dependencies retain their own licenses.
+[Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0), starting with version 0.8.1. Both wheel and source archive include `LICENSE`, `NOTICE` and `LICENSES/MIT.txt`; the MIT notice preserves attribution for earlier material. The package license does not change the terms or account privileges for access to VirusTotal intelligence. Dependencies retain their own licenses.
