@@ -11,7 +11,10 @@ but is deliberately rejected by publish: its README still describes PyPI as
 unpublished and contains relative consumer links. The first PyPI publication
 needs a new reviewed release with a PyPI-ready README and metadata. Fixing those
 files means a new version and new CI assets; never rebuild or overwrite 0.8.2.
-This guide does not claim that a PyPI account, project or publication is ready.
+Version 0.8.3 supplies the PyPI-ready README and metadata. Its GitHub release
+is followed by a separate PyPI publication; check the public PyPI files and
+hashes before announcing availability. Account setup alone does not establish
+a completed publication.
 
 ## One-time ownership setup
 
@@ -47,6 +50,17 @@ Sources: [PyPI first publication](https://docs.pypi.org/trusted-publishers/creat
 [GitHub identity validator](https://github.com/pypi/warehouse/blob/main/warehouse/oidc/models/github.py),
 [PyPI account and package visibility](https://pypi.org/help/),
 [2FA requirement](https://blog.pypi.org/posts/2024-01-01-2fa-enforced/).
+
+## Package and Registry identity
+
+The package README includes `mcp-name: io.github.VirusTotal/virustotal-mcp`.
+The MCP Registry checks this published description to associate `vt-mcp` with
+the corporate server name. Preserve the marker when editing the README.
+Publish and reconcile the PyPI package before publishing a Registry manifest
+that references it. The Registry publishing helper verifies the package files
+against the annotated GitHub release's checksum manifest.
+
+[Registry package ownership](https://modelcontextprotocol.io/registry/package-types).
 
 ## Run verification, then publish the reviewed bytes
 

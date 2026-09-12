@@ -3,8 +3,36 @@
   "name": "io.github.VirusTotal/virustotal-mcp",
   "title": "VirusTotal",
   "description": "VirusTotal reports for files, URLs, domains and IPs, plus file submission and analysis recovery.",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "websiteUrl": "https://ai.virustotal.com/connect/mcp",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "vt-mcp",
+      "version": "0.8.3",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "VTAI_TOKEN_FILE",
+          "description": "Path to a protected file containing only your VTAI token. Get free access at https://ai.virustotal.com/connect/mcp.",
+          "format": "filepath",
+          "isRequired": true,
+          "placeholder": "/home/user/.config/vt-mcp/token"
+        }
+      ],
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--python",
+          "value": "3.12"
+        }
+      ]
+    }
+  ],
   "remotes": [
     {
       "type": "streamable-http",

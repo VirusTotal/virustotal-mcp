@@ -1,4 +1,4 @@
-"""Bounded Registry operations for the two reviewed remote-only identities."""
+"""Bounded Registry operations with release-verified PyPI distribution."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ from urllib.parse import quote
 REGISTRY = "https://registry.modelcontextprotocol.io"
 OFFICIAL = "io.modelcontextprotocol.registry/official"
 # Canonical JSON hashes pin the entire manifest, including the secret header
-# template. The corporate remote-only manifest deliberately has no repository.
+# template and package configuration. Private source is not advertised.
 IDENTITIES = {
     "VirusTotal/virustotal-mcp": {
         "id": 1361592455,
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
-        "version": "0.8.2",
-        "manifest_sha256": "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8",
+        "version": "0.8.3",
+        "manifest_sha256": "fdcfa9f92f6945e38bfecc65d5f22c5ce2caf908573bc39a059a79fd3daae40b",
     },
     "king-tero/vt-mcp": {
         "id": 1359828317,
@@ -35,6 +35,12 @@ IDENTITIES = {
         "version": "0.8.0",
         "manifest_sha256": "86c09dc2d84b540291e56813f13e6747cc6ae0f138adb9e4d5575d769f0a155d",
     },
+}
+PREVIOUS = {
+    "VirusTotal/virustotal-mcp": {
+        "version": "0.8.2",
+        "manifest_sha256": "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8",
+    }
 }
 OPERATIONS = {"verify-identity", "publish", "retire", "restore"}
 RETIRE_MESSAGES = {
@@ -118,14 +124,17 @@ def command(args, environ, *, timeout=90):
     return result.stdout
 
 
-def github(path, environ):
+def github(path, environ, *, binary=False):
+    args = ["gh", "api", "--hostname", "github.com", "--method", "GET", path]
+    if binary:
+        args += ["-H", "Accept: application/octet-stream"]
     raw = command(
-        ["gh", "api", "--hostname", "github.com", "--method", "GET", path],
+        args,
         child_env(environ),
         timeout=30,
     )
     require(len(raw) <= LIMIT, "github_response_too_large")
-    return json.loads(raw)
+    return raw if binary else json.loads(raw)
 
 
 def github_preflight(current, environ):
@@ -138,7 +147,7 @@ def github_preflight(current, environ):
         and type(repository.get("private")) is bool,
         "github_repository_mismatch",
     )
-    # Only the pinned corporate remote-only contract may omit a public repository.
+    # Only the pinned corporate contract may omit a public source repository.
     require(not repository["private"] or current["id"] == 1361592455, "private_repository_rejected")
     main = github(prefix + "/git/ref/heads/main", environ)
     require(main.get("object", {}).get("sha") == current["sha"], "main_has_changed")
@@ -162,6 +171,124 @@ def github_preflight(current, environ):
         ),
         "successful_main_ci_required",
     )
+
+
+def pypi_get(version):
+    connection = http.client.HTTPSConnection("pypi.org", timeout=30)
+    try:
+        connection.request(
+            "GET",
+            f"/pypi/vt-mcp/{version}/json",
+            headers={"Accept": "application/json", "Cache-Control": "no-cache"},
+        )
+        response = connection.getresponse()
+        require(response.status == 200, "pypi_version_not_available")
+        require(
+            response.getheader("Content-Encoding", "identity") == "identity", "compressed_response"
+        )
+        raw = response.read(LIMIT + 1)
+        require(len(raw) <= LIMIT, "pypi_response_too_large")
+        return json.loads(raw)
+    finally:
+        connection.close()
+
+
+def pypi_preflight(current, environ):
+    """Link both public distributions to the reviewed annotated release tag."""
+    version, prefix = current["version"], f"repos/{current['repository']}"
+    value = pypi_get(version)
+    info = value["info"]
+    require(
+        info.get("name") == "vt-mcp" and info.get("version") == version,
+        "pypi_identity_mismatch",
+    )
+    description = info.get("description")
+    require(
+        isinstance(description, str)
+        and re.findall(r"mcp-name:\s*([^\s<>]+)", description) == [current["name"]],
+        "pypi_ownership_marker_mismatch",
+    )
+    files = {
+        f"vt_mcp-{version}-py3-none-any.whl": "bdist_wheel",
+        f"vt_mcp-{version}.tar.gz": "sdist",
+    }
+    rows = value["urls"]
+    require(
+        isinstance(rows, list)
+        and len(rows) == 2
+        and {f.get("filename") for f in rows} == set(files)
+        and all(
+            f.get("packagetype") == files[f["filename"]]
+            and f.get("yanked") is False
+            and re.fullmatch(r"[0-9a-f]{64}", f.get("digests", {}).get("sha256", ""))
+            for f in rows
+        ),
+        "pypi_distributions_mismatch",
+    )
+    tag_name = "v" + version
+    ref = github(prefix + "/git/ref/tags/" + tag_name, environ)
+    require(
+        ref["object"].get("type") == "tag"
+        and re.fullmatch(r"[0-9a-f]{40}", ref["object"].get("sha", "")),
+        "release_tag_not_annotated",
+    )
+    tag = github(prefix + "/git/tags/" + ref["object"]["sha"], environ)
+    require(
+        tag.get("tag") == tag_name
+        and tag["object"].get("type") == "commit"
+        and tag["object"].get("sha") == current["sha"],
+        "release_source_mismatch",
+    )
+    pinned = re.findall(r"^SHA256SUMS-SHA256: ([0-9a-f]{64})$", tag["message"], re.MULTILINE)
+    require(len(pinned) == 1, "release_manifest_not_pinned")
+    release = github(prefix + "/releases/tags/" + tag_name, environ)
+    require(
+        release.get("tag_name") == tag_name
+        and release.get("draft") is False
+        and release.get("prerelease") is False
+        and release.get("published_at"),
+        "release_not_published",
+    )
+    assets = release["assets"]
+    require(
+        isinstance(assets, list)
+        and len(assets) == 3
+        and {a.get("name") for a in assets} == {*files, "SHA256SUMS"}
+        and all(
+            type(a.get("id")) is int and a["id"] > 0 and a.get("state") == "uploaded"
+            for a in assets
+        ),
+        "release_assets_mismatch",
+    )
+    manifest_asset = next(a for a in assets if a["name"] == "SHA256SUMS")
+    manifest = github(prefix + f"/releases/assets/{manifest_asset['id']}", environ, binary=True)
+    require(hashlib.sha256(manifest).hexdigest() == pinned[0], "release_manifest_mismatch")
+    lines = manifest.decode("ascii").splitlines()
+    require(len(lines) == 2, "invalid_release_manifest")
+    expected = {}
+    for line in lines:
+        match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9_.-]+)", line)
+        require(
+            match is not None and match[2] in files and match[2] not in expected,
+            "invalid_release_manifest",
+        )
+        expected[match[2]] = match[1]
+    require(
+        all(f["digests"]["sha256"] == expected[f["filename"]] for f in rows)
+        and all(
+            a.get("digest") == "sha256:" + {**expected, "SHA256SUMS": pinned[0]}[a["name"]]
+            for a in assets
+        ),
+        "pypi_release_hash_mismatch",
+    )
+    return {
+        "name": "vt-mcp",
+        "version": version,
+        "source_sha": current["sha"],
+        "tag_object_sha": ref["object"]["sha"],
+        "manifest_sha256": pinned[0],
+        "files": expected,
+    }
 
 
 def registry_get(path):
@@ -209,26 +336,44 @@ def public_entry(value, selected):
 def snapshot():
     observed = {}
     for repository, selected in IDENTITIES.items():
+        versions = {selected["version"]: selected}
+        if repository in PREVIOUS:
+            previous = {**selected, **PREVIOUS[repository]}
+            versions[previous["version"]] = previous
         prefix = "/v0.1/servers/" + quote(selected["name"], safe="") + "/versions"
         listing = registry_get(prefix + "?include_deleted=true")
-        listed = None
+        listed = {}
         if listing is not None:
             rows, metadata = listing["servers"], listing["metadata"]
             # This specific endpoint returns all versions, not a paginated search.
-            require(isinstance(rows, list) and len(rows) <= 1, "unexpected_registry_versions")
+            require(
+                isinstance(rows, list) and len(rows) <= len(versions),
+                "unexpected_registry_versions",
+            )
             require(
                 type(metadata.get("count")) is int
                 and metadata["count"] == len(rows)
                 and not any(metadata.get(k) for k in ("nextCursor", "next_cursor", "cursor")),
                 "incomplete_registry_versions",
             )
-            if rows:
-                listed = public_entry(rows[0], selected)
-        exact = public_entry(
-            registry_get(prefix + "/" + selected["version"] + "?include_deleted=true"), selected
-        )
-        require((listed or public_entry(None, selected)) == exact, "registry_views_disagree")
-        observed[repository] = exact
+            for row in rows:
+                version = row["server"]["version"]
+                require(
+                    version in versions and version not in listed, "unexpected_registry_versions"
+                )
+                listed[version] = public_entry(row, versions[version])
+        for version, contract in versions.items():
+            exact = public_entry(
+                registry_get(prefix + "/" + version + "?include_deleted=true"), contract
+            )
+            require(
+                listed.get(version, public_entry(None, contract)) == exact,
+                "registry_views_disagree",
+            )
+            is_current = version == selected["version"]
+            if not is_current:
+                require(exact["status"] == "active", "previous_version_status_changed")
+            observed[repository if is_current else f"{repository}@{version}"] = exact
     return observed
 
 
@@ -241,10 +386,17 @@ def action(current, before):
         require(
             all(
                 s["status"] in {"absent", "deleted"}
-                for r, s in before.items()
-                if r != current["repository"]
+                for s in before.values()
+                if s["name"] != current["name"]
             ),
             "counterpart_reserves_remote_url",
+        )
+    if current["repository"] == "VirusTotal/virustotal-mcp":
+        personal = before["king-tero/vt-mcp"]
+        require(
+            personal["status"] == "deleted"
+            and personal["status_message_sha256"] == digest(RETIRE_MESSAGES["king-tero/vt-mcp"]),
+            "personal_retirement_changed",
         )
     if operation == "publish":
         require(own in {"absent", "active"}, "existing_version_requires_restore")
@@ -402,6 +554,9 @@ def operate(environ, result):
     manifest_contract(json.loads(Path("server.json").read_text()), current)
     result["phase"] = "github_preflight"
     github_preflight(current, environ)  # Must pass before requesting OIDC.
+    if current["repository"] in PREVIOUS and current["operation"] in {"publish", "restore"}:
+        result["phase"] = "pypi_preflight"
+        result["pypi"] = pypi_preflight(current, environ)
     publisher = str(Path(environ["RUNNER_TEMP"]) / "mcp-publisher")
     result["phase"] = "authentication"
     with authenticated(publisher, current, environ, result):
