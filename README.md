@@ -37,8 +37,9 @@ Claude Code and Codex have each used Bearer for one report query in staging and 
 | GitHub Copilot CLI | [Local stdio recipe](docs/clients.md#github-copilot-cli) |
 | Devin Local / Windsurf / Devin Desktop | [Choose Local or Cascade](docs/clients.md#devin-local-and-windsurf--devin-desktop) |
 
-The additional recipes have [separate validation levels](docs/clients.md#additional-client-validation).
-They are not yet validated model workflows against VTAI.
+Copilot CLI has a verified domain lookup workflow with a model through local
+stdio. The other additional clients have [separate validation levels](docs/clients.md#additional-client-validation),
+with model workflows against VTAI still pending.
 
 `VTAI_MCP_TOKEN` names an environment variable; it is not a token value. Use the [protected-file launch instructions](docs/access.md#remote-client-environment) to supply it for HTTP without putting the credential in arguments, prompts or configuration text.
 
