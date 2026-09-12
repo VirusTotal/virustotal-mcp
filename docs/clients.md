@@ -201,8 +201,10 @@ and `agent mcp list-tools virustotal`. CLI discovery is separate from an IDE
 model session. To disconnect, remove the `virustotal` entry from the file where
 you added it and reload. [Cursor CLI MCP](https://cursor.com/docs/cli/mcp).
 
-**Status:** recipe checked against official documentation on 2026-09-11;
-native header expansion, tool calls and model workflow remain unverified.
+**Status:** Cursor CLI `2026.09.10-fd3934a` expanded the environment reference
+and completed two native discovery commands against a local HTTP server.
+Successful POST discovery was observed after GET 405 responses. Cursor IDE,
+tool calls and a model workflow against VTAI remain unverified.
 
 ## VS Code with GitHub Copilot
 
@@ -221,9 +223,10 @@ the Agent Host. For that runtime or Copilot CLI, use the separate Copilot format
 below; `.vscode/mcp.json` and `~/.copilot/mcp-config.json` are not interchangeable.
 [VS Code MCP setup](https://code.visualstudio.com/docs/agent-customization/mcp-servers).
 
-**Status:** official recipe reviewed; local configuration/transport checks are
-recorded in the [additional-client matrix](#additional-client-validation).
-A native Copilot model workflow against VTAI remains unverified.
+**Status:** VS Code 1.107.1 completed native HTTP tool calls against a local
+server, including password input resolution, GET 405 handling and restart.
+A Copilot model workflow against VTAI remains unverified. See the
+[additional-client matrix](#additional-client-validation) for the scope.
 
 ## GitHub Copilot CLI
 
@@ -243,15 +246,15 @@ The `tools` list controls availability, while Copilot's permissions control
 execution. Your Copilot login is separate from VTAI access.
 [Copilot CLI MCP documentation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers).
 
-**Status:** CLI 1.0.83 saved and recognized this configuration in an isolated
-profile on 2026-09-11. No tool invocation or model workflow is claimed. Copilot
-also documents remote HTTP; safe header expansion and a VTAI workflow through
-that transport have not been validated here.
+**Status:** CLI 1.0.83 used a model to call `get_domain_report` for
+`virustotal.com` through the public vt-mcp 0.8.0 stdio package and used the
+`found` response from VTAI. This validates that domain lookup workflow; other
+tools and remote HTTP workflows have not been validated with this client.
 
 ## Devin Local and Windsurf / Devin Desktop
 
 Select instructions for the agent running inside the editor. **Devin Local and
-legacy Cascade have different configuration paths.**
+legacy Cascade use separate recipes.** Open the configuration for that agent.
 
 For **Devin Local / Devin CLI**, install the verified local package and merge
 [stdio.json](../examples/client-configs/stdio.json) into
@@ -262,20 +265,30 @@ to the token file; `vt-mcp` reads it. This avoids relying on unverified HTTP
 header interpolation in Devin Local.
 [Devin configuration reference](https://docs.devin.ai/cli/reference/configuration/config-file).
 
-For **legacy Cascade** in Windsurf / Devin Desktop, merge
-[cascade-http.json](../examples/client-configs/cascade-http.json) into
-`~/.codeium/windsurf/mcp_config.json` and refresh the MCP settings. Its documented
-`${file:~/.config/vt-mcp/token}` expansion reads and trims the file. Store only
-the VTAI token there, without `Bearer` or dotenv syntax. An unreadable file leaves
-the reference unresolved. Cascade documents both `serverUrl` and `url`; this
-fragment uses `serverUrl`. [Cascade MCP](https://docs.devin.ai/desktop/cascade/mcp).
+For **legacy Cascade** in Windsurf / Devin Desktop, open **MCP Servers** from
+Cascade and open its raw configuration file. Merge
+[cascade-http.json](../examples/client-configs/cascade-http.json) into the file
+your version opens, preserving existing settings, then refresh the MCP servers.
+The documented legacy path is `~/.codeium/windsurf/mcp_config.json`; Devin Desktop
+3.10.23 on Linux opened `~/.config/devin/mcp_config.json`. Use the app's action
+to select the file instead of adding entries to both paths. This observation
+does not establish migration or exclusive use of either path.
+
+Its documented `${file:~/.config/vt-mcp/token}` expansion reads and trims the
+file. Store only the VTAI token there, without `Bearer` or dotenv syntax. An
+unreadable file leaves the reference unresolved. Cascade documents both
+`serverUrl` and `url`; this fragment uses `serverUrl`.
+[Cascade MCP](https://docs.devin.ai/desktop/cascade/mcp).
 
 Devin can also import other editors' MCP configuration. Check the effective
 source to avoid duplicate entries; remove the entry from that source and reload
 to disconnect. [Configuration imports](https://docs.devin.ai/cli/reference/configuration/read-config-from).
 
-**Status:** both recipes checked against their official documentation on
-2026-09-11; neither client has completed a native VTAI workflow in our validation.
+**Status:** Devin CLI 3000.10.21 launched vt-mcp 0.8.0 over stdio through ACP
+and initialized the server. This does not validate loading the dedicated MCP
+configuration file, tool discovery, tool calls or a model workflow against VTAI.
+The Cascade configuration editor was opened in Devin Desktop 3.10.23 on Linux;
+HTTP transport, file-token expansion and tool/model workflows remain unverified.
 
 ## Gemini CLI
 
@@ -382,25 +395,40 @@ Use the connection page to revoke the credential when required. Only HTTP 204 co
 
 ### Additional-client validation
 
-Checked on 2026-09-11. These recipes use the existing service and do not extend
+Checked on 2026-09-12. These recipes use the existing service and do not extend
 the validation of Agy, Claude Code or Codex to another host.
 
-| Client | Configuration evidence | Tool calls / model workflow |
+| Client | Client evidence | Tool calls / model workflow |
 |---|---|---|
-| Cursor IDE / CLI | Official HTTP configuration reviewed; binary not tested | Pending |
-| VS Code 1.107.1 | Recipe accepted by installed schema; extracted variable/transport code exercised offline | Native VTAI workflow pending |
-| Copilot CLI 1.0.83 | Native add/get commands saved and recognized the stdio configuration in an isolated profile | Pending |
-| Devin Local / CLI | Official stdio configuration and versioned file paths reviewed | Pending |
-| Cascade in Windsurf / Devin Desktop | Official HTTP and token-file syntax reviewed | Pending |
+| Cursor CLI 2026.09.10-fd3934a | Environment header expansion and two discovery commands verified against a local HTTP server | Tool calls, IDE and model/VTAI workflows pending |
+| VS Code 1.107.1 | Full application and Extension Host resolved the password input and used HTTP, including GET 405 and restart | Three local tool calls verified; model/VTAI workflow pending |
+| Copilot CLI 1.0.83 | Configuration recognized and public vt-mcp 0.8.0 launched through stdio | Model called `get_domain_report` against VTAI and used its response; other tool workflows unverified |
+| Devin CLI 3000.10.21 | Launched vt-mcp 0.8.0 through ACP/stdio and initialized the server | Tool discovery, calls and model/VTAI workflows pending; dedicated configuration file not exercised |
+| Cascade in Windsurf / Devin Desktop | Devin Desktop 3.10.23 on Linux opened its MCP configuration editor; HTTP and token-file syntax documented | Transport, tool calls and model/VTAI workflow pending |
 
-VS Code checks used installed commit `994fd12f8d3a5aa16f17d42c041e5809167e845a`.
-Its extracted code resolved the password input without changing the original
-recipe and directed that input to secret storage through an intercepted interface.
-With synthetic I/O, POST initialization succeeded, one GET returned 405, and
-subsequent POST discovery and tool calls succeeded, both with and without a
-session ID. The GET was not retried and no connection-error event was emitted.
-These checks did not launch the UI, exercise a real keyring, authenticate to VTAI
-or invoke a model; they do not validate later VS Code versions.
+VS Code checks used installed commit `994fd12f8d3a5aa16f17d42c041e5809167e845a`
+and the documented configuration with only its URL changed to a local server.
+The native application completed initialization, GET 405, POST discovery and a
+tool call on initial start, after restarting the MCP server, and after reloading
+the window with a new Extension Host. A local test extension invoked the native
+`vscode.lm.invokeTool` API and received each server response. These calls did not
+use a model or VTAI. A synthetic password was retained across those restarts;
+this does not establish the protection of credentials in a production keyring.
+
+Cursor CLI discovery verified the documented environment-based header against a
+local server. Two `list-tools` commands succeeded; the capture contains four
+initialize requests, four GET 405 responses and two successful `tools/list`
+responses. This does not establish recovery for every initial connection or
+validate Cursor IDE, tool invocation or a model workflow.
+
+Copilot CLI's model called `get_domain_report` once for `virustotal.com` through
+the public vt-mcp 0.8.0 package. VTAI admitted the query and returned HTTP 200;
+the model used the `found` result in its answer. A found report is not a safety
+guarantee. This observation covers one domain lookup, not every tool or transport.
+
+Devin CLI's ACP launch exercised the real stdio wrapper's initialization and
+`prompts/list`, not `tools/list` or `tools/call`. The documented standalone
+configuration and model workflow need separate validation.
 
 The HTTP service does not offer a standalone SSE stream: an authenticated
 `GET /mcp` returns **405**, while MCP requests use POST. A client may omit that
@@ -416,12 +444,15 @@ tool result, not only the final answer. Repeat a report lookup after any observe
 GET 405. Validate credential handling without printing its value. A successful
 report lookup does not validate file submission, recovery or analysis completion.
 
-The native tool/model stages above remain pending; configuration examples do not
+The unverified tool/model stages above remain pending; configuration examples do not
 establish a production workflow. Removing a client configuration does not revoke
 the VTAI token; use the [revocation instructions](access.md#revoke-access) when
 you intend to disable it across clients.
 
-Evidence reviewed through 2026-09-08 (UTC). Configuration parsing, MCP discovery, an actual tool call and a model-assisted workflow are separate observations. The generic Python SDK test is not evidence of a Claude or Gemini model workflow.
+The following records retain their original dates and scope. Configuration
+parsing, MCP discovery, an actual tool call and a workflow with a model are
+separate observations. The generic Python SDK test is not evidence of a Claude
+or Gemini model workflow.
 
 Client checks identify the artifact and date tested. Checks for earlier
 versions describe private development, not installation from this public

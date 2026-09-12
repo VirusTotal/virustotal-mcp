@@ -17,19 +17,24 @@ The corporate source at [VirusTotal/virustotal-mcp](https://github.com/VirusTota
 | [opencode-v1-stdio.json](opencode-v1-stdio.json) | OpenCode V1 `~/.config/opencode/opencode.json` | Public schema checked; client binary untested |
 | [opencode-v1-http.json](opencode-v1-http.json) | OpenCode V1 `~/.config/opencode/opencode.json` | Public schema checked; client binary untested |
 
-Additional recipes reviewed on 2026-09-11, with their own evidence:
+Additional recipes reviewed on 2026-09-12, with their own evidence:
 
 | File | Client / destination | Validation scope |
 |---|---|---|
-| [cursor-http.json](cursor-http.json) | Cursor `~/.cursor/mcp.json` or project `.cursor/mcp.json` | Official header syntax reviewed; native workflow pending |
-| [vscode-http.json](vscode-http.json) | VS Code `.vscode/mcp.json` or **MCP: Open User Configuration** | Extension Host recipe; [local code checks and limits](../../docs/clients.md#additional-client-validation) |
-| [copilot-cli-stdio.json](copilot-cli-stdio.json) | Copilot CLI `~/.copilot/mcp-config.json` | CLI 1.0.83 saved and recognized the configuration; tool calls pending |
-| [stdio.json](stdio.json) | Devin CLI v3000.3 / Local 3.6 onward, `~/.config/devin/mcp_config.json` | Official configuration reviewed; native workflow pending |
-| [cascade-http.json](cascade-http.json) | Legacy Cascade `~/.codeium/windsurf/mcp_config.json` | Official token-file expansion reviewed; native workflow pending |
+| [cursor-http.json](cursor-http.json) | Cursor `~/.cursor/mcp.json` or project `.cursor/mcp.json` | CLI header expansion and discovery verified locally; IDE, tool calls and model/VTAI workflow pending |
+| [vscode-http.json](vscode-http.json) | VS Code `.vscode/mcp.json` or **MCP: Open User Configuration** | Native HTTP calls and restart verified locally; [scope and model/VTAI limits](../../docs/clients.md#additional-client-validation) |
+| [copilot-cli-stdio.json](copilot-cli-stdio.json) | Copilot CLI `~/.copilot/mcp-config.json` | CLI 1.0.83 completed a domain lookup with a model through public vt-mcp 0.8.0 and VTAI; other tool workflows unverified |
+| [stdio.json](stdio.json) | Devin CLI v3000.3 / Local 3.6 onward, `~/.config/devin/mcp_config.json` | CLI 3000.10.21 initialized the wrapper through ACP/stdio; this configuration file, tool discovery and model/VTAI workflow remain unverified |
+| [cascade-http.json](cascade-http.json) | Cascade → **MCP Servers** → raw configuration file | Open the path selected by your app version; token-file expansion, transport and native workflow pending |
 
 The [setup guide](../../docs/clients.md#cursor) explains restart, discovery and
 removal. Do not copy VS Code's `servers`/`inputs` format into Copilot CLI's
 `mcpServers` file. Devin Local and Cascade also have separate recipes.
+
+Cascade's documented legacy path is `~/.codeium/windsurf/mcp_config.json`; Devin
+Desktop 3.10.23 on Linux opened `~/.config/devin/mcp_config.json`. Use its **MCP
+Servers** action to open the correct file for your version, merge the fragment
+and refresh. Preserve existing settings and avoid adding the server twice.
 
 For stdio, install the verified wheel first. `vt-mcp` must be on the PATH used by the host; otherwise replace it with the absolute path reported by `command -v vt-mcp`. The token path is an example. vt-mcp expands `~` itself; no shell expansion of arbitrary JSON values is assumed. Declare `VTAI_TOKEN_FILE` explicitly, especially in Gemini, which filters sensitive inherited environment names. Gemini CLI no longer serves Code Assist individual, Google AI Pro or Ultra accounts through Google login; use [Antigravity CLI (`agy`)](../../docs/clients.md#antigravity-cli-agy) for those accounts.
 
