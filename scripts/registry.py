@@ -26,7 +26,7 @@ IDENTITIES = {
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
         "version": "0.8.3",
-        "manifest_sha256": "c748597de410529feb855e7a585b479c140ded807af2a85efbb0466dc5899397",
+        "manifest_sha256": "fdcfa9f92f6945e38bfecc65d5f22c5ce2caf908573bc39a059a79fd3daae40b",
     },
     "king-tero/vt-mcp": {
         "id": 1359828317,

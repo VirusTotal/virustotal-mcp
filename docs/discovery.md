@@ -37,8 +37,8 @@ no token belongs in the manifest, chat, source control or a shared installation 
 `x-apikey` configuration remains documented in the [access guide](access.md).
 Send only one authentication header. This is static token authentication, not OAuth.
 
-The stdio configuration uses `uvx` with `vt-mcp==0.8.3` and requires Python 3.12 or
-newer. Set `VTAI_TOKEN_FILE` to the path of a protected file containing only your
+The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.8.3`, so uv
+selects a supported interpreter. Set `VTAI_TOKEN_FILE` to the path of a protected file containing only your
 VTAI token, for example `/home/user/.config/vt-mcp/token`. The Registry input is
 the file path; the credential stays in that file. Obtain it through the access
 page above and restrict file access to your user. Clients that do not import
