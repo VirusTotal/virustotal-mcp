@@ -1,5 +1,6 @@
 import base64
 import copy
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -24,11 +25,13 @@ SUBJECTS = {
 }
 
 
-def manifest(repository):
+def manifest(repository, version=None):
     result = json.loads((ROOT / "server.json").read_text())
     selected = registry.IDENTITIES[repository]
-    result.update(name=selected["name"], version=selected["version"])
+    result.update(name=selected["name"], version=version or selected["version"])
     result.pop("repository", None)
+    if repository == PERSONAL or version == "0.8.2":
+        result.pop("packages", None)
     if repository == PERSONAL:
         result["repository"] = {
             "url": f"https://github.com/{PERSONAL}",
@@ -38,13 +41,15 @@ def manifest(repository):
     return result
 
 
-def entry(repository, status):
+def entry(repository, status, version=None):
     if status == "absent":
         return None
     official = {"status": status}
     if status != "active":
         official["statusMessage"] = "Previous public lifecycle message"
-    return {"server": manifest(repository), "_meta": {registry.OFFICIAL: official}}
+    if repository == PERSONAL and status == "deleted":
+        official["statusMessage"] = registry.RETIRE_MESSAGES[PERSONAL]
+    return {"server": manifest(repository, version), "_meta": {registry.OFFICIAL: official}}
 
 
 def token(repository, **changes):
@@ -110,6 +115,8 @@ def harness(tmp_path, monkeypatch):
         calls=[],
         reads=[],
         entries={CORPORATE: None, PERSONAL: entry(PERSONAL, "active")},
+        previous=entry(CORPORATE, "active", "0.8.2"),
+        pypi_reads=[],
         gh_override={},
         claims={},
         saved_changes={},
@@ -118,6 +125,66 @@ def harness(tmp_path, monkeypatch):
         apply=True,
         after_mutation=None,
     )
+    state.checksums = (
+        f"{'1' * 64}  vt_mcp-0.8.3-py3-none-any.whl\n{'2' * 64}  vt_mcp-0.8.3.tar.gz\n"
+    ).encode()
+    manifest_sha = hashlib.sha256(state.checksums).hexdigest()
+    state.pypi = {
+        "info": {
+            "name": "vt-mcp",
+            "version": "0.8.3",
+            "description": "<!-- mcp-name: io.github.VirusTotal/virustotal-mcp -->\n",
+        },
+        "urls": [
+            {
+                "filename": "vt_mcp-0.8.3-py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "digests": {"sha256": "1" * 64},
+                "yanked": False,
+            },
+            {
+                "filename": "vt_mcp-0.8.3.tar.gz",
+                "packagetype": "sdist",
+                "digests": {"sha256": "2" * 64},
+                "yanked": False,
+            },
+        ],
+    }
+    state.release_responses = {
+        f"repos/{CORPORATE}/git/ref/tags/v0.8.3": {"object": {"type": "tag", "sha": "b" * 40}},
+        f"repos/{CORPORATE}/git/tags/{'b' * 40}": {
+            "tag": "v0.8.3",
+            "object": {"type": "commit", "sha": SHA},
+            "message": f"Release\nSHA256SUMS-SHA256: {manifest_sha}\n",
+        },
+        f"repos/{CORPORATE}/releases/tags/v0.8.3": {
+            "tag_name": "v0.8.3",
+            "draft": False,
+            "prerelease": False,
+            "published_at": "2026-09-12T19:00:00Z",
+            "assets": [
+                {
+                    "id": 1,
+                    "name": "SHA256SUMS",
+                    "state": "uploaded",
+                    "digest": f"sha256:{manifest_sha}",
+                },
+                {
+                    "id": 2,
+                    "name": "vt_mcp-0.8.3-py3-none-any.whl",
+                    "state": "uploaded",
+                    "digest": f"sha256:{'1' * 64}",
+                },
+                {
+                    "id": 3,
+                    "name": "vt_mcp-0.8.3.tar.gz",
+                    "state": "uploaded",
+                    "digest": f"sha256:{'2' * 64}",
+                },
+            ],
+        },
+        f"repos/{CORPORATE}/releases/assets/1": state.checksums,
+    }
 
     def select(repository, operation="verify-identity"):
         env.update(
@@ -134,10 +201,15 @@ def harness(tmp_path, monkeypatch):
         repository = next(r for r, s in registry.IDENTITIES.items() if s["name"] in unquote(path))
         current = copy.deepcopy(state.entries[repository])
         if path.endswith("/versions?include_deleted=true"):
+            rows = [current] if current else []
+            if repository == CORPORATE and state.previous:
+                rows.append(copy.deepcopy(state.previous))
             return {
-                "servers": [current] if current else [],
-                "metadata": {"count": int(current is not None)},
+                "servers": rows,
+                "metadata": {"count": len(rows)},
             }
+        if repository == CORPORATE and "/versions/0.8.2?" in path:
+            return copy.deepcopy(state.previous)
         return current
 
     def run(argv, *, env, capture_output, timeout, check, stdin):
@@ -171,16 +243,20 @@ def harness(tmp_path, monkeypatch):
                     ]
                 },
             }
+            responses.update(state.release_responses)
+            response = state.gh_override.get(argv[6], responses[argv[6]])
+            if isinstance(response, bytes):
+                assert argv[-2:] == ["-H", "Accept: application/octet-stream"]
             return SimpleNamespace(
                 returncode=0,
-                stdout=json.dumps(state.gh_override.get(argv[6], responses[argv[6]])).encode(),
+                stdout=response if isinstance(response, bytes) else json.dumps(response).encode(),
                 stderr=b"",
             )
         assert "GH_TOKEN" not in env
         operation = argv[1]
         credential = home / ".config/mcp-publisher/token.json"
         if operation == "login":
-            assert len([c for c in state.calls if c[0][0] == "gh"]) == 3
+            assert len([c for c in state.calls if c[0][0] == "gh"]) in {3, 7}
             credential.parent.mkdir(parents=True, exist_ok=True)
             credential.write_text(
                 json.dumps({**token(repository, **state.claims), **state.saved_changes})
@@ -214,7 +290,13 @@ def harness(tmp_path, monkeypatch):
         return SimpleNamespace(returncode=0, stdout=MARKER.encode(), stderr=MARKER.encode())
 
     select(CORPORATE)
+
+    def pypi_read(version):
+        state.pypi_reads.append(version)
+        return copy.deepcopy(state.pypi)
+
     monkeypatch.setattr(registry, "registry_get", read)
+    monkeypatch.setattr(registry, "pypi_get", pypi_read)
     monkeypatch.setattr(registry.subprocess, "run", run)
     state.select = select
     state.result = lambda: json.loads((temporary / "registry-result.json").read_text())
@@ -226,7 +308,7 @@ def test_verify_identity_authenticates_but_never_changes_entries(harness, capsys
     assert registry.main([]) == 0
     result = harness.result()
     assert result["status"] == "verified" and result["identity_verified"]
-    assert result["before"] == result["after"] and len(harness.reads) == 8
+    assert result["before"] == result["after"] and len(harness.reads) == 10
     assert not result["mutation_attempted"] and not harness.mutations()
     assert result["credential_cleanup"] == "removed"
     assert not registry.credential_paths()[0].exists()
@@ -285,11 +367,11 @@ def test_github_preflight_precedes_oidc(harness, change):
     [
         ("repository", {"url": "https://private.invalid"}),
         ("packages", []),
-        ("version", "0.8.3"),
+        ("version", "0.8.4"),
         ("remotes", [{"url": "https://other.invalid"}]),
     ],
 )
-def test_contract_pins_entire_remote_manifest(harness, field, value):
+def test_contract_pins_entire_remote_and_package_manifest(harness, field, value):
     data = manifest(CORPORATE)
     data[field] = value
     (harness.cwd / "server.json").write_text(json.dumps(data))
@@ -304,8 +386,6 @@ def test_contract_pins_entire_remote_manifest(harness, field, value):
         (PERSONAL, "retire", "active", "absent", "completed"),
         (PERSONAL, "retire", "deprecated", "active", "completed"),
         (PERSONAL, "retire", "deleted", "active", "noop"),
-        (PERSONAL, "restore", "deleted", "absent", "completed"),
-        (PERSONAL, "restore", "deprecated", "deleted", "completed"),
         (CORPORATE, "restore", "deleted", "deleted", "completed"),
         (CORPORATE, "restore", "active", "deleted", "noop"),
     ],
@@ -487,6 +567,210 @@ def test_counterpart_changed_after_mutation_is_preserved_error(harness):
     harness.after_mutation = lambda: harness.entries.update({PERSONAL: entry(PERSONAL, "active")})
     assert registry.main([]) == 1
     assert harness.result()["error"] == "counterpart_changed" and len(harness.mutations()) == 1
+
+
+def test_publish_keeps_both_previous_manifests_and_statuses(harness):
+    harness.select(CORPORATE, "publish")
+    harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
+    assert registry.main([]) == 0
+    result = harness.result()
+    previous = f"{CORPORATE}@0.8.2"
+    assert result["before"][previous] == result["after"][previous]
+    assert result["after"][previous]["manifest_sha256"] == (
+        "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8"
+    )
+    assert result["after"][previous]["status"] == "active"
+    assert result["before"][PERSONAL] == result["after"][PERSONAL]
+    assert result["after"][PERSONAL]["status"] == "deleted"
+    assert result["after"][CORPORATE]["version"] == "0.8.3"
+    assert result["pypi"]["files"] == {
+        "vt_mcp-0.8.3-py3-none-any.whl": "1" * 64,
+        "vt_mcp-0.8.3.tar.gz": "2" * 64,
+    }
+    assert harness.pypi_reads == ["0.8.3"]
+
+
+@pytest.mark.parametrize("after_mutation", [False, True])
+@pytest.mark.parametrize("drift", ["missing", "status", "manifest"])
+def test_previous_version_drift_is_rejected(harness, drift, after_mutation):
+    harness.select(CORPORATE, "publish")
+    harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
+
+    def change():
+        if drift == "missing":
+            harness.previous = None
+        elif drift == "status":
+            harness.previous = entry(CORPORATE, "deleted", "0.8.2")
+        else:
+            harness.previous["server"]["title"] = "Changed"
+
+    if after_mutation:
+        harness.after_mutation = change
+    else:
+        change()
+    assert registry.main([]) == 1
+    result = harness.result()
+    assert result["error"] == (
+        "manifest_contract_mismatch" if drift == "manifest" else "previous_version_status_changed"
+    )
+    assert result["mutation_attempted"] is after_mutation
+    assert result["reconciliation_required"] is after_mutation
+    assert len(harness.mutations()) == int(after_mutation)
+
+
+@pytest.mark.parametrize("version", ["0.8.1", "0.8.4"])
+def test_no_other_corporate_version_is_accepted(harness, version):
+    harness.previous["server"]["version"] = version
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "unexpected_registry_versions"
+    assert not harness.mutations()
+
+
+def test_personal_restore_is_blocked_by_existing_corporate_082(harness):
+    harness.select(PERSONAL, "restore")
+    harness.entries = {PERSONAL: entry(PERSONAL, "deleted"), CORPORATE: None}
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "counterpart_reserves_remote_url"
+    assert not harness.mutations() and not harness.pypi_reads
+
+
+def test_personal_retirement_message_is_pinned_before_new_publication(harness):
+    harness.select(CORPORATE, "publish")
+    harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
+    harness.entries[PERSONAL]["_meta"][registry.OFFICIAL]["statusMessage"] = "Changed"
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "personal_retirement_changed"
+    assert not harness.mutations()
+
+
+@pytest.mark.parametrize("operation", ["verify-identity", "retire"])
+def test_recovery_and_identity_do_not_require_pypi(harness, monkeypatch, operation):
+    harness.select(CORPORATE, operation)
+    harness.entries = {PERSONAL: entry(PERSONAL, "deleted"), CORPORATE: entry(CORPORATE, "active")}
+
+    def unavailable(*args):
+        pytest.fail("Recovery must not depend on PyPI availability")
+
+    monkeypatch.setattr(registry, "pypi_get", unavailable)
+    assert registry.main([]) == 0
+    assert "pypi" not in harness.result()
+
+
+@pytest.mark.parametrize("operation", ["publish", "restore"])
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "unavailable",
+        "name",
+        "version",
+        "marker",
+        "duplicate_marker",
+        "partial",
+        "duplicate",
+        "extra",
+        "yanked",
+        "type",
+        "invalid_hash",
+        "wrong_hash",
+    ],
+)
+def test_pypi_gate_rejects_before_oidc(harness, monkeypatch, operation, problem):
+    harness.select(CORPORATE, operation)
+    harness.entries = {
+        PERSONAL: entry(PERSONAL, "deleted"),
+        CORPORATE: entry(CORPORATE, "deleted") if operation == "restore" else None,
+    }
+    if problem == "unavailable":
+
+        def unavailable(*args):
+            raise registry.Rejected("pypi_version_not_available")
+
+        monkeypatch.setattr(registry, "pypi_get", unavailable)
+    elif problem in {"name", "version"}:
+        harness.pypi["info"][problem] = "other"
+    elif problem == "marker":
+        harness.pypi["info"]["description"] = "<!-- mcp-name: io.github.other/server -->"
+    elif problem == "duplicate_marker":
+        harness.pypi["info"]["description"] *= 2
+    elif problem == "partial":
+        harness.pypi["urls"].pop()
+    elif problem == "duplicate":
+        harness.pypi["urls"][1] = copy.deepcopy(harness.pypi["urls"][0])
+    elif problem == "extra":
+        harness.pypi["urls"].append(copy.deepcopy(harness.pypi["urls"][0]))
+    elif problem == "yanked":
+        harness.pypi["urls"][0]["yanked"] = True
+    elif problem == "type":
+        harness.pypi["urls"][0]["packagetype"] = "sdist"
+    else:
+        harness.pypi["urls"][0]["digests"]["sha256"] = (
+            "z" * 64 if problem == "invalid_hash" else "3" * 64
+        )
+    assert registry.main([]) == 1
+    assert harness.result()["phase"] == "pypi_preflight"
+    assert not harness.result()["mutation_attempted"]
+    assert not harness.reads and not registry.credential_paths()[0].exists()
+    assert all(c[0][0] == "gh" for c in harness.calls)
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "lightweight_tag",
+        "wrong_source",
+        "unpinned_manifest",
+        "draft",
+        "prerelease",
+        "asset_names",
+        "asset_hash",
+        "manifest_hash",
+        "duplicate_manifest_name",
+    ],
+)
+def test_release_provenance_must_match_public_package(harness, problem):
+    harness.select(CORPORATE, "publish")
+    harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
+    prefix = f"repos/{CORPORATE}"
+    tag = harness.release_responses[f"{prefix}/git/tags/{'b' * 40}"]
+    release = harness.release_responses[f"{prefix}/releases/tags/v0.8.3"]
+    if problem == "lightweight_tag":
+        harness.release_responses[f"{prefix}/git/ref/tags/v0.8.3"]["object"]["type"] = "commit"
+    elif problem == "wrong_source":
+        tag["object"]["sha"] = "c" * 40
+    elif problem == "unpinned_manifest":
+        tag["message"] = "No reviewed checksum"
+    elif problem in {"draft", "prerelease"}:
+        release[problem] = True
+    elif problem == "asset_names":
+        release["assets"][2]["name"] = "unreviewed.tar.gz"
+    elif problem == "asset_hash":
+        release["assets"][2]["digest"] = "sha256:" + "3" * 64
+    elif problem == "manifest_hash":
+        harness.release_responses[f"{prefix}/releases/assets/1"] += b"\n"
+    else:
+        changed = (harness.checksums.decode().splitlines()[0] + "\n") * 2
+        raw = changed.encode()
+        harness.release_responses[f"{prefix}/releases/assets/1"] = raw
+        tag["message"] = f"SHA256SUMS-SHA256: {hashlib.sha256(raw).hexdigest()}\n"
+    assert registry.main([]) == 1
+    assert harness.result()["phase"] == "pypi_preflight"
+    assert not harness.reads and not harness.mutations()
+    assert all(c[0][0] == "gh" for c in harness.calls)
+
+
+def test_manifest_uses_only_a_path_for_stdio_credential():
+    value = manifest(CORPORATE)
+    (package,) = value["packages"]
+    assert package["registryType"] == "pypi" and package["identifier"] == "vt-mcp"
+    assert package["version"] == value["version"] == "0.8.3"
+    assert package["transport"] == {"type": "stdio"} and package["runtimeHint"] == "uvx"
+    (setting,) = package["environmentVariables"]
+    assert setting["name"] == "VTAI_TOKEN_FILE"
+    assert setting["isRequired"] is True and setting.get("isSecret", False) is False
+    assert setting["format"] == "filepath" and setting["placeholder"].startswith("/")
+    assert "value" not in setting and "default" not in setting
+    assert "repository" not in value
+    assert value["remotes"] == manifest(CORPORATE, "0.8.2")["remotes"]
 
 
 def test_workflow_keeps_publisher_pin_scoped_oidc_and_sanitized_artifact():
