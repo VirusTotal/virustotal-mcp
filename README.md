@@ -6,7 +6,7 @@ Give your agent VirusTotal intelligence before it opens a link, runs a downloade
 
 Use the free VTAI service with its current access limits. You need a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp); you do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
 
-## Install
+## Install for local stdio
 
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 

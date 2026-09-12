@@ -1,6 +1,6 @@
 # Connect an MCP client
 
-These instructions cover **vt-mcp 0.8.0**: seven common tools over remote HTTP or local stdio, and an eighth local-file tool over stdio. HTTP needs a compatible client and VTAI token, with no local Python installation; stdio needs the verified wheel. Four report tools and `get_analysis` remain read-only. `submit_file(sha256, content_base64)` submits up to 24,000,000 decoded bytes; `get_submission(sha256)` recovers the account’s receipt. Stdio additionally offers `submit_local_file(path, expected_sha256=None)` up to 32,000,000 bytes. See the [submission and recovery guide](analysis.md).
+These instructions cover **vt-mcp 0.8.3**, retaining the tool contract introduced in 0.8.0: seven common tools over remote HTTP or local stdio, and an eighth local-file tool over stdio. HTTP needs a compatible client and VTAI token, with no local Python installation; stdio needs the verified wheel. Four report tools and `get_analysis` remain read-only. `submit_file(sha256, content_base64)` submits up to 24,000,000 decoded bytes; `get_submission(sha256)` recovers the account’s receipt. Stdio additionally offers `submit_local_file(path, expected_sha256=None)` up to 32,000,000 bytes. See the [submission and recovery guide](analysis.md).
 
 Submission tools have no per-call human confirmation or consent argument. Configure the specific host permissions for files you authorize for standard sharing; host permissions still apply. **The 0.8 submission cycle has been exercised in staging and against a production candidate. The public rollout is accepted, with separate direct SDK checks.** The [historical native-client validation](client-validation-2026-09-07.md) covers five read-only tools in 0.7, not autonomous submission. Set up protected access using the [access guide](access.md), or the [README](../README.md#connect-your-client).
 
@@ -8,7 +8,7 @@ VT-MCP provides the submission capability; the client owner configures whether t
 
 Start with [Antigravity CLI (`agy`)](#antigravity-cli-agy), [Claude Code](#claude-code), or [Codex CLI](#codex-cli--remote-http). Other client guides follow those three.
 
-VTAI 0.8.1 adds static Bearer authentication as an alternative to `x-apikey`, using the same VTAI token, rights and quotas. The existing package remains 0.8.0 and its stdio wrapper continues using `x-apikey`. Send only one credential method per connection. The [scoped Bearer checks and deployment status](#bearer-authentication-validation) are separate from the historical `x-apikey` workflow evidence. See [authentication and diagnostics](access.md#choose-one-authentication-header).
+VTAI 0.8.1 adds static Bearer authentication as an alternative to `x-apikey`, using the same VTAI token, rights and quotas. The 0.8.3 stdio wrapper continues using `x-apikey`; the historical MIT distribution remains at 0.8.0. Send only one credential method per connection. The [scoped Bearer checks and deployment status](#bearer-authentication-validation) are separate from the historical `x-apikey` workflow evidence. See [authentication and diagnostics](access.md#choose-one-authentication-header).
 
 ## Antigravity CLI (`agy`)
 
@@ -460,8 +460,8 @@ repository. Each public release requires its own verified CI run and checksums.
 
 ### Bearer authentication validation
 
-**Deployment accepted: VTAI 0.8.1, 2026-09-08.** The published vt-mcp
-package remains 0.8.0.
+**Deployment accepted: VTAI 0.8.1, 2026-09-08.** At that time, the public vt-mcp
+package remained at 0.8.0. These records retain that historical scope.
 
 On 2026-09-08, these native HTTP checks used Bearer through dedicated QA proxies,
 with the same VTAI 0.8.1 image in staging and the production candidate:

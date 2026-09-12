@@ -2,9 +2,9 @@
 
 These fragments configure the VirusTotal MCP server: seven common tools with the compatible VTAI 0.8 backend, plus local stdio `submit_local_file` for eight. Common tools are the four report lookups, `get_analysis`, `submit_file` and `get_submission`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
 
-The [versioned configuration directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs) contains the fragments shipped in the `v0.8.0` source distribution. This branch also includes later recipes, which are not added retroactively to published archives. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup.
+The 0.8.3 source archive contains this complete directory: twelve configuration files and this README, including Cursor, VS Code, Copilot CLI and Cascade. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup; packaging a recipe does not extend its validation.
 
-The corporate source at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp) is currently private preparation. The linked public v0.8.0 source and release remain under king-tero until the distribution moves; the package name and VTAI endpoint do not change. See [discovery status](../../docs/discovery.md).
+Install the current Apache-2.0 distribution using the [README](../../README.md#install-for-local-stdio). The [historical v0.8.0 directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs) retains its original MIT archive and earlier examples. The corporate development repository is still private; the current PyPI source archive provides these consumer files without repository access. See [discovery status](../../docs/discovery.md).
 
 | File | Client / destination | Historical v0.7.0 configuration evidence |
 |---|---|---|

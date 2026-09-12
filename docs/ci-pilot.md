@@ -95,7 +95,7 @@ Allow is a decision under this limited policy, never a claim that a file is safe
 
 ## Reference driver and JSON
 
-Use the complete [v0.8.2 corporate source checkout](https://github.com/VirusTotal/virustotal-mcp/tree/v0.8.2),
+Use the complete [v0.8.3 corporate source checkout](https://github.com/VirusTotal/virustotal-mcp/tree/v0.8.3),
 which requires repository access while it is private,
 with that version's verified wheel installed in its Python environment. The wheel
 and sdist do **not** contain the driver, fixtures or workflows; downloading the
