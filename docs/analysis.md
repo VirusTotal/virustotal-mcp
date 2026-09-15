@@ -157,8 +157,9 @@ consume another query allowance.
 
 ## CLI durable recovery before sending
 
-Before dispatch, the CLI exclusively creates and fsyncs a small local reference,
-including the required directory entries. If private durable storage cannot be
+Before dispatch, the CLI exclusively creates and synchronizes a small local reference.
+POSIX uses file and directory fsync; Windows uses local NTFS, write-through creation
+and FlushFileBuffers. If private durable storage cannot be
 confirmed, **no POST starts**. Printing the digest alone is not this guarantee.
 The JSON stores only:
 
@@ -175,9 +176,11 @@ The default root is `$XDG_STATE_HOME/vt-mcp`, or `~/.local/state/vt-mcp` when th
 XDG value is absent or relative. `submit --state-dir /absolute/private/state`
 selects a different root, useful for an isolated account or test runner. The root
 and its internal directories must be private to the current user; new directories
-use mode 700 and reference files mode 600. Directory traversal rejects symlinks.
-This durability implementation requires the tested POSIX descriptor and directory
-fsync capabilities; unsupported storage fails before POST.
+use mode 700 and reference files mode 600 on POSIX. Windows uses a protected ACL
+granting access only to the current user. Windows receipt storage must be local NTFS;
+network shares, alternate streams and reparse points are rejected. Parent handles
+remain open while creating the receipt. Unsupported storage fails before POST.
+This is an OS storage guarantee, not a claim that tests simulate physical power loss.
 
 Internal directories are keyed by service and an irreversible, service-specific
 fingerprint of the credential. The fingerprint is local indexing metadata only:

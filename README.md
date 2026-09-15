@@ -11,13 +11,17 @@ Use the free VTAI service with its current access limits. You need a **VTAI toke
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.3'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.4'
 vt-mcp --version
 ```
 
+The local MCP server supports Linux, macOS and Windows, including both file submission tools. Windows submission receipts require local NTFS storage; network shares and reparse points are rejected. The separate `vt-mcp guard` command remains Linux-only.
+
+For automatic client configuration, use the [setup guide](https://ai.virustotal.com/connect/mcp) and choose your operating system. It configures Agy, Claude Code or Codex and protects the token using owner-only POSIX permissions or a Windows user-only ACL.
+
 The command installs the package from the official PyPI index in an isolated tool environment. Python 3.12 or newer is required. Keep `vt-mcp` on the MCP client's PATH, or use its absolute executable path. The package does not modify client configuration.
 
-For a connection without a local Python process, use **`https://ai.virustotal.com/mcp`** with a supported HTTP client. Supply the VTAI token through either `Authorization: Bearer` or `x-apikey`, using the client's protected credential settings. Send only one authentication header. This is static token authentication; clients that require OAuth need a separate integration.
+For a connection without a local Python process, use **`https://ai.virustotal.com/mcp`** with a supported HTTP client. Supply the VTAI token through either `Authorization: Bearer` or `x-apikey`, using the client's protected credential settings. Send only one authentication header. Compatible HTTP clients can instead use the hosted [OAuth connection](https://ai.virustotal.com/connect/mcp?client=codex&transport=http), with browser sign-in and per-application permissions.
 
 ## Connect your client
 
@@ -103,11 +107,11 @@ Removing the MCP connection from a client does not revoke VTAI access. Use [acce
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.3/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.4/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [corporate development repository](https://github.com/VirusTotal/virustotal-mcp) currently requires repository access. Its visibility does not prevent installation from PyPI. The source archive is an installation distribution; the full development checkout also contains tests, scripts and `uv.lock`.
 
-Version 0.8.3 changes package distribution and discovery. Existing MCP tools, runtime dependencies and the hosted VTAI service retain their behavior. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
+Version 0.8.4 adds protected Windows submission recovery and binary file handling. Tool schemas, account rights and quotas retain their behavior. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 
 ## License
 
