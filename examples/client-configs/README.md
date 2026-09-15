@@ -1,5 +1,7 @@
 # Client configuration fragments
 
+For automatic setup on Linux, macOS or Windows, choose your system in the [setup guide](https://ai.virustotal.com/connect/mcp). Manual shell examples below use POSIX syntax. Native package tests cover file handling and MCP protocol behavior; historical client/model validation keeps its original platform and version scope.
+
 These fragments configure the VirusTotal MCP server: seven common tools with the compatible VTAI 0.8 backend, plus local stdio `submit_local_file` for eight. Common tools are the four report lookups, `get_analysis`, `submit_file` and `get_submission`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
 
 The 0.8.3 source archive contains this complete directory: twelve configuration files and this README, including Cursor, VS Code, Copilot CLI and Cascade. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup; packaging a recipe does not extend its validation.

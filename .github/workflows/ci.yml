@@ -160,3 +160,37 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           overwrite: false
+
+  native-package:
+    name: Installed wheel / ${{ matrix.os }}
+    needs: check
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, macos-15]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.12.10'
+          python-version: '3.12'
+          enable-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: dist-${{ github.sha }}
+          path: native-dist
+      - name: Install the exact Linux-built wheel in a clean environment
+        run: |
+          uv venv --python 3.12 native-venv
+          if [ "$RUNNER_OS" = Windows ]; then
+            native_python="$PWD/native-venv/Scripts/python.exe"
+          else
+            native_python="$PWD/native-venv/bin/python"
+          fi
+          uv pip install --python "$native_python" --only-binary :all: --default-index https://pypi.org/simple pytest==9.1.1 native-dist/*.whl
+          "$native_python" -I -c 'import pathlib, vt_mcp; assert "native-venv" in str(pathlib.Path(vt_mcp.__file__)); print("Testing installed wheel")'
+          "$native_python" -I -m pytest --noconftest tests/test_submission_platform.py

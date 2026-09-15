@@ -1,5 +1,7 @@
 # Configure free VTAI access
 
+For Windows, use the [automatic setup guide](https://ai.virustotal.com/connect/mcp) and select Windows PowerShell. The installer creates a user-only Windows ACL. The shell examples below are for Linux/macOS; `chmod` is not a Windows access-control mechanism.
+
 A VTAI credential identifies one registered agent and carries VTAI's current rights and quotas. It is not a VirusTotal API key or a model-provider key. Free access does not imply anonymous or unlimited use, or free inference from your chosen assistant.
 
 Keep registration, credential entry, diagnosis and revocation outside model conversations. Use a terminal you control or the VTAI connection page. Do not ask an assistant to read your token file, environment or client credential settings.
