@@ -84,7 +84,17 @@ Configure **one** credential method per connection: `x-apikey` or `Authorization
 
 For the Bearer alternative, use the host's protected environment reference: [Claude Code](clients.md#claude-code) expands `Bearer ${VTAI_MCP_TOKEN}` in its Authorization header, and [Codex](clients.md#codex-cli--remote-http) supports `bearer_token_env_var = "VTAI_MCP_TOKEN"`. Remove any `x-apikey` mapping from that server entry when selecting Bearer. The examples contain a variable name, never a credential value. See the [scoped native Bearer checks and deployment status](clients.md#bearer-authentication-validation); earlier HTTP workflow evidence used `x-apikey`.
 
-This is a static VTAI Agent Token, not a VirusTotal API key, Google access token or model-provider login. VTAI does not implement OAuth login, refresh or OAuth discovery. A `WWW-Authenticate: Bearer` challenge does not establish an OAuth authorization server or hosted-connector compatibility. Do not run `codex mcp login` to obtain this token; reuse or explicitly register VTAI access as described above.
+The credential described here is a static VTAI Agent Token. Reuse or explicitly
+register it as described above; it is not a VirusTotal API key, Google access
+token or model-provider login.
+
+For browser sign-in, VTAI also provides MCP OAuth with discovery, scoped consent,
+refresh and revocation. Configure `https://ai.virustotal.com/mcp` without a static
+header and use the client's OAuth login flow. This grants a separate OAuth
+connection; it does not create a static Agent Token. OAuth access applies to MCP,
+while local stdio and direct REST access continue to use an Agent Token. See the
+[current connection guide](https://ai.virustotal.com/connect/mcp) and the
+[hosted-client validation limits](hosted-clients.md).
 
 The Bearer scheme is case insensitive and the token is case sensitive. The configured header must use spaces between the scheme and token, without quotes, surrounding whitespace, tabs or comma-separated credentials. The examples below load the token for either supported header mapping.
 
