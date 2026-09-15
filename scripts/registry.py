@@ -18,15 +18,21 @@ from urllib.parse import quote
 
 REGISTRY = "https://registry.modelcontextprotocol.io"
 OFFICIAL = "io.modelcontextprotocol.registry/official"
-# Canonical JSON hashes pin the entire manifest, including the secret header
-# template and package configuration. Private source is not advertised.
+# Canonical JSON hashes pin the entire remote and package configuration.
+# The package release is independent of the Registry metadata version.
 IDENTITIES = {
     "VirusTotal/virustotal-mcp": {
         "id": 1361592455,
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
-        "version": "0.8.3",
-        "manifest_sha256": "fdcfa9f92f6945e38bfecc65d5f22c5ce2caf908573bc39a059a79fd3daae40b",
+        "version": "0.8.4",
+        "manifest_sha256": "5295fde5e5c1dcab1061763236c332d8ef1ec4ec7b108d17da638cad0873f04d",
+        "package_release": {
+            "version": "0.8.3",
+            "source_sha": "2080ccc83ce04b30b3d8cb18b7129466d3e833d7",
+            "tag_object_sha": "3f07fe43fee1c1398314d69db2e77be005c8e4a2",
+            "manifest_sha256": "5160fd83b3053885e2350d901c5f00a5aaac78af7b42e103f43231f98fcf6c6b",
+        },
     },
     "king-tero/vt-mcp": {
         "id": 1359828317,
@@ -37,10 +43,16 @@ IDENTITIES = {
     },
 }
 PREVIOUS = {
-    "VirusTotal/virustotal-mcp": {
-        "version": "0.8.2",
-        "manifest_sha256": "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8",
-    }
+    "VirusTotal/virustotal-mcp": (
+        {
+            "version": "0.8.2",
+            "manifest_sha256": "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8",
+        },
+        {
+            "version": "0.8.3",
+            "manifest_sha256": "fdcfa9f92f6945e38bfecc65d5f22c5ce2caf908573bc39a059a79fd3daae40b",
+        },
+    )
 }
 OPERATIONS = {"verify-identity", "publish", "retire", "restore"}
 RETIRE_MESSAGES = {
@@ -195,7 +207,8 @@ def pypi_get(version):
 
 def pypi_preflight(current, environ):
     """Link both public distributions to the reviewed annotated release tag."""
-    version, prefix = current["version"], f"repos/{current['repository']}"
+    release_pin = current["package_release"]
+    version, prefix = release_pin["version"], f"repos/{current['repository']}"
     value = pypi_get(version)
     info = value["info"]
     require(
@@ -229,18 +242,18 @@ def pypi_preflight(current, environ):
     ref = github(prefix + "/git/ref/tags/" + tag_name, environ)
     require(
         ref["object"].get("type") == "tag"
-        and re.fullmatch(r"[0-9a-f]{40}", ref["object"].get("sha", "")),
-        "release_tag_not_annotated",
+        and ref["object"].get("sha") == release_pin["tag_object_sha"],
+        "release_tag_mismatch",
     )
     tag = github(prefix + "/git/tags/" + ref["object"]["sha"], environ)
     require(
         tag.get("tag") == tag_name
         and tag["object"].get("type") == "commit"
-        and tag["object"].get("sha") == current["sha"],
+        and tag["object"].get("sha") == release_pin["source_sha"],
         "release_source_mismatch",
     )
     pinned = re.findall(r"^SHA256SUMS-SHA256: ([0-9a-f]{64})$", tag["message"], re.MULTILINE)
-    require(len(pinned) == 1, "release_manifest_not_pinned")
+    require(pinned == [release_pin["manifest_sha256"]], "release_manifest_not_pinned")
     release = github(prefix + "/releases/tags/" + tag_name, environ)
     require(
         release.get("tag_name") == tag_name
@@ -284,7 +297,7 @@ def pypi_preflight(current, environ):
     return {
         "name": "vt-mcp",
         "version": version,
-        "source_sha": current["sha"],
+        "source_sha": release_pin["source_sha"],
         "tag_object_sha": ref["object"]["sha"],
         "manifest_sha256": pinned[0],
         "files": expected,
@@ -337,9 +350,8 @@ def snapshot():
     observed = {}
     for repository, selected in IDENTITIES.items():
         versions = {selected["version"]: selected}
-        if repository in PREVIOUS:
-            previous = {**selected, **PREVIOUS[repository]}
-            versions[previous["version"]] = previous
+        for previous in PREVIOUS.get(repository, ()):
+            versions[previous["version"]] = {**selected, **previous}
         prefix = "/v0.1/servers/" + quote(selected["name"], safe="") + "/versions"
         listing = registry_get(prefix + "?include_deleted=true")
         listed = {}
@@ -554,7 +566,7 @@ def operate(environ, result):
     manifest_contract(json.loads(Path("server.json").read_text()), current)
     result["phase"] = "github_preflight"
     github_preflight(current, environ)  # Must pass before requesting OIDC.
-    if current["repository"] in PREVIOUS and current["operation"] in {"publish", "restore"}:
+    if "package_release" in current and current["operation"] in {"publish", "restore"}:
         result["phase"] = "pypi_preflight"
         result["pypi"] = pypi_preflight(current, environ)
     publisher = str(Path(environ["RUNNER_TEMP"]) / "mcp-publisher")

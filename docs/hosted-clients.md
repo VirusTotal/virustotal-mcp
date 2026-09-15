@@ -2,14 +2,16 @@
 
 The tested client guides remain [Agy](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), then [Codex](clients.md#codex-cli--remote-http).
-This page covers separate hosted connections. Requirements were checked on
-2026-09-08; no hosted account or end-to-end connection has been validated.
+This page covers separate hosted connections. Host setup requirements were
+checked on 2026-09-08; VTAI's OAuth status was updated on 2026-09-15. No hosted
+account or end-to-end hosted connection has been validated.
 
-VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It accepts a VTAI
-Agent Token through one credential header, including `Authorization: Bearer`.
-The service exposes seven tools, with file submission and receipt recovery.
-It currently provides no OAuth authorization server or protected-resource
-metadata. A successful CLI session does not establish hosted-account access.
+VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It supports MCP OAuth
+and also accepts a static VTAI Agent Token through one credential header,
+including `Authorization: Bearer`. The service exposes seven tools, with file
+submission and receipt recovery. Protected-resource and authorization-server
+metadata are live. A successful CLI session does not establish hosted-account
+access or a validated hosted connection.
 
 ## Claude organization request-header beta
 
@@ -40,19 +42,24 @@ argument. The host may request confirmation independently.
 
 ## ChatGPT public connection and individual OAuth
 
-**Status: requires a maintained authorization provider and account validation.**
+**Status: VTAI OAuth is live; hosted account and connection validation remain pending.**
 ChatGPT's authenticated public MCP connection uses OAuth. A static VTAI token
 cannot be entered as an OAuth client secret. Its authorization contract includes
 PKCE S256, protected-resource and issuer discovery, and resource-bound access
 tokens. CIMD or a pre-registered client can avoid dynamic client registration.
 [OpenAI authentication](https://developers.openai.com/plugins/build/auth).
 
-The implementation path is to connect a maintained corporate authorization
-provider to VTAI. VTAI must verify issuer, audience, expiry and scopes, then
-resolve the user to its existing access controls, quotas and owned receipts.
-The proposed resource identifier is `https://ai.virustotal.com/mcp`. An issuer
-URL and client-registration settings must come from a real configured provider;
-this guide does not announce an issuer or a working login endpoint.
+VTAI uses a maintained authorization provider and validates issuer, resource,
+expiry, approved scopes and active grants before applying its access controls,
+quotas and receipt ownership. The resource is `https://ai.virustotal.com/mcp`,
+and the issuer is `https://ai.virustotal.com`. Clients can discover these through
+[protected-resource metadata](https://ai.virustotal.com/.well-known/oauth-protected-resource/mcp)
+and [authorization-server metadata](https://ai.virustotal.com/.well-known/oauth-authorization-server).
+The advertised registration endpoint supports DCR. Client ID Metadata Documents
+(CIMD) are not yet supported; a host requiring them needs a separate compatibility
+update. Configure the MCP URL without static headers for an OAuth connection and
+follow the host's sign-in and explicit consent flow. This infrastructure does not
+by itself establish compatibility with a particular hosted account or client.
 
 Claude also supports OAuth for individual accounts. Use the exact callback and
 registration mode documented for the chosen host; a client secret and DCR are
@@ -82,10 +89,11 @@ entries; the local-file tool is available only through stdio.
 A missing report remains unknown; errors and incomplete coverage are not safety
 verdicts. A passing query does not validate file submission, refresh, revocation,
 other tools or publication in a host's directory. Test those as separate flows.
-For temporary testing, remove the connector and revoke its dedicated token as
-specified in the [access guide](access.md#revoke-access).
+For temporary testing, remove the connector and revoke its access: use
+[Your connections](https://ai.virustotal.com/oauth/connections) for OAuth, or the
+[access guide](access.md#revoke-access) for a static Agent Token.
 
-After OAuth is implemented, additionally verify two identities cannot read each
-other's receipts, expired or revoked access is rejected, and refresh preserves
-the same VTAI identity. A submission test must use intentionally public inert
-bytes and recover its original receipt without repeating an ambiguous upload.
+For OAuth acceptance, verify receipt isolation between identities, rejection of
+expired or revoked access, and refresh preserving the same VTAI identity. A
+submission test must use intentionally public inert bytes and recover its
+original receipt without repeating an ambiguous upload.
