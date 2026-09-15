@@ -10,7 +10,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
@@ -61,9 +61,16 @@ class Snapshot:
 def copy_snapshot(path: str, *, checkpoint: Callable[[], None] | None = None) -> Iterator[Snapshot]:
     source = None
     prepared = False
+    handles = ExitStack()
     try:
-        flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0)
-        source = os.open(path, flags | getattr(os, "O_NOFOLLOW", 0))
+        if os.name == "nt":
+            from vt_mcp.windows_files import open_snapshot
+
+            source = handles.enter_context(open_snapshot(path))
+        else:
+            flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0)
+            source = os.open(path, flags | getattr(os, "O_NOFOLLOW", 0))
+            handles.callback(os.close, source)
         before = os.fstat(source)
         if not stat.S_ISREG(before.st_mode) or not 0 <= before.st_size <= MAX_SUBMISSION_BYTES:
             raise CLIError("invalid_file")
@@ -96,7 +103,7 @@ def copy_snapshot(path: str, *, checkpoint: Callable[[], None] | None = None) ->
                 raise CLIError("snapshot_timeout")
             if checkpoint is not None:
                 checkpoint()
-            os.close(source)
+            handles.close()
             source = None
             prepared = True
             yield Snapshot(copied, digest.hexdigest(), size)
@@ -105,8 +112,7 @@ def copy_snapshot(path: str, *, checkpoint: Callable[[], None] | None = None) ->
             raise
         raise CLIError("invalid_file") from None
     finally:
-        if source is not None:
-            os.close(source)
+        handles.close()
 
 
 def _directory(parent: int, name: str, *, private: bool) -> int:
@@ -171,6 +177,12 @@ def persist_reference(settings: Settings, sha256: str, directory: Path) -> bool:
         b"vt-mcp-submission-identity-v1\0" + service.encode() + b"\0" + settings.token.encode()
     ).hexdigest()
     try:
+        if os.name == "nt":
+            from vt_mcp.windows_files import persist_reference as persist_windows_reference
+
+            return persist_windows_reference(
+                directory, service_key, identity_key, sha256 + ".json", raw
+            )
         with _state_directory(directory) as root:
             parent = _directory(root, service_key, private=True)
             try:
