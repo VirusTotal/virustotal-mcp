@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """An opt-in Linux guard for one exact, isolated Python command shape.
 
 This is a host hook adapter and data-snapshot runner, not an MCP tool or sandbox.

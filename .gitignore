@@ -26,3 +26,16 @@ build/
 
 # Local agent instructions
 AGENTS.md
+
+# Local credentials and internal audit artifacts
+*credentials*.json
+vtai-console-production_oauth_credentials.json
+.agents/
+BRIEFING.md
+handoff.md
+ORIGINAL_REQUEST.md
+docs/auditoria_*.md
+docs/estudio_oauth_*.md
+docs/informe_*.md
+docs/plan_*.md
+docs/revision_argon_*.md

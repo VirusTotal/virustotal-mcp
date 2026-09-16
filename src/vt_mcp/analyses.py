@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Pure, bounded presentation of actor-owned submissions and selected analyses."""
 
 import base64

@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Win32 handles for private submission receipts and immutable binary copies.
 
 This adapter is loaded only on Windows. Receipt durability uses local NTFS,

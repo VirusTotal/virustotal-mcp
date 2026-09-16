@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Observable CLI behavior with generated text and a loopback backend only."""
 
 import base64

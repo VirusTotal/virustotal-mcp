@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Run the local MCP server. stdout is reserved for the MCP protocol."""
 
 import argparse

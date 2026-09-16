@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Local persistence fault injection; no network or actual sample submission."""
 
 import hashlib

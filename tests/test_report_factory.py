@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Host-owned resources and binding, without cloud services or real credentials."""
 
 import asyncio

@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Shared MCP tools with a report reader bound separately for each call."""
 
 import json

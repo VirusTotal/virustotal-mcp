@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Reference CI gate for two explicitly public fixtures, never private distributions."""
 
 import argparse

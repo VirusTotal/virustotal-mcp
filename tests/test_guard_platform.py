@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Linux capability checks do not depend on CPython's exposed header macros."""
 
 import builtins

@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Autonomous local submission of one immutable copy, with durable recovery."""
 
 import io

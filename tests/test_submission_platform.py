@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Native files and exact installed-wheel stdio; synthetic bytes and loopback only."""
 
 import base64

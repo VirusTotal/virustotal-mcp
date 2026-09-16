@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Equivalent strict decoding and cancellation, entirely local and without threads."""
 
 import base64

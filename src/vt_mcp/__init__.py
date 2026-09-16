@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """VirusTotal MCP integration backed by HTTP or an authorized VTAI report reader."""
 
 from importlib.metadata import version

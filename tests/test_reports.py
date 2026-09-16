@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Pure presentation preserves the shared data contract and controlled failures."""
 
 import copy

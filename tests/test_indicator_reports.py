@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Observable transport and report fidelity for the three read-only lookups."""
 
 import json

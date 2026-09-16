@@ -1,3 +1,6 @@
+# Copyright 2026 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+
 """Bounded guard behavior using only generated harmless files and synthetic access."""
 
 import asyncio
