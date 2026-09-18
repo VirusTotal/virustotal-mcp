@@ -39,8 +39,8 @@ IDENTITIES = {
         "id": 1361592455,
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
-        "version": "0.8.5",
-        "manifest_sha256": "a17f254fc684ca7ce8cd46f5244f2667f91a858b116528cc1fc55a6677a6779a",
+        "version": "0.8.6",
+        "manifest_sha256": "6a5600b9d522ea989228caae71ad3f3250431f76516297dbd41b7cc2f462782e",
         "package_release": {
             "version": "0.8.4",
             "source_sha": "c26eb5127d6e6a48fd241330cfc0c2d6c3f3c2ae",
@@ -69,6 +69,10 @@ PREVIOUS = {
         {
             "version": "0.8.4",
             "manifest_sha256": "5295fde5e5c1dcab1061763236c332d8ef1ec4ec7b108d17da638cad0873f04d",
+        },
+        {
+            "version": "0.8.5",
+            "manifest_sha256": "a17f254fc684ca7ce8cd46f5244f2667f91a858b116528cc1fc55a6677a6779a",
         },
     )
 }
@@ -177,8 +181,8 @@ def github_preflight(current, environ):
         and type(repository.get("private")) is bool,
         "github_repository_mismatch",
     )
-    # Only the pinned corporate contract may omit a public source repository.
-    require(not repository["private"] or current["id"] == 1361592455, "private_repository_rejected")
+    # Published source metadata must identify a publicly inspectable repository.
+    require(not repository["private"], "private_repository_rejected")
     main = github(prefix + "/git/ref/heads/main", environ)
     require(main.get("object", {}).get("sha") == current["sha"], "main_has_changed")
     runs = github(

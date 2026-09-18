@@ -3,7 +3,7 @@
   "name": "io.github.VirusTotal/virustotal-mcp",
   "title": "VirusTotal",
   "description": "VirusTotal reports for files, URLs, domains and IPs, plus file submission and analysis recovery.",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "websiteUrl": "https://ai.virustotal.com/connect/mcp",
   "packages": [
     {
@@ -47,5 +47,10 @@
         "any"
       ]
     }
-  ]
+  ],
+  "repository": {
+    "url": "https://github.com/VirusTotal/virustotal-mcp",
+    "source": "github",
+    "id": "1361592455"
+  }
 }

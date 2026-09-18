@@ -44,7 +44,8 @@ def manifest(repository, version=None):
     result = json.loads((ROOT / "server.json").read_text())
     selected = registry.IDENTITIES[repository]
     result.update(name=selected["name"], version=version or selected["version"])
-    result.pop("repository", None)
+    if repository == PERSONAL or version in {"0.8.2", "0.8.3", "0.8.4", "0.8.5"}:
+        result.pop("repository", None)
     if repository == PERSONAL or version in {"0.8.2", "0.8.3"}:
         result.pop("icons", None)
         result["remotes"][0]["headers"] = [
@@ -153,7 +154,8 @@ def harness(tmp_path, monkeypatch):
         reads=[],
         entries={CORPORATE: None, PERSONAL: entry(PERSONAL, "active")},
         previous={
-            version: entry(CORPORATE, "active", version) for version in ("0.8.2", "0.8.3", "0.8.4")
+            version: entry(CORPORATE, "active", version)
+            for version in ("0.8.2", "0.8.3", "0.8.4", "0.8.5")
         },
         pypi_reads=[],
         gh_override={},
@@ -275,7 +277,7 @@ def harness(tmp_path, monkeypatch):
             prefix = f"repos/{repository}"
             base_repo = {"id": selected["id"], "full_name": repository}
             responses = {
-                prefix: {**base_repo, "private": repository == CORPORATE},
+                prefix: {**base_repo, "private": False},
                 prefix + "/git/ref/heads/main": {"object": {"sha": SHA}},
                 prefix
                 + f"/actions/workflows/ci.yml/runs?head_sha={SHA}"
@@ -359,7 +361,7 @@ def test_verify_identity_authenticates_but_never_changes_entries(harness, capsys
     assert registry.main([]) == 0
     result = harness.result()
     assert result["status"] == "verified" and result["identity_verified"]
-    assert result["before"] == result["after"] and len(harness.reads) == 14
+    assert result["before"] == result["after"] and len(harness.reads) == 16
     assert not result["mutation_attempted"] and not harness.mutations()
     assert result["credential_cleanup"] == "removed"
     assert not registry.credential_paths()[0].exists()
@@ -391,14 +393,16 @@ def test_context_rejected_before_any_authentication(harness, key, value):
     assert not harness.calls and not harness.reads
 
 
-@pytest.mark.parametrize("change", ["id", "main", "ci", "private"])
+@pytest.mark.parametrize("change", ["id", "main", "ci", "private", "private_corporate"])
 def test_github_preflight_precedes_oidc(harness, change):
     if change == "private":
         harness.select(PERSONAL)
     prefix = f"repos/{harness.env['GITHUB_REPOSITORY']}"
-    if change in ("id", "private"):
+    if change in ("id", "private", "private_corporate"):
         harness.gh_override[prefix] = {
-            "id": 1 if change == "id" else 1359828317,
+            "id": 1
+            if change == "id"
+            else registry.IDENTITIES[harness.env["GITHUB_REPOSITORY"]]["id"],
             "full_name": harness.env["GITHUB_REPOSITORY"],
             "private": True,
         }
@@ -418,7 +422,7 @@ def test_github_preflight_precedes_oidc(harness, change):
     [
         ("repository", {"url": "https://private.invalid"}),
         ("packages", []),
-        ("version", "0.8.6"),
+        ("version", "0.8.7"),
         ("remotes", [{"url": "https://other.invalid"}]),
     ],
 )
@@ -629,6 +633,7 @@ def test_publish_keeps_previous_manifests_and_uses_existing_package(harness):
         ("0.8.2", "294e3daa8f45e8f6b6050ab7cce140489272844c911afe6e3aca60843b0aa0e8"),
         ("0.8.3", "fdcfa9f92f6945e38bfecc65d5f22c5ce2caf908573bc39a059a79fd3daae40b"),
         ("0.8.4", "5295fde5e5c1dcab1061763236c332d8ef1ec4ec7b108d17da638cad0873f04d"),
+        ("0.8.5", "a17f254fc684ca7ce8cd46f5244f2667f91a858b116528cc1fc55a6677a6779a"),
     ):
         previous = f"{CORPORATE}@{version}"
         assert result["before"][previous] == result["after"][previous]
@@ -636,7 +641,7 @@ def test_publish_keeps_previous_manifests_and_uses_existing_package(harness):
         assert result["after"][previous]["status"] == "active"
     assert result["before"][PERSONAL] == result["after"][PERSONAL]
     assert result["after"][PERSONAL]["status"] == "deleted"
-    assert result["after"][CORPORATE]["version"] == "0.8.5"
+    assert result["after"][CORPORATE]["version"] == "0.8.6"
     assert result["pypi"]["version"] == "0.8.4"
     assert result["pypi"]["source_sha"] == PACKAGE_SOURCE_SHA != result["sha"]
     assert result["pypi"]["files"] == {
@@ -663,7 +668,7 @@ def test_publication_allows_registry_to_update_computed_latest_flag(harness):
 
 @pytest.mark.parametrize("after_mutation", [False, True])
 @pytest.mark.parametrize("drift", ["missing", "status", "manifest"])
-@pytest.mark.parametrize("version", ["0.8.2", "0.8.3", "0.8.4"])
+@pytest.mark.parametrize("version", ["0.8.2", "0.8.3", "0.8.4", "0.8.5"])
 def test_previous_version_drift_is_rejected(harness, drift, after_mutation, version):
     harness.select(CORPORATE, "publish")
     harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
@@ -690,7 +695,7 @@ def test_previous_version_drift_is_rejected(harness, drift, after_mutation, vers
     assert len(harness.mutations()) == int(after_mutation)
 
 
-@pytest.mark.parametrize("version", ["0.8.1", "0.8.6"])
+@pytest.mark.parametrize("version", ["0.8.1", "0.8.7"])
 def test_no_other_corporate_version_is_accepted(harness, version):
     harness.previous["0.8.2"]["server"]["version"] = version
     assert registry.main([]) == 1
@@ -838,14 +843,18 @@ def test_manifest_uses_only_a_path_for_stdio_credential():
     value = manifest(CORPORATE)
     (package,) = value["packages"]
     assert package["registryType"] == "pypi" and package["identifier"] == "vt-mcp"
-    assert package["version"] == "0.8.4" and value["version"] == "0.8.5"
+    assert package["version"] == "0.8.4" and value["version"] == "0.8.6"
     assert package["transport"] == {"type": "stdio"} and package["runtimeHint"] == "uvx"
     (setting,) = package["environmentVariables"]
     assert setting["name"] == "VTAI_TOKEN_FILE"
     assert setting["isRequired"] is True and setting.get("isSecret", False) is False
     assert setting["format"] == "filepath" and setting["placeholder"].startswith("/")
     assert "value" not in setting and "default" not in setting
-    assert "repository" not in value
+    assert value["repository"] == {
+        "url": "https://github.com/VirusTotal/virustotal-mcp",
+        "source": "github",
+        "id": "1361592455",
+    }
     assert value["remotes"] == [{"type": "streamable-http", "url": "https://ai.virustotal.com/mcp"}]
     assert value["icons"] == [
         {"src": "https://ai.virustotal.com/logo.svg", "mimeType": "image/svg+xml", "sizes": ["any"]}
