@@ -109,10 +109,12 @@ Removing the MCP connection from a client does not revoke VTAI access. Use [acce
 
 The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.4/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
-The [corporate development repository](https://github.com/VirusTotal/virustotal-mcp) currently requires repository access. Its visibility does not prevent installation from PyPI. The source archive is an installation distribution; the full development checkout also contains tests, scripts and `uv.lock`.
+The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
 
 Version 0.8.4 adds protected Windows submission recovery and binary file handling. Tool schemas, account rights and quotas retain their behavior. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 
 ## License
 
 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0), starting with version 0.8.1. Both wheel and source archive include `LICENSE`, `NOTICE` and `LICENSES/MIT.txt`; the MIT notice preserves attribution for earlier material. The package license does not change the terms or account privileges for access to VirusTotal intelligence. Dependencies retain their own licenses.
+
+Eligibility for the [Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security) is determined by the [Google Open Source Software Vulnerability Reward Program Rules](https://bughunters.google.com/about/rules/open-source/google-open-source-software-vulnerability-reward-program-rules).
