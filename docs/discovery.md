@@ -2,10 +2,9 @@
 
 Connect to the hosted endpoint or install
 [`vt-mcp` 0.8.3 from PyPI](https://pypi.org/project/vt-mcp/0.8.3/) for local stdio.
-The PyPI wheel and source distribution use Apache-2.0. The corporate repository,
-[VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), remains
-private; installation from PyPI does not require GitHub access. The historical
-[0.8.0 GitHub release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0)
+The PyPI wheel and source distribution use Apache-2.0, and the source repository
+is available at [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp).
+The historical [0.8.0 GitHub release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0)
 retains its original MIT license and files.
 
 Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
