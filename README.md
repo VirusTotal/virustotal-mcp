@@ -11,7 +11,7 @@ Use the free VTAI service with its current access limits. You need a **VTAI toke
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.4'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.5'
 vt-mcp --version
 ```
 
@@ -22,6 +22,21 @@ For automatic client configuration, use the [setup guide](https://ai.virustotal.
 The command installs the package from the official PyPI index in an isolated tool environment. Python 3.12 or newer is required. Keep `vt-mcp` on the MCP client's PATH, or use its absolute executable path. The package does not modify client configuration.
 
 For a connection without a local Python process, use **`https://ai.virustotal.com/mcp`** with a supported HTTP client. Supply the VTAI token through either `Authorization: Bearer` or `x-apikey`, using the client's protected credential settings. Send only one authentication header. Compatible HTTP clients can instead use the hosted [OAuth connection](https://ai.virustotal.com/connect/mcp?client=codex&transport=http), with browser sign-in and per-application permissions.
+
+## Maintain an existing connection
+
+Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the configured transport and update a setup-managed installation without creating another token. Restart the client after an update. A configuration check does not exercise a tool or certify the model's behavior.
+
+If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
+
+```sh
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.5'
+vt-mcp --version
+```
+
+A client configured with `uvx ... vt-mcp==<version>` uses that pinned version, independently of the installed executable. Update its pin or use the setup guide. Hosted HTTP connections use the deployed server; they do not need a local package upgrade. Keep existing tokens and submission receipts.
+
+Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. Unknown URLs can use a separate domain report as contextual evidence; it is not a verdict on the URL. Domain and IP lookups do not start new analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never replay an uncertain file submission: recover its receipt first.
 
 ## Connect your client
 
@@ -107,11 +122,11 @@ Removing the MCP connection from a client does not revoke VTAI access. Use [acce
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.4/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.5/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
 
-Version 0.8.4 adds protected Windows submission recovery and binary file handling. Tool schemas, account rights and quotas retain their behavior. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
+Version 0.8.5 adds actionable missing-report and quota guidance, and preserves service retry delays in the local client. Tool schemas, account rights and quotas retain their behavior. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 
 ## License
 

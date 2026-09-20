@@ -135,7 +135,9 @@ def analysis_http_error(
             503: "unavailable",
             504: "timeout",
         }.get(status, "unavailable")
-    if code not in {"rate_limited", "capacity_exceeded"}:
+    if code not in {"rate_limited", "capacity_exceeded"} and not (
+        code == "unavailable" and status == 503
+    ):
         retry_after_seconds = None
     return AnalysisError(
         code, http_status=status, retry_after_seconds=retry_after_seconds, submission=submission

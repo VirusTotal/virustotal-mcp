@@ -45,23 +45,26 @@ TOKEN = "vtai_synthetic_test_credential"
         ("17", 17),
     ],
 )
-async def test_http_retry_date_is_bounded_and_rounded_up(file_hash, monkeypatch, value, delay):
+@pytest.mark.parametrize("status,code", [(429, "rate_limited"), (503, "upstream_error")])
+async def test_http_retry_date_is_bounded_and_rounded_up(
+    file_hash, monkeypatch, value, delay, status, code
+):
     class Clock(datetime):
         @classmethod
         def now(cls, tz=None):
             return datetime(2026, 9, 6, 12, 0, 0, 250000, tzinfo=UTC)
 
-    monkeypatch.setattr("vt_mcp.vtai_client.datetime", Clock)
+    monkeypatch.setattr("vt_mcp.reports.datetime", Clock)
     async with VTAIClient(
         Settings(TOKEN),
         transport=httpx.MockTransport(
-            lambda _: httpx.Response(429, headers={"Retry-After": value}, json={})
+            lambda _: httpx.Response(status, headers={"Retry-After": value}, json={})
         ),
     ) as client:
         with pytest.raises(VTAIError) as caught:
             await client.get_file_report(file_hash)
     error = caught.value.error
-    assert error["code"] == "rate_limited"
+    assert error["code"] == code
     assert error["retry_after_seconds"] == delay
     assert value not in error["message"] and TOKEN not in json.dumps(error)
 
@@ -149,7 +152,7 @@ async def test_errors_are_distinct_sanitized_and_not_retried(
     assert error["http_status"] == status
     assert TOKEN not in str(error)
     assert len(calls) == 1  # Includes redirect responses: the token stays at VTAI.
-    assert error["retry_after_seconds"] == (17 if status == 429 else None)
+    assert error["retry_after_seconds"] == (17 if status in {429, 503} else None)
 
 
 @pytest.mark.parametrize("body", [b"not JSON", b"null", b"[]", b"{}", b'{"data":{}}'])
