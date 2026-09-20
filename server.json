@@ -2,15 +2,15 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.VirusTotal/virustotal-mcp",
   "title": "VirusTotal",
-  "description": "VirusTotal reports for files, URLs, domains and IPs, plus file submission and analysis recovery.",
-  "version": "0.8.7",
+  "description": "VirusTotal reports, file and URL submissions, domain/IP reanalysis, and analysis recovery.",
+  "version": "0.9.0",
   "websiteUrl": "https://ai.virustotal.com/connect/mcp",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "vt-mcp",
-      "version": "0.8.5",
+      "version": "0.9.1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"

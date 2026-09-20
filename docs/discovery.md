@@ -1,7 +1,7 @@
 # Find and connect to VirusTotal MCP
 
 Connect to the hosted endpoint or install
-[`vt-mcp` 0.8.5 from PyPI](https://pypi.org/project/vt-mcp/0.8.5/) for local stdio.
+[`vt-mcp` 0.9.1 from PyPI](https://pypi.org/project/vt-mcp/0.9.1/) for local stdio.
 The package and the public source repository,
 [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), use
 Apache-2.0. Installation from PyPI does not require a GitHub account. The historical
@@ -21,9 +21,10 @@ public source repository. GitHub Actions OIDC establishes the corporate namespac
 publication is bound to repository ID `1361592455`. The package README carries the
 matching `mcp-name` ownership marker.
 
-Registry metadata **0.8.7** updates the local package to **vt-mcp 0.8.5**, which
-adds actionable error recovery and retry guidance. It retains the OAuth-capable
-endpoint, VirusTotal icon and public repository URL and ID. Registry and package
+Registry metadata **0.9.0** updates the local package to **vt-mcp 0.9.1**, which
+adds URL submission, domain/IP reanalysis and recovery using caller-retained request IDs.
+It retains the OAuth-capable endpoint, VirusTotal icon and public repository URL and ID.
+Registry and package
 versions are independent: this metadata update points to an existing Python
 release; it does not publish another package or deploy a hosted server.
 
@@ -46,16 +47,22 @@ credential for local stdio and direct REST access; MCP OAuth tokens are not REST
 API keys. Reuse credentials rather than registering again after an error or quota
 response.
 
-The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.8.5`, so uv
+The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.1`, so uv
 selects a supported interpreter. Set `VTAI_TOKEN_FILE` to the path of a protected
 file containing only your VTAI token, for example `/home/user/.config/vt-mcp/token`.
 The Registry input is the file path; the credential stays in that file. Restrict
 file access to your user. Clients that do not import Registry configuration can
 use the [manual setup](clients.md).
 
-There are seven remote tools, including file submission and recovery. The eighth,
-`submit_local_file`, requires local stdio. Registry discovery does not establish
-support in every client, approval by a model provider or directory, or a working
+With the compatible hosted service, there are ten remote tools, including file and
+URL submission, domain/IP reanalysis and receipt recovery. Local stdio adds
+`submit_local_file`, for eleven tools. Before a network operation, retain a canonical
+lowercase UUIDv4 `request_id`; after interruption recover the same receipt, without
+automatically repeating POST. Standard sharing applies. OAuth network writes require
+`vt:reports:read` plus `vt:network-analysis:write`; existing grants do not expand
+automatically. See [analysis and recovery](analysis.md#network-analysis-and-recovery).
+
+Registry discovery does not establish support in every client, approval by a model provider or directory, or a working
 hosted-client connection. Consult the [client evidence](clients.md).
 
 ### Maintaining the entry
@@ -74,7 +81,7 @@ Run `publish` with the reviewed metadata commit on main. Before requesting OIDC,
 the helper checks PyPI's name, version and README ownership marker, and requires
 exactly the wheel and source distribution, neither yanked. Their SHA-256 hashes
 must match the corporate release's `SHA256SUMS` and GitHub asset digests. The
-annotated `v0.8.5` tag object, package source commit and checksum manifest are
+annotated `v0.9.1` tag object, package source commit and checksum manifest are
 pinned independently of the metadata commit. This verifies existing published
 bytes without rebuilding or uploading them. A moved tag, changed release,
 partial upload or mismatched source blocks publication.
@@ -84,10 +91,10 @@ published entry anonymously and compares its manifest and active status. No
 permanent Registry secret or VTAI token is needed. CI validates the schema and
 manifest contract without requiring an already-published PyPI package.
 
-`retire` and `restore` change only corporate metadata version **0.8.7**. Retirement
+`retire` and `restore` change only corporate metadata version **0.9.0**. Retirement
 preserves its manifest and status message in the `include_deleted=true` view;
 restoration reactivates the same entry and requires the matching PyPI release.
-Corporate versions **0.8.2–0.8.6** retain their original manifests and active
+Corporate versions **0.8.2–0.8.7** retain their original manifests and active
 status. The personal **0.8.0** entry remains retired with its corporate migration
 message. The Registry may update its computed latest-version flag.
 
