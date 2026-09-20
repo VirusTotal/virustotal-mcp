@@ -25,11 +25,16 @@ import httpx
 from vt_mcp.analyses import (
     MAX_SUBMISSION_BYTES,
     AnalysisError,
+    NetworkKind,
     analysis_http_error,
     format_analysis_response,
+    format_network_submission_response,
     format_submission_response,
+    unknown_network_submission,
     unknown_submission,
     validate_analysis_id,
+    validate_network_submission,
+    validate_request_id,
     validate_sha256,
 )
 from vt_mcp.reports import MAX_RESPONSE_BYTES, parse_retry_after
@@ -56,12 +61,19 @@ class AnalysisClient(VTAIClient):
     """Shares the existing credential and HTTP lifecycle; POST never retries."""
 
     async def _analysis_request(
-        self, method, path, *, content=None, size=None, timeout=READ_TIMEOUT
+        self,
+        method,
+        path,
+        *,
+        content=None,
+        size=None,
+        timeout=READ_TIMEOUT,
+        content_type="application/octet-stream",
     ):
         headers = {}
         if method == "POST":
             headers = {
-                "Content-Type": "application/octet-stream",
+                "Content-Type": content_type,
                 "X-VTAI-Consent": "standard-v1",
                 "Content-Length": str(size),
             }
@@ -93,7 +105,12 @@ class AnalysisClient(VTAIClient):
                         if retry is None:
                             retry = detail.get("retry_after_seconds")
                         raise analysis_http_error(
-                            response.status_code, code=detail.get("code"), retry_after_seconds=retry
+                            response.status_code,
+                            code=detail.get("code"),
+                            retry_after_seconds=retry,
+                            submission=detail.get("submission")
+                            if method == "POST" and path.startswith("network-submissions/")
+                            else None,
                         )
                     if raw is None:
                         raise AnalysisError("invalid_response")
@@ -107,10 +124,15 @@ class AnalysisClient(VTAIClient):
         except httpx.RequestError:
             raise AnalysisError("unavailable") from None
 
-    async def get_analysis(self, analysis_id: str) -> dict:
+    async def get_analysis(self, analysis_id: str, *, request_id: str | None = None) -> dict:
         validate_analysis_id(analysis_id)
-        raw = await self._analysis_request("GET", f"analyses/{quote(analysis_id, safe='')}")
-        return format_analysis_response(raw, analysis_id, forbidden_values=(self.settings.token,))
+        path = f"analyses/{quote(analysis_id, safe='')}"
+        if request_id is not None:
+            path += f"?request_id={validate_request_id(request_id)}"
+        raw = await self._analysis_request("GET", path)
+        return format_analysis_response(
+            raw, analysis_id, request_id=request_id, forbidden_values=(self.settings.token,)
+        )
 
     async def get_submission(self, sha256: str) -> dict:
         validate_sha256(sha256)
@@ -119,6 +141,81 @@ class AnalysisClient(VTAIClient):
         if result["status"] == "exists":
             raise AnalysisError("invalid_response")
         return result
+
+    async def get_network_submission(self, request_id: str) -> dict:
+        validate_request_id(request_id)
+        raw = await self._analysis_request("GET", f"network-submissions/{request_id}")
+        return format_network_submission_response(
+            raw, request_id, forbidden_values=(self.settings.token,)
+        )
+
+    async def submit_network(
+        self, indicator_type: NetworkKind, indicator: str, request_id: str
+    ) -> dict:
+        """One standard-mode POST; the caller must retain request_id before this call."""
+        validate_network_submission(indicator_type, indicator, request_id)
+        content = json.dumps(
+            {"indicator_type": indicator_type, "indicator": indicator},
+            ensure_ascii=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+        try:
+            raw = await self._analysis_request(
+                "POST",
+                f"network-submissions/{request_id}",
+                content=content,
+                size=len(content),
+                content_type="application/json",
+                timeout=SUBMIT_TIMEOUT,
+            )
+            return format_network_submission_response(
+                raw,
+                request_id,
+                indicator_type=indicator_type,
+                forbidden_values=(self.settings.token,),
+            )
+        except AnalysisError as exc:
+            if exc.submission is not None:
+                try:
+                    recovery = format_network_submission_response(
+                        exc.submission,
+                        request_id,
+                        indicator_type=indicator_type,
+                        forbidden_values=(self.settings.token,),
+                    )
+                    expected_code = (
+                        "permission_denied"
+                        if exc.error["code"] == "access_denied"
+                        else exc.error["code"]
+                    )
+                    if (
+                        recovery["status"] != "rejected"
+                        or recovery["error"]["code"] != expected_code
+                    ):
+                        raise AnalysisError("invalid_response")
+                except AnalysisError:
+                    raise AnalysisError(
+                        "submission_unknown",
+                        submission=unknown_network_submission(request_id, indicator_type),
+                    ) from None
+                raise AnalysisError(
+                    exc.error["code"],
+                    http_status=exc.error["http_status"],
+                    retry_after_seconds=exc.error["retry_after_seconds"],
+                    submission=recovery,
+                ) from None
+            if exc.error["code"] in {
+                "timeout",
+                "unavailable",
+                "invalid_response",
+                "response_too_large",
+                "submission_unknown",
+            }:
+                raise AnalysisError(
+                    "submission_unknown",
+                    submission=unknown_network_submission(request_id, indicator_type),
+                ) from None
+            raise
 
     async def submit(self, snapshot: BinaryIO, sha256: str, size: int) -> dict:
         """Only call after explicit consent and confirmed durable local recovery state."""

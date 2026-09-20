@@ -1,8 +1,8 @@
 # Embed report, analysis and submission tools in VTAI
 
-The factory introduced in `0.3.0` exposes four report tools through a host-supplied reader. Version `0.5.0` adds an optional analysis reader; `0.8.0` adds an optional submission reader. The CLI remains stdio and `create_server(settings, transport=...)` remains compatible. The embedding host supplies authentication and owns its HTTP deployment; this factory alone does not provide either.
+The factory introduced in `0.3.0` exposes four report tools through a host-supplied reader. Version `0.5.0` adds an optional analysis reader; `0.8.0` adds an optional submission reader. Version `0.9.0` adds an optional network-submission reader. The CLI remains stdio and `create_server(settings, transport=...)` remains compatible. The embedding host supplies authentication and owns its HTTP deployment; this factory alone does not provide either.
 
-`vt_mcp.server.create_report_server(*, lifespan, bind_reports, bind_analyses=None, bind_submissions=None)` returns an SDK `MCPServer`. The first two arguments are required:
+`vt_mcp.server.create_report_server(*, lifespan, bind_reports, bind_analyses=None, bind_submissions=None, bind_network_submissions=None)` returns an SDK `MCPServer`. The first two arguments are required:
 
 - `lifespan` accepts the server and returns an async context manager yielding shared resources. The resource owner opens and closes them once; a VTAI host may lend resources that its own application lifespan already manages.
 - `bind_reports(ctx)` is synchronous and returns a `vt_mcp.reports.ReportReader` for the current tool call. The SDK context is `mcp.server.mcpserver.Context`. Its `request_context.lifespan_context` contains shared resources; for HTTP calls, `request_context.request` contains that request's Starlette `Request`.
@@ -36,11 +36,11 @@ The VTAI host owns SDK HTTP transport settings, host/origin policy, ASGI mountin
 
 ## Bind analysis lookups
 
-Pass `bind_analyses(ctx)` to expose `get_analysis(analysis_id)`. Without that argument the embedded factory keeps its original four report tools. With the analysis reader it exposes five; the optional submission reader adds two more. The local 0.8 `create_server` supplies all readers and its local-file tool for eight tools.
+Pass `bind_analyses(ctx)` to expose `get_analysis(analysis_id)`. Without that argument the embedded factory keeps its original four report tools. With the analysis reader it exposes five; the optional submission reader adds two more. The current local `create_server` supplies all readers, including network submission, and its local-file tool for eleven tools.
 
 The synchronous binder returns `vt_mcp.analyses.AnalysisReader`, with one asynchronous method `get_analysis(analysis_id) -> dict`. It resolves the authenticated actor on every call and invokes the shared VTAI analysis service. VTAI owns receipt visibility, revalidation, quota admission and upstream access. That binder grants only selected-analysis reads; submission and receipt tools use the separate binder below.
 
-`format_analysis_response(raw, analysis_id, *, forbidden_values=())` validates the complete JSON-compatible analysis response, including its selected ID, file identity, pending/completed state and evidence. This response does not use the report `data` envelope. For Pydantic models, use `model_dump(mode="json")`. Keep the upstream analysis date and VTAI retrieval time; do not substitute a later file report.
+`format_analysis_response(raw, analysis_id, *, request_id=None, forbidden_values=())` validates the complete JSON-compatible analysis response, including its selected ID, file or typed network identity, pending/completed state and evidence. Pass the network receipt's request ID to enforce that selection; existing file calls remain unchanged. This response does not use the report `data` envelope. For Pydantic models, use `model_dump(mode="json")`. Keep the upstream analysis date and VTAI retrieval time; do not substitute a later file report.
 
 `analysis_http_error(status, *, code=None, retry_after_seconds=None, submission=None)` creates a closed, sanitized `AnalysisError`, a subclass of `VTAIError`. Direct readers map typed backend errors rather than exposing raw messages. As with report readers, unexpected exceptions are sanitized and cancellation propagates. Do not place credentials or actors in the shared lifespan.
 
@@ -55,10 +55,10 @@ async def get_submission(self, sha256: str) -> dict: ...
 ```
 
 Providing this binder adds `submit_file` and `get_submission` together. Omitting
-it preserves the four/five-tool embedding surface. With both optional binders,
-the embedded server has seven tools. The local `create_server` additionally
-registers `submit_local_file(path, expected_sha256: str | None = None)`, for eight;
-that local-path tool is not exposed by the remote embedding factory.
+it preserves the four/five-tool embedding surface. With the analysis and file-submission binders, the embedded server keeps seven tools.
+Adding the network binder below exposes ten; local `create_server` also registers
+`submit_local_file(path, expected_sha256: str | None = None)`, for eleven. That
+local-path tool is not exposed by the remote embedding factory.
 
 Bind the authenticated actor afresh and invoke VTAI's existing shared submission
 and receipt services. Do not use HTTP loopback inside VTAI or bypass its current
@@ -80,3 +80,44 @@ replace selected-analysis evidence with the newest file report. Cancellation mus
 propagate while retaining any durable recovery state. Version 0.8 binding, limits
 and native-client workflows require their own validation; prior five-tool evidence
 is historical.
+
+
+## Bind network analysis and receipt recovery
+
+`bind_network_submissions(ctx)` is optional and returns an actor-bound
+`vt_mcp.analyses.NetworkSubmissionReader`:
+
+```python
+async def submit_network(self, indicator_type: str, indicator: str, request_id: str) -> dict: ...
+async def get_network_submission(self, request_id: str) -> dict: ...
+```
+
+It adds `submit_url`, `reanalyze_domain` and `reanalyze_ip`, and extends
+`get_submission` to accept exactly one `sha256` or `request_id`. If no file reader
+is configured, SHA-256 receipt calls fail closed. Hosts omitting the new binder
+retain the existing file receipt schema and four/five/seven-tool surfaces.
+Malformed tool argument shapes and noncanonical UUIDv4 IDs never bind a reader.
+
+The analysis reader may accept `get_analysis(analysis_id, *, request_id=None)`.
+The factory passes the keyword only when supplied, preserving existing one-argument
+readers. An integrated network service must enforce ownership and request-ID selection;
+the package never grants arbitrary upstream analysis access.
+
+Use `format_network_submission_response(raw, request_id, *, indicator_type=None,
+forbidden_values=())` for the minimized receipt and `format_analysis_response` for
+both file and network evidence. `unknown_network_submission(request_id, indicator_type)`
+creates safe unknown recovery metadata. Rejected receipt messages are reconstructed
+from closed codes; arbitrary provider errors are not displayed. `AnalysisError` may
+carry a validated rejected/unknown network receipt in `submission`.
+
+The host reserves the request ID durably before upstream dispatch, rejects reuse
+with a different kind or normalized target, revalidates the caller and applies
+shared quota/capacity/deadline rules. Existing receipt recovery must not dispatch or
+consume query quota. Validate the upstream analysis ID, typed relationship and target
+binding before returning completed evidence. Never log or persist raw URL targets in
+receipts. This binder is an adapter to VTAI's existing services, not another direct
+VirusTotal client, task queue or credential store.
+
+OAuth authorization belongs to the host: network writes require reports-read plus
+`vt:network-analysis:write`, without expanding older file-write grants. No interactive
+confirmation or credential argument is added to individual tool calls.

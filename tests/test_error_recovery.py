@@ -54,11 +54,20 @@ def test_missing_file_describes_available_submission_and_recovery(interface):
 
 @pytest.mark.parametrize("interface", ["remote", "stdio", "rest"])
 @pytest.mark.parametrize("kind", ["url", "domain", "ip"])
-def test_missing_indicators_do_not_invent_submission_or_transfer_domain_safety(interface, kind):
+def test_missing_indicators_describe_explicit_submission_without_transferring_domain_safety(
+    interface, kind
+):
     error = report_http_error(404, kind, interface=interface).error
     steps = " ".join(error["next_steps"])
     assert "retrieves existing reports" in steps or "retrieve existing reports" in steps
-    assert "submit_url" not in steps and "submit_file" not in steps
+    assert "submit_file" not in steps
+    assert "UUIDv4 request_id" in steps and "uncertain POST" in steps
+    if interface == "rest":
+        assert "POST JSON" in steps and "network-submissions/{request_id}" in steps
+    else:
+        assert {"url": "submit_url", "domain": "reanalyze_domain", "ip": "reanalyze_ip"}[
+            kind
+        ] in steps
     if kind == "url":
         assert "does not establish the URL's safety" in steps
         assert (

@@ -40,10 +40,10 @@ async def test_local_analysis_read_preserves_structured_parity():
         create_server(Settings(TOKEN), transport=httpx.MockTransport(handler))
     ) as client:
         tools = (await client.list_tools()).tools
-        assert len(tools) == 8
+        assert len(tools) == 11
         assert {tool.name for tool in tools}.isdisjoint({"submit", "upload_file"})
         tool = next(tool for tool in tools if tool.name == "get_analysis")
-        assert set(tool.input_schema["properties"]) == {"analysis_id"}
+        assert set(tool.input_schema["properties"]) == {"analysis_id", "request_id"}
         assert tool.annotations.read_only_hint and tool.annotations.idempotent_hint
         assert not tool.annotations.destructive_hint
         result = await client.call_tool("get_analysis", {"analysis_id": ANALYSIS_ID})

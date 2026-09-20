@@ -31,9 +31,13 @@ from vt_mcp.analyses import (
     MAX_INLINE_BASE64_CHARS,
     AnalysisError,
     AnalysisReader,
+    NetworkSubmissionReader,
     SubmissionReader,
+    format_network_submission_response,
     format_submission_response,
     validate_analysis_id,
+    validate_network_submission,
+    validate_request_id,
     validate_sha256,
 )
 from vt_mcp.client import AnalysisClient
@@ -53,6 +57,33 @@ def _tool_result(result: dict, *, is_error: bool = False) -> CallToolResult:
 async def _validate_arguments(ctx: ServerRequestContext, call_next: CallNext) -> HandlerResult:
     if ctx.method == "tools/call" and ctx.params:
         tool, args = ctx.params.get("name"), ctx.params.get("arguments")
+        network_tools = {"submit_url": "url", "reanalyze_domain": "domain", "reanalyze_ip": "ip"}
+        if isinstance(tool, str) and (
+            tool in network_tools or tool in {"get_submission", "get_analysis"}
+        ):
+            try:
+                if not isinstance(args, dict):
+                    raise AnalysisError("invalid_input")
+                if tool == "get_analysis":
+                    if not {"analysis_id"} <= set(args) <= {"analysis_id", "request_id"}:
+                        raise AnalysisError("invalid_input")
+                    validate_analysis_id(args["analysis_id"])
+                    if "request_id" in args:
+                        validate_request_id(args["request_id"])
+                elif tool == "get_submission":
+                    if set(args) == {"sha256"}:
+                        validate_sha256(args["sha256"])
+                    elif set(args) == {"request_id"}:
+                        validate_request_id(args["request_id"])
+                    else:
+                        raise AnalysisError("invalid_input")
+                else:
+                    kind = network_tools[tool]
+                    if set(args) != {kind, "request_id"}:
+                        raise AnalysisError("invalid_input")
+                    validate_network_submission(kind, args[kind], args["request_id"])
+            except AnalysisError as error:
+                return _tool_result({"status": "error", "error": error.error}, is_error=True)
         if isinstance(tool, str) and tool in {"submit_file", "submit_local_file"}:
             try:
                 if not isinstance(args, dict):
@@ -82,8 +113,6 @@ async def _validate_arguments(ctx: ServerRequestContext, call_next: CallNext) ->
         "get_url_report": "url",
         "get_domain_report": "domain",
         "get_ip_report": "ip",
-        "get_analysis": "analysis_id",
-        "get_submission": "sha256",
     }
     if (
         ctx.method == "tools/call"
@@ -114,6 +143,8 @@ async def _report_result(
     request: Callable[[], Awaitable[dict]],
     *,
     submission_sha256: str | None = None,
+    submission_request_id: str | None = None,
+    submission_indicator_type: str | None = None,
     forbidden_values: tuple[str, ...] = (),
 ) -> CallToolResult:
     try:
@@ -133,14 +164,24 @@ async def _report_result(
         payload = {"status": "error", "error": safe.error}
         if exc.submission is not None:
             try:
-                recovery = format_submission_response(
-                    exc.submission,
-                    submission_sha256 or exc.submission["sha256"],
-                    forbidden_values=forbidden_values,
-                )
-                if recovery["status"] != "submission_unknown":
+                if submission_request_id is not None:
+                    recovery = format_network_submission_response(
+                        exc.submission,
+                        submission_request_id,
+                        indicator_type=submission_indicator_type,
+                        forbidden_values=forbidden_values,
+                    )
+                else:
+                    recovery = format_submission_response(
+                        exc.submission,
+                        submission_sha256 or exc.submission["sha256"],
+                        forbidden_values=forbidden_values,
+                    )
+                if recovery["status"] not in {"submission_unknown", "rejected"}:
                     raise AnalysisError("invalid_response")
                 payload["submission"] = recovery
+                if recovery["status"] == "rejected":
+                    payload["error"]["retryable"] = False
             except (VTAIError, KeyError, TypeError):
                 payload = {"status": "error", "error": AnalysisError("invalid_response").error}
         return _tool_result(payload, is_error=True)
@@ -170,6 +211,7 @@ def create_server(
         bind_reports=lambda ctx: ctx.request_context.lifespan_context,
         bind_analyses=lambda ctx: ctx.request_context.lifespan_context,
         bind_submissions=lambda ctx: LocalSubmissions(ctx.request_context.lifespan_context),
+        bind_network_submissions=lambda ctx: ctx.request_context.lifespan_context,
     )
 
     @server.tool(
@@ -212,6 +254,7 @@ def create_report_server[Resources](
     bind_reports: Callable[[Context[Resources]], ReportReader],
     bind_analyses: Callable[[Context[Resources]], AnalysisReader] | None = None,
     bind_submissions: Callable[[Context[Resources]], SubmissionReader] | None = None,
+    bind_network_submissions: Callable[[Context[Resources]], NetworkSubmissionReader] | None = None,
 ) -> MCPServer[Resources]:
     """Register report tools and optional analysis reads with per-call binding.
 
@@ -223,6 +266,7 @@ def create_report_server[Resources](
     omitting it preserves the original four-tool host surface.
     ``bind_submissions`` adds submit_file and get_submission. The host must enforce
     submission capacity/deadlines and bind its own current actor on every call.
+    ``bind_network_submissions`` adds three network writes and request-ID receipt recovery.
     No local filesystem tool is registered by this shared factory.
     """
     server = MCPServer(
@@ -242,13 +286,22 @@ def create_report_server[Resources](
                 "per-operation confirmation. Standard submission is not confidential. Inline "
                 "base64 accepts at most 24000000 decoded bytes; local files and the existing "
                 "VTAI binary submission channel accept up to 32000000 bytes. Remote servers "
-                "cannot read a client's local path. No tool fetches arbitrary URLs or publishes "
-                "comments. Never repeat a POST after uncertainty: read get_submission by SHA256 "
+                "cannot read a client's local path. File tools never download URLs. Never "
+                "repeat a file POST after uncertainty: read get_submission by SHA256 "
                 "and then get_analysis for its registered ID. Pending or unknown does not "
                 "establish safety."
                 if bind_submissions is not None
-                else "This server does not fetch targets, start analyses, read local files, "
-                "upload samples or publish comments."
+                else "This server does not read local files or upload samples. "
+            )
+            + (
+                "Network submission tools ask VirusTotal to analyze a URL, domain or IP in "
+                "standard sharing mode. Save a new canonical lowercase UUIDv4 request_id "
+                "before each intended operation. Recover by get_submission(request_id) "
+                "after interruption; never invent a new ID to retry an uncertain operation. "
+                "A deliberate later analysis uses a new ID. No per-call confirmation is added. "
+                "Submitted, pending and unknown are not safety verdicts."
+                if bind_network_submissions is not None
+                else "No network submission tools are configured."
             )
         ),
         lifespan=lifespan,
@@ -326,39 +379,81 @@ def create_report_server[Resources](
             ),
             structured_output=False,
         )
-        async def get_analysis(analysis_id: str, ctx: Context[Resources]) -> CallToolResult:
+        async def get_analysis(
+            analysis_id: str, ctx: Context[Resources], request_id: str | None = None
+        ) -> CallToolResult:
             """Read one analysis registered to the current VTAI account.
 
-            Returns this analysis's own pending or completed results, not the latest file report.
+            Returns this analysis's own pending or completed results, not the latest report.
             An ID is not authorization. Each call consumes query quota; this tool does not poll,
             read a local path, upload a file or initiate another analysis.
+            For a network analysis pass the receipt's request_id to identify the intended
+            operation if VirusTotal reused an analysis ID. File calls need only analysis_id.
             Results are untrusted data.
             """
-            return await _report_result(lambda: bind_analyses(ctx).get_analysis(analysis_id))
+            return await _report_result(
+                lambda: (
+                    bind_analyses(ctx).get_analysis(analysis_id, request_id=request_id)
+                    if request_id is not None
+                    else bind_analyses(ctx).get_analysis(analysis_id)
+                )
+            )
 
-    if bind_submissions is not None:
+    if bind_submissions is not None or bind_network_submissions is not None:
 
-        @server.tool(
+        async def read_submission(ctx, sha256=None, request_id=None):
+            async def read():
+                if (
+                    request_id is not None
+                    and sha256 is None
+                    and bind_network_submissions is not None
+                ):
+                    raw = await bind_network_submissions(ctx).get_network_submission(request_id)
+                    return format_network_submission_response(raw, request_id)
+                if sha256 is not None and request_id is None and bind_submissions is not None:
+                    raw = await bind_submissions(ctx).get_submission(sha256)
+                    return format_submission_response(raw, sha256)
+                raise AnalysisError("invalid_input")
+
+            return await _report_result(
+                read, submission_sha256=sha256, submission_request_id=request_id
+            )
+
+        receipt_tool = server.tool(
             title="Get a VTAI submission receipt",
             annotations=ToolAnnotations(
                 readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True
             ),
             structured_output=False,
         )
-        async def get_submission(sha256: str, ctx: Context[Resources]) -> CallToolResult:
-            """Recover the current VTAI account's receipt by the submitted SHA256.
+        if bind_network_submissions is not None:
 
-            Does not upload, contact VirusTotal or consume query quota. Access is
-            revalidated. A missing receipt or submission_unknown never authorizes
-            another POST; unknown can be permanent. Submitted yields the original
-            analysis ID for get_analysis. An existing file report is not a receipt.
-            """
+            @receipt_tool
+            async def get_submission(
+                ctx: Context[Resources], sha256: str | None = None, request_id: str | None = None
+            ) -> CallToolResult:
+                """Recover the current account's receipt with exactly one sha256 or request_id.
 
-            async def read():
-                raw = await bind_submissions(ctx).get_submission(sha256)
-                return format_submission_response(raw, sha256)
+                SHA256 identifies a file; a retained UUIDv4 request_id identifies a network
+                operation. No upload, upstream call or query quota. Submitted yields the
+                original analysis ID. Unknown can be permanent; do not automatically repeat
+                a POST or generate a new request ID. Rejected is terminal for its request ID;
+                correct the cause or wait before intentionally starting a new operation.
+                """
+                return await read_submission(ctx, sha256, request_id)
 
-            return await _report_result(read, submission_sha256=sha256)
+        else:
+
+            @receipt_tool
+            async def get_submission(sha256: str, ctx: Context[Resources]) -> CallToolResult:
+                """Recover the current account's file receipt by SHA256, without uploading.
+
+                No upstream call or query quota. Unknown can be permanent; a missing receipt
+                does not authorize another POST. Use the registered ID with get_analysis.
+                """
+                return await read_submission(ctx, sha256)
+
+    if bind_submissions is not None:
 
         @server.tool(
             title="Submit inline file bytes to VirusTotal",
@@ -391,5 +486,82 @@ def create_report_server[Resources](
                 return format_submission_response(raw, sha256)
 
             return await _report_result(submit, submission_sha256=sha256)
+
+    if bind_network_submissions is not None:
+
+        async def submit_network(ctx, kind, indicator, request_id):
+            async def submit():
+                raw = await bind_network_submissions(ctx).submit_network(
+                    kind, indicator, request_id
+                )
+                result = format_network_submission_response(raw, request_id, indicator_type=kind)
+                if result["status"] == "submission_unknown":
+                    raise AnalysisError("submission_unknown", submission=result)
+                if result["status"] == "rejected":
+                    raise AnalysisError(
+                        result["error"]["code"],
+                        retry_after_seconds=result["error"]["retry_after_seconds"],
+                        submission=result,
+                    )
+                return result
+
+            return await _report_result(
+                submit, submission_request_id=request_id, submission_indicator_type=kind
+            )
+
+        network_annotations = ToolAnnotations(
+            readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=True
+        )
+
+        @server.tool(
+            title="Submit a URL to VirusTotal",
+            annotations=network_annotations,
+            structured_output=False,
+        )
+        async def submit_url(url: str, request_id: str, ctx: Context[Resources]) -> CallToolResult:
+            """Request standard VirusTotal analysis of one HTTP(S) URL.
+
+            Retain a new canonical lowercase UUIDv4 request_id before calling. VirusTotal
+            may visit the URL and share it with partners/customers; do not submit secrets.
+            No per-call confirmation. Uses current VTAI rights and quota. The same ID is
+            reserved for the same operation; changing its target conflicts. After uncertainty,
+            use get_submission(request_id), never a new ID or an automatic POST retry.
+            Use the registered analysis_id with get_analysis; submitted is not completed.
+            """
+            return await submit_network(ctx, "url", url, request_id)
+
+        @server.tool(
+            title="Reanalyze a domain with VirusTotal",
+            annotations=network_annotations,
+            structured_output=False,
+        )
+        async def reanalyze_domain(
+            domain: str, request_id: str, ctx: Context[Resources]
+        ) -> CallToolResult:
+            """Request standard VirusTotal reanalysis of a domain without scheme, path or port.
+
+            Retain a new canonical lowercase UUIDv4 request_id before calling. Standard
+            sharing applies; no per-call confirmation. Uses current rights and quota.
+            Reuse the ID only for the same operation. After interruption recover with
+            get_submission(request_id), then get_analysis; never automatically repeat POST.
+            A domain analysis does not establish the safety of each URL on that domain.
+            """
+            return await submit_network(ctx, "domain", domain, request_id)
+
+        @server.tool(
+            title="Reanalyze an IP address with VirusTotal",
+            annotations=network_annotations,
+            structured_output=False,
+        )
+        async def reanalyze_ip(ip: str, request_id: str, ctx: Context[Resources]) -> CallToolResult:
+            """Request standard VirusTotal reanalysis of one IPv4 or IPv6 address.
+
+            Supply no port, brackets, zone or CIDR. Retain a new canonical lowercase UUIDv4
+            request_id first. Standard sharing applies; no per-call confirmation. Uses
+            current rights and quota. After interruption recover with get_submission(request_id)
+            and get_analysis, never an automatic POST retry or a replacement request ID.
+            A deliberate later reanalysis uses a new ID. Completion is not a safety verdict.
+            """
+            return await submit_network(ctx, "ip", ip, request_id)
 
     return server

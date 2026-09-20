@@ -49,6 +49,9 @@ async def test_tool_surface_and_structured_result(file_hash, report, indicator_r
             "get_submission",
             "submit_file",
             "submit_local_file",
+            "submit_url",
+            "reanalyze_domain",
+            "reanalyze_ip",
         }
         inputs = {
             "get_file_report": ("hash", file_hash, "files"),
@@ -57,12 +60,19 @@ async def test_tool_surface_and_structured_result(file_hash, report, indicator_r
             "get_ip_report": ("ip", "192.0.2.1", "ip_addresses"),
         }
         for tool in tools:
-            if tool.name in {"get_submission", "submit_file", "submit_local_file"}:
+            if tool.name in {
+                "get_submission",
+                "submit_file",
+                "submit_local_file",
+                "submit_url",
+                "reanalyze_domain",
+                "reanalyze_ip",
+            }:
                 # Submission behavior has its own durable-state/byte-integrity tests.
                 continue
             if tool.name == "get_analysis":
                 # Analysis-specific calls are exercised in test_analysis_mcp.py.
-                assert set(tool.input_schema["properties"]) == {"analysis_id"}
+                assert set(tool.input_schema["properties"]) == {"analysis_id", "request_id"}
                 assert tool.annotations.read_only_hint is True
                 assert tool.annotations.destructive_hint is False
                 continue

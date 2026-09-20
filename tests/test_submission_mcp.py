@@ -70,13 +70,13 @@ async def test_optional_binder_compatibility_and_submission_schemas(analysis, su
         assert tools["get_submission"].annotations.idempotent_hint
 
 
-async def test_local_has_eight_tools_and_no_confirmation_argument():
+async def test_local_has_eleven_tools_and_no_confirmation_argument():
     server = create_server(
         Settings(TOKEN), transport=httpx.MockTransport(lambda _: pytest.fail("Discovery HTTP"))
     )
     async with Client(server) as client:
         tools = {tool.name: tool for tool in (await client.list_tools()).tools}
-    assert len(tools) == 8
+    assert len(tools) == 11
     local = tools["submit_local_file"]
     assert set(local.input_schema["properties"]) == {"path", "expected_sha256"}
     assert local.input_schema["required"] == ["path"]

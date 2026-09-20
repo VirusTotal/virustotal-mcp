@@ -1,23 +1,26 @@
-# Submit authorized files and recover the selected analysis
+# Submit files and network indicators, then recover the selected analysis
 
-Version 0.8 adds autonomous MCP submission and receipt recovery alongside the compatible submission CLI and selected-analysis reader.
+Version 0.9 adds autonomous URL submission and domain/IP reanalysis to file submission and selected-analysis recovery. Network tools require a compatible VTAI service; the file CLI remains compatible.
 A compatible VTAI submission and analysis service is required; see
 [service validation](clients.md#service-and-workflow-validation) for observed
 workflows and their limits. Bare `vt-mcp` still starts the MCP server over stdio.
 
 ## Autonomous MCP workflow
 
-With the compatible VTAI 0.8 service, HTTP and stdio expose seven common tools:
-four report lookups, `get_analysis`, `submit_file` and `get_submission`. Local
-stdio adds `submit_local_file`, for eight tools in total. Existing report lookups
+With the compatible VTAI network-analysis service, HTTP and stdio expose ten common tools:
+four report lookups, `get_analysis`, `submit_file`, the three network submission tools
+and `get_submission`. Local stdio adds `submit_local_file`, for eleven tools in total. Existing report lookups
 do not upload or request a rescan.
 
 | Tool | Contract |
 |---|---|
 | `submit_file(sha256, content_base64)` | Submit base64-encoded bytes whose decoded SHA-256 matches `sha256`; maximum **24,000,000 decoded bytes**. Available over HTTP and stdio. |
 | `submit_local_file(path, expected_sha256=None)` | Copy a regular file accessible to the **local vt-mcp process**, calculate its SHA-256 and submit that copy; maximum **32,000,000 bytes**. If supplied, the expected digest must match. Local stdio only. |
-| `get_submission(sha256)` | Read the existing receipt for this VTAI account and hash, without uploading again. |
-| `get_analysis(analysis_id)` | Read one registered analysis; retain its selected ID, SHA-256, status, date and engine evidence. |
+| `submit_url(url, request_id)` | Request standard analysis of one HTTP(S) URL. |
+| `reanalyze_domain(domain, request_id)` | Request domain reanalysis; no scheme, path or port. |
+| `reanalyze_ip(ip, request_id)` | Request reanalysis of one IPv4 or IPv6 address. |
+| `get_submission(sha256=None, request_id=None)` | Read an owned receipt using exactly one file SHA-256 or network request ID. |
+| `get_analysis(analysis_id, request_id=None)` | Read selected registered analysis evidence. Pass the network receipt's request ID when applicable. |
 
 The submission tools operate in **standard mode**. VT-MCP adds no `consent` Boolean,
 confirmation argument or per-call human prompt. The client owner configures host
@@ -50,7 +53,7 @@ executes the file or adds a comment. Empty files are permitted. The 24 MB inline
 ceiling accounts for base64 expansion inside the bounded HTTP request; it is not
 32 MB of decoded content. The local/binary path retains the 32,000,000-byte limit.
 
-All paths use the same VTAI identity, rights, quota policy and existing per-account
+File submission paths use the same VTAI identity, rights, quota policy and existing per-account
 submission receipts. VTAI checks for a report before starting a new submission:
 only confirmed absence allows a new upload. An `exists` response describes that
 existing report; it does not establish a new analysis.
@@ -78,7 +81,7 @@ or invents completion, and no credential is a tool argument.
 
 ### MCP recovery state
 
-Both submission tools in the local stdio server reuse the CLI's
+Both file submission tools in the local stdio server reuse the CLI's
 [durable reference](#cli-durable-recovery-before-sending), before sending a POST.
 The state belongs to the vt-mcp process and is shared by clients using the same
 service, credential and state directory. Configure `XDG_STATE_HOME` on that process
@@ -99,6 +102,69 @@ preserving pending and completed results. Later API reads confirmed both candida
 analyses completed. The public rollout and separate direct SDK checks are now
 accepted; the native sessions retain their candidate-route scope, and the
 historical 0.7 read-only sessions retain theirs.
+
+## Network analysis and recovery
+
+Use `submit_url`, `reanalyze_domain` or `reanalyze_ip` when a new analysis is needed.
+A missing report remains unknown. Domain evidence does not establish a URL's safety.
+The tools ask VirusTotal to perform the operation; the local package never visits a
+target or calls the VirusTotal API directly. Standard sharing applies, including the
+complete URL and its query/fragment. Avoid URLs containing secrets.
+
+Before calling, generate a canonical lowercase UUIDv4 and **save it in the caller's
+existing durable task state**. For example, Python's `str(uuid.uuid4())` produces the
+required format. Retain the ID and its intended operation before sending, so a
+process restart can recover it. There is no confirmation parameter, automatic ID
+creation or additional local network-receipt store in this package.
+
+1. Call the chosen tool with its indicator and the retained `request_id`.
+2. On interruption, read `get_submission(request_id=...)` using the same ID and identity.
+3. When submitted, call `get_analysis(analysis_id=..., request_id=...)` with both values
+   from the receipt. Respect the returned polling delay and a finite task budget.
+
+Reusing an ID identifies the same operation, not a fresh rescan. A changed kind or
+normalized target conflicts without another dispatch. Do not replace the ID to retry
+an uncertain operation. A deliberate later analysis, or a corrected operation after
+a confirmed rejection, uses a new ID. The package never automatically retries POST.
+
+| Receipt status | Meaning and action |
+|---|---|
+| `submitted` | VTAI registered an analysis ID; read that selected analysis. This is not completion. |
+| `submission_unknown` | Acceptance or registration could not be confirmed. Recover the same receipt; uncertainty may be permanent. |
+| `rejected` | Confirmed rejection is terminal for this ID. Follow its closed error: correct input, resolve permission, or wait for quota before intentionally using a new ID. |
+
+Network receipts contain `status`, `mode`, `request_id`, `indicator_type`,
+`analysis_id`, `analysis_status`, `next_poll_after_seconds` and `can_resubmit:false`.
+Only rejected receipts add `error`, with a closed code/message, `retryable:false`
+and an optional retry delay. They contain neither raw targets nor file fields.
+MCP writes return `isError` for rejected/unknown outcomes and retain the receipt;
+reading such a receipt is a successful read of its actual state.
+
+Network analysis results preserve `request_id`, `indicator_type` and `report_id`
+instead of a file SHA-256. A pending result may have no report ID or link. Completed
+results require matching selected-analysis evidence and its typed VirusTotal report
+link, as checked by VTAI. Upstream analysis IDs can recur: an omitted `request_id`
+works only when the receipt is unambiguous; otherwise supply the receipt's ID after
+`receipt_conflict`. Never substitute the newest report for the selected analysis.
+
+With direct REST, POST JSON exactly `{"indicator_type":"url","indicator":"https://example.com/"}`
+to `/api/v3/network-submissions/{request_id}`, or use `domain`/`ip` with the matching
+indicator. Authenticate with your existing Agent Token and send
+`Content-Type: application/json` and `X-VTAI-Consent: standard-v1`. The stdio client
+sets those submission headers itself. Targets appear only in the JSON input, never
+in the receipt URL. Recover with GET on the same path and read
+`/api/v3/analyses/{analysis_id}?request_id={request_id}`. URL-encode the opaque analysis
+ID as one path segment. REST returns 202 for an uncertain submission, and a confirmed
+rejection returns its 422/403/429 error with `detail.submission` recovery metadata.
+
+OAuth network writes require both `vt:reports:read` and `vt:network-analysis:write`.
+The existing file-write permission does not grant network writes, and old grants do
+not expand automatically. Static Agent Tokens retain their VTAI rights and quotas.
+Receipt recovery makes no upstream call and consumes no query quota. A newly admitted
+network dispatch and each selected-analysis read use the ordinary query allowance.
+
+The following local-state and CLI submission sections apply to files. Network writes
+are MCP tools or direct REST operations; no new CLI subcommand is required.
 
 <a id="authorize-one-copy"></a>
 
@@ -275,12 +341,12 @@ access for every read.
 `status` is `pending` or `completed`. `analysis_status` preserves `queued`,
 `in-progress`, `completed` or null. Pending results can retain partial evidence.
 `not_available_yet` means no analysis evidence was available; `result_not_ready`
-means the provider reported completion but its matching file item was not yet
+means the provider reported completion but its matching typed result was not yet
 available. Completion requires the registered analysis to be completed with valid
-stats/results and one matching file item, as verified by VTAI.
+stats/results and a matching file or network result, as verified by VTAI.
 
 The returned stats, engine results and analysis date belong to **that analysis**.
-No latest file-report request replaces them. `retrieved_at` is the query time;
+No latest report request replaces them. `retrieved_at` is the query time;
 missing analysis date remains null. Failed or timed-out engines are evidence,
 not a fabricated global `failed` state. Labels and analysis content are untrusted
 data. [VirusTotal analysis object](https://docs.virustotal.com/reference/analyses-object).

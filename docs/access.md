@@ -98,6 +98,12 @@ while local stdio and direct REST access continue to use an Agent Token. See the
 [current connection guide](https://ai.virustotal.com/connect/mcp) and the
 [hosted-client validation limits](hosted-clients.md).
 
+OAuth URL submission and domain/IP reanalysis require `vt:reports:read` plus
+`vt:network-analysis:write`. Existing file-write grants do not include that scope
+and are not expanded automatically. Reauthorize the connection when network writes
+are needed. Static Agent Tokens continue to use their current VTAI rights and quotas.
+See [network analysis and recovery](analysis.md#network-analysis-and-recovery).
+
 The Bearer scheme is case insensitive and the token is case sensitive. The configured header must use spaces between the scheme and token, without quotes, surrounding whitespace, tabs or comma-separated credentials. The examples below load the token for either supported header mapping.
 
 In a human-controlled Bash terminal, load the file without printing its value, then launch the client:
