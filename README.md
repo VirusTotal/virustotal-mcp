@@ -36,7 +36,7 @@ vt-mcp --version
 
 A client configured with `uvx ... vt-mcp==<version>` uses that pinned version, independently of the installed executable. Update its pin or use the setup guide. Hosted HTTP connections use the deployed server; they do not need a local package upgrade. Keep existing tokens and submission receipts.
 
-Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. An unknown URL can use `submit_url`; domain and IP analyses can be refreshed with `reanalyze_domain` and `reanalyze_ip`. Retain a new UUIDv4 `request_id` before an intended network operation, then recover using that ID. Report lookups themselves do not start analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never automatically replay an uncertain submission or replace its request ID: recover its receipt first.
+Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. An unknown URL can use `submit_url`; domain and IP analyses can be refreshed with `reanalyze_domain` and `reanalyze_ip`. Retain a new UUIDv4 `request_id` before an intended network operation, then recover using that ID. VTAI report lookups do not explicitly submit an analysis request. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never automatically replay an uncertain submission or replace its request ID: recover its receipt first.
 
 ## Connect your client
 
