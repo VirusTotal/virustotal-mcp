@@ -36,7 +36,7 @@ vt-mcp --version
 
 A client configured with `uvx ... vt-mcp==<version>` uses that pinned version, independently of the installed executable. Update its pin or use the setup guide. Hosted HTTP connections use the deployed server; they do not need a local package upgrade. Keep existing tokens and submission receipts.
 
-Report errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. Unknown URLs can use a separate domain report as contextual evidence; it is not a verdict on the URL. Domain and IP lookups do not start new analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never replay an uncertain file submission: recover its receipt first.
+Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. Unknown URLs can use a separate domain report as contextual evidence; it is not a verdict on the URL. Domain and IP lookups do not start new analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never replay an uncertain file submission: recover its receipt first.
 
 ## Connect your client
 
