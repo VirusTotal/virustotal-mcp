@@ -21,7 +21,6 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -36,6 +35,7 @@ from vt_mcp.reports import (
     VTAIError,
     format_file_report,
     format_indicator_report,
+    parse_retry_after,
     report_http_error,
     validate_indicator,
     validate_report_values,
@@ -201,20 +201,20 @@ class VTAIClient:
                 upstream_error = isinstance(json.loads(payload).get("detail"), dict)
             except (ValueError, AttributeError, RecursionError):
                 pass
-        retry_after = response.headers.get("Retry-After", "")
-        seconds = int(retry_after) if re.fullmatch(r"[0-9]{1,8}", retry_after) else None
-        if status == 429 and seconds is None and 0 < len(retry_after) <= 64:
+        quota_source = "unknown"
+        if status == 429:
             try:
-                if any(ord(char) < 32 or ord(char) > 126 for char in retry_after):
-                    raise ValueError("Invalid retry delay")
-                retry_at = parsedate_to_datetime(retry_after)
-                if retry_at.utcoffset() is not None:
-                    seconds = max(0, math.ceil((retry_at - datetime.now(UTC)).total_seconds()))
-            except (TypeError, ValueError, OverflowError):
+                detail = json.loads(payload).get("detail")
+                candidate = detail.get("quota_source") if isinstance(detail, dict) else None
+                if candidate in ("actor", "upstream"):
+                    quota_source = candidate
+            except (ValueError, AttributeError, RecursionError):
                 pass
         raise report_http_error(
             status,
             kind,
-            retry_after_seconds=seconds,
+            retry_after_seconds=parse_retry_after(response.headers.get("Retry-After")),
             upstream_access_denied=upstream_error,
+            interface="stdio",
+            quota_source=quota_source,
         )

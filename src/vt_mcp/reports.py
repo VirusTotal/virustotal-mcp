@@ -15,8 +15,10 @@
 """Pure report validation and presentation shared by HTTP and direct readers."""
 
 import json
+import math
 import re
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Annotated, Any, Literal, Protocol
 from urllib.parse import quote, urlsplit
 
@@ -25,6 +27,25 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 MAX_RESPONSE_BYTES = 256 * 1024
 HASH_PATTERN = r"(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{40}|[a-fA-F0-9]{64})"
 INDICATOR_LIMITS = {"url": 8192, "domain": 1024, "ip": 45}
+RECOVERY_DOCUMENTATION_URL = "https://ai.virustotal.com/install.md"
+
+
+def parse_retry_after(value: str | None) -> int | None:
+    """Read a bounded delta or timezone-aware HTTP date without reflecting its text."""
+    if not isinstance(value, str) or not 0 < len(value) <= 64:
+        return None
+    if re.fullmatch(r"[0-9]{1,8}", value):
+        return int(value)
+    if any(ord(char) < 32 or ord(char) > 126 for char in value):
+        return None
+    try:
+        retry_at = parsedate_to_datetime(value)
+        if retry_at.utcoffset() is None:
+            return None
+        seconds = max(0, math.ceil((retry_at - datetime.now(UTC)).total_seconds()))
+        return seconds if seconds <= 99_999_999 else None
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 class ReportReader(Protocol):
@@ -84,6 +105,8 @@ def report_http_error(
     *,
     retry_after_seconds: int | None = None,
     upstream_access_denied: bool = False,
+    interface: Literal["stdio", "remote", "rest"] = "remote",
+    quota_source: Literal["actor", "upstream", "unknown"] = "unknown",
 ) -> VTAIError:
     """Map a semantic HTTP status to the shared, sanitized report error contract.
 
@@ -92,13 +115,70 @@ def report_http_error(
     it must not be inferred from caller-supplied MCP arguments.
     """
     kind = "hash" if kind == "file" else kind
+    interface = interface if interface in ("stdio", "remote", "rest") else "remote"
+    seconds = retry_after_seconds
+    if type(seconds) is not int or not 0 <= seconds <= 99_999_999:
+        seconds = None
+
+    def recovery(error: VTAIError, steps: list[str]) -> VTAIError:
+        error.error.update(next_steps=steps, documentation_url=RECOVERY_DOCUMENTATION_URL)
+        return error
+
     if status == 422:
         return VTAIError(f"invalid_{kind}", f"VTAI rejected the {kind} input.", http_status=status)
     if status == 404:
-        return VTAIError(
-            "not_found",
-            "No existing report was found. This does not establish safety.",
-            http_status=status,
+        steps = ["Verify the indicator and keep the result unknown; a missing report is not safe."]
+        if kind == "hash":
+            submit = {
+                "remote": (
+                    "compute their SHA256 and call submit_file with that hash and base64 bytes"
+                ),
+                "stdio": (
+                    "call submit_local_file with the file path, or submit_file with SHA256 "
+                    "and base64 bytes"
+                ),
+                "rest": (
+                    "compute their SHA256 and POST the bytes to /api/v3/submissions/{sha256} "
+                    "with Content-Type: application/octet-stream and X-VTAI-Consent: standard-v1"
+                ),
+            }[interface]
+            steps.append(
+                "If you have the actual file bytes and authority to submit them, "
+                f"{submit}. Standard analysis shares the file with VirusTotal."
+            )
+            recover = (
+                "GET /api/v3/submissions/{sha256} and GET /api/v3/analyses/{analysis_id}"
+                if interface == "rest"
+                else "get_submission and get_analysis"
+            )
+            steps.append(
+                f"Recover the receipt and its analysis with {recover}; "
+                "a hash alone cannot start a file analysis."
+            )
+        elif kind == "url":
+            domain_lookup = (
+                "GET /api/v3/domains/{domain}" if interface == "rest" else "get_domain_report"
+            )
+            steps.extend(
+                [
+                    "Verify the full URL. URL lookups retrieve existing reports and do not "
+                    "submit URLs for analysis.",
+                    f"For a URL with a domain host, use {domain_lookup} for separate domain "
+                    "evidence; it does not establish the URL's safety.",
+                ]
+            )
+        elif kind in {"domain", "ip"}:
+            steps.append(
+                "This lookup retrieves existing reports; it does not submit domains or IPs "
+                "for analysis."
+            )
+        return recovery(
+            VTAIError(
+                "not_found",
+                "No existing report was found. This does not establish safety.",
+                http_status=status,
+            ),
+            steps,
         )
     if status in {401, 403}:
         if upstream_access_denied:
@@ -113,15 +193,26 @@ def report_http_error(
             http_status=status,
         )
     if status == 429:
-        seconds = retry_after_seconds
-        if type(seconds) is not int or not 0 <= seconds <= 99_999_999:
-            seconds = None
-        return VTAIError(
+        error = VTAIError(
             "rate_limited",
             "The VTAI or upstream quota is exhausted. Retry later.",
             retryable=True,
             http_status=status,
             retry_after_seconds=seconds,
+        )
+        error.error["quota_source"] = (
+            quota_source if quota_source in ("actor", "upstream", "unknown") else "unknown"
+        )
+        return recovery(
+            error,
+            [
+                "Wait at least retry_after_seconds before another lookup when it is provided; "
+                "otherwise defer the lookup instead of retrying in a tight loop.",
+                "Reuse the existing credential; new registrations are not a quota "
+                "recovery mechanism.",
+                "Deduplicate repeated lookups and reuse recent successful results "
+                "when appropriate.",
+            ],
         )
     if status == 504:
         return VTAIError(
@@ -130,12 +221,24 @@ def report_http_error(
             retryable=True,
             http_status=status,
         )
-    return VTAIError(
+    error = VTAIError(
         "upstream_error",
         "VTAI could not complete the request.",
         retryable=status >= 500,
         http_status=status,
+        retry_after_seconds=seconds if status == 503 else None,
     )
+    if status == 503:
+        return recovery(
+            error,
+            [
+                "Keep the existing credential. This is a temporary service failure, "
+                "not a missing report.",
+                "Wait at least retry_after_seconds before another lookup when it is provided; "
+                "otherwise defer the lookup instead of retrying in a tight loop.",
+            ],
+        )
+    return error
 
 
 class AIInsight(BaseModel):

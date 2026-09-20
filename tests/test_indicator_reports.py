@@ -146,7 +146,7 @@ async def test_controlled_errors_never_leak_or_retry(kind, status, code, retryab
     assert error["code"] == (f"invalid_{kind}" if status == 422 else code)
     assert error["http_status"] == status
     assert error["retryable"] is retryable
-    assert error["retry_after_seconds"] == (17 if status == 429 else None)
+    assert error["retry_after_seconds"] == (17 if status in {429, 503} else None)
     assert TOKEN not in str(error)
     assert len(calls) == 1
 

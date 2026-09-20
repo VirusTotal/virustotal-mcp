@@ -32,7 +32,7 @@ from vt_mcp.analyses import (
     validate_analysis_id,
     validate_sha256,
 )
-from vt_mcp.reports import MAX_RESPONSE_BYTES
+from vt_mcp.reports import MAX_RESPONSE_BYTES, parse_retry_after
 from vt_mcp.vtai_client import VTAIClient
 
 SUBMIT_TIMEOUT = 130.0
@@ -89,7 +89,9 @@ class AnalysisClient(VTAIClient):
                     if response.status_code not in ({200, 202} if method == "POST" else {200}):
                         detail = raw.get("detail") if isinstance(raw, dict) else None
                         detail = detail if isinstance(detail, dict) else {}
-                        retry = detail.get("retry_after_seconds")
+                        retry = parse_retry_after(response.headers.get("Retry-After"))
+                        if retry is None:
+                            retry = detail.get("retry_after_seconds")
                         raise analysis_http_error(
                             response.status_code, code=detail.get("code"), retry_after_seconds=retry
                         )
