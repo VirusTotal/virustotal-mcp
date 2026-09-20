@@ -1,7 +1,7 @@
 # Find and connect to VirusTotal MCP
 
 Connect to the hosted endpoint or install
-[`vt-mcp` 0.9.0 from PyPI](https://pypi.org/project/vt-mcp/0.9.0/) for local stdio.
+[`vt-mcp` 0.9.1 from PyPI](https://pypi.org/project/vt-mcp/0.9.1/) for local stdio.
 The package and the public source repository,
 [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), use
 Apache-2.0. Installation from PyPI does not require a GitHub account. The historical
@@ -21,7 +21,7 @@ public source repository. GitHub Actions OIDC establishes the corporate namespac
 publication is bound to repository ID `1361592455`. The package README carries the
 matching `mcp-name` ownership marker.
 
-Registry metadata **0.9.0** updates the local package to **vt-mcp 0.9.0**, which
+Registry metadata **0.9.0** updates the local package to **vt-mcp 0.9.1**, which
 adds URL submission, domain/IP reanalysis and recovery using caller-retained request IDs.
 It retains the OAuth-capable endpoint, VirusTotal icon and public repository URL and ID.
 Registry and package
@@ -47,7 +47,7 @@ credential for local stdio and direct REST access; MCP OAuth tokens are not REST
 API keys. Reuse credentials rather than registering again after an error or quota
 response.
 
-The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.0`, so uv
+The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.1`, so uv
 selects a supported interpreter. Set `VTAI_TOKEN_FILE` to the path of a protected
 file containing only your VTAI token, for example `/home/user/.config/vt-mcp/token`.
 The Registry input is the file path; the credential stays in that file. Restrict
@@ -81,7 +81,7 @@ Run `publish` with the reviewed metadata commit on main. Before requesting OIDC,
 the helper checks PyPI's name, version and README ownership marker, and requires
 exactly the wheel and source distribution, neither yanked. Their SHA-256 hashes
 must match the corporate release's `SHA256SUMS` and GitHub asset digests. The
-annotated `v0.9.0` tag object, package source commit and checksum manifest are
+annotated `v0.9.1` tag object, package source commit and checksum manifest are
 pinned independently of the metadata commit. This verifies existing published
 bytes without rebuilding or uploading them. A moved tag, changed release,
 partial upload or mismatched source blocks publication.

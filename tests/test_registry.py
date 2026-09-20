@@ -31,7 +31,7 @@ registry = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(registry)
 CORPORATE, PERSONAL = registry.IDENTITIES
 SHA = "a" * 40
-PACKAGE_SOURCE_SHA = "db80760bb3e8c6c14b95582015f820c2ece59ed5"
+PACKAGE_SOURCE_SHA = "7ab8960dcee63bb6ebdce4d40bc77247996d2935"
 MARKER = "SYNTHETIC_SECRET_MUST_NOT_ESCAPE"
 # Independently fixed from each repository's observed GitHub sub_claim_prefix.
 SUBJECTS = {
@@ -176,14 +176,14 @@ def harness(tmp_path, monkeypatch):
         after_mutation=None,
     )
     state.checksums = (
-        f"{'1' * 64}  vt_mcp-0.9.0-py3-none-any.whl\n{'2' * 64}  vt_mcp-0.9.0.tar.gz\n"
+        f"{'1' * 64}  vt_mcp-0.9.1-py3-none-any.whl\n{'2' * 64}  vt_mcp-0.9.1.tar.gz\n"
     ).encode()
     manifest_sha = hashlib.sha256(state.checksums).hexdigest()
     monkeypatch.setitem(
         registry.IDENTITIES[CORPORATE],
         "package_release",
         {
-            "version": "0.9.0",
+            "version": "0.9.1",
             "source_sha": PACKAGE_SOURCE_SHA,
             "tag_object_sha": "b" * 40,
             "manifest_sha256": manifest_sha,
@@ -192,18 +192,18 @@ def harness(tmp_path, monkeypatch):
     state.pypi = {
         "info": {
             "name": "vt-mcp",
-            "version": "0.9.0",
+            "version": "0.9.1",
             "description": "<!-- mcp-name: io.github.VirusTotal/virustotal-mcp -->\n",
         },
         "urls": [
             {
-                "filename": "vt_mcp-0.9.0-py3-none-any.whl",
+                "filename": "vt_mcp-0.9.1-py3-none-any.whl",
                 "packagetype": "bdist_wheel",
                 "digests": {"sha256": "1" * 64},
                 "yanked": False,
             },
             {
-                "filename": "vt_mcp-0.9.0.tar.gz",
+                "filename": "vt_mcp-0.9.1.tar.gz",
                 "packagetype": "sdist",
                 "digests": {"sha256": "2" * 64},
                 "yanked": False,
@@ -211,14 +211,14 @@ def harness(tmp_path, monkeypatch):
         ],
     }
     state.release_responses = {
-        f"repos/{CORPORATE}/git/ref/tags/v0.9.0": {"object": {"type": "tag", "sha": "b" * 40}},
+        f"repos/{CORPORATE}/git/ref/tags/v0.9.1": {"object": {"type": "tag", "sha": "b" * 40}},
         f"repos/{CORPORATE}/git/tags/{'b' * 40}": {
-            "tag": "v0.9.0",
+            "tag": "v0.9.1",
             "object": {"type": "commit", "sha": PACKAGE_SOURCE_SHA},
             "message": f"Release\nSHA256SUMS-SHA256: {manifest_sha}\n",
         },
-        f"repos/{CORPORATE}/releases/tags/v0.9.0": {
-            "tag_name": "v0.9.0",
+        f"repos/{CORPORATE}/releases/tags/v0.9.1": {
+            "tag_name": "v0.9.1",
             "draft": False,
             "prerelease": False,
             "published_at": "2026-09-12T19:00:00Z",
@@ -231,13 +231,13 @@ def harness(tmp_path, monkeypatch):
                 },
                 {
                     "id": 2,
-                    "name": "vt_mcp-0.9.0-py3-none-any.whl",
+                    "name": "vt_mcp-0.9.1-py3-none-any.whl",
                     "state": "uploaded",
                     "digest": f"sha256:{'1' * 64}",
                 },
                 {
                     "id": 3,
-                    "name": "vt_mcp-0.9.0.tar.gz",
+                    "name": "vt_mcp-0.9.1.tar.gz",
                     "state": "uploaded",
                     "digest": f"sha256:{'2' * 64}",
                 },
@@ -653,13 +653,13 @@ def test_publish_keeps_previous_manifests_and_uses_existing_package(harness):
     assert result["before"][PERSONAL] == result["after"][PERSONAL]
     assert result["after"][PERSONAL]["status"] == "deleted"
     assert result["after"][CORPORATE]["version"] == "0.9.0"
-    assert result["pypi"]["version"] == "0.9.0"
+    assert result["pypi"]["version"] == "0.9.1"
     assert result["pypi"]["source_sha"] == PACKAGE_SOURCE_SHA != result["sha"]
     assert result["pypi"]["files"] == {
-        "vt_mcp-0.9.0-py3-none-any.whl": "1" * 64,
-        "vt_mcp-0.9.0.tar.gz": "2" * 64,
+        "vt_mcp-0.9.1-py3-none-any.whl": "1" * 64,
+        "vt_mcp-0.9.1.tar.gz": "2" * 64,
     }
-    assert harness.pypi_reads == ["0.9.0"]
+    assert harness.pypi_reads == ["0.9.1"]
 
 
 def test_publication_allows_registry_to_update_computed_latest_flag(harness):
@@ -821,11 +821,11 @@ def test_release_provenance_must_match_public_package(harness, problem):
     harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
     prefix = f"repos/{CORPORATE}"
     tag = harness.release_responses[f"{prefix}/git/tags/{'b' * 40}"]
-    release = harness.release_responses[f"{prefix}/releases/tags/v0.9.0"]
+    release = harness.release_responses[f"{prefix}/releases/tags/v0.9.1"]
     if problem == "lightweight_tag":
-        harness.release_responses[f"{prefix}/git/ref/tags/v0.9.0"]["object"]["type"] = "commit"
+        harness.release_responses[f"{prefix}/git/ref/tags/v0.9.1"]["object"]["type"] = "commit"
     elif problem == "moved_tag":
-        harness.release_responses[f"{prefix}/git/ref/tags/v0.9.0"]["object"]["sha"] = "c" * 40
+        harness.release_responses[f"{prefix}/git/ref/tags/v0.9.1"]["object"]["sha"] = "c" * 40
     elif problem == "wrong_source":
         # A metadata commit is not a replacement package release.
         tag["object"]["sha"] = SHA
@@ -854,7 +854,7 @@ def test_manifest_uses_only_a_path_for_stdio_credential():
     value = manifest(CORPORATE)
     (package,) = value["packages"]
     assert package["registryType"] == "pypi" and package["identifier"] == "vt-mcp"
-    assert package["version"] == "0.9.0" and value["version"] == "0.9.0"
+    assert package["version"] == "0.9.1" and value["version"] == "0.9.0"
     assert package["transport"] == {"type": "stdio"} and package["runtimeHint"] == "uvx"
     (setting,) = package["environmentVariables"]
     assert setting["name"] == "VTAI_TOKEN_FILE"
