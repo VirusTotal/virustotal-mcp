@@ -306,7 +306,7 @@ async def test_new_analysis_tool_over_real_stdio_process(fixture):
     )
     async with Client(parameters, read_timeout_seconds=15) as client:
         tools = (await client.list_tools()).tools
-        assert len(tools) == 8
+        assert len(tools) == 11
         result = await client.call_tool("get_analysis", {"analysis_id": ANALYSIS_ID})
     assert not result.is_error and result.structured_content == analysis_response()
     assert json.loads(result.content[0].text) == result.structured_content

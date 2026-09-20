@@ -172,6 +172,32 @@ def report_http_error(
                 "This lookup retrieves existing reports; it does not submit domains or IPs "
                 "for analysis."
             )
+        if kind in {"url", "domain", "ip"}:
+            operation = {"url": "submit_url", "domain": "reanalyze_domain", "ip": "reanalyze_ip"}[
+                kind
+            ]
+            submit = (
+                "POST JSON with indicator_type and indicator to "
+                "/api/v3/network-submissions/{request_id}, using Content-Type: application/json "
+                "and X-VTAI-Consent: standard-v1"
+                if interface == "rest"
+                else f"call {operation} with the indicator and request_id"
+            )
+            recover = (
+                "GET /api/v3/network-submissions/{request_id}"
+                if interface == "rest"
+                else "get_submission(request_id)"
+            )
+            steps.extend(
+                [
+                    "If a new analysis is needed and you have authority for standard VirusTotal "
+                    "sharing, retain a new canonical lowercase UUIDv4 request_id first, "
+                    f"then {submit}.",
+                    f"After interruption recover with {recover}; never automatically replay an "
+                    "uncertain POST or replace its request ID. Use the registered analysis_id and "
+                    "request_id to read the selected analysis.",
+                ]
+            )
         return recovery(
             VTAIError(
                 "not_found",

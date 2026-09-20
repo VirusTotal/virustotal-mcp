@@ -24,11 +24,18 @@ from collections.abc import Generator
 from contextlib import closing
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, Protocol
+from urllib.parse import quote
 
 import anyio
 from pydantic import BaseModel, ConfigDict, Field
 
-from vt_mcp.reports import MAX_RESPONSE_BYTES, VTAIError, format_file_report, validate_report_values
+from vt_mcp.reports import (
+    MAX_RESPONSE_BYTES,
+    VTAIError,
+    format_file_report,
+    validate_indicator,
+    validate_report_values,
+)
 
 MAX_SUBMISSION_BYTES = 32_000_000
 MAX_INLINE_SUBMISSION_BYTES = 24_000_000
@@ -37,6 +44,9 @@ _BASE64_BLOCK_CHARS = 64 * 1024
 MAX_ANALYSIS_ID_BYTES = 1024
 SHA256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 Count = Annotated[int, Field(ge=0)]
+NetworkKind = Literal["url", "domain", "ip"]
+_REQUEST_ID_PATTERN = r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+RequestID = Annotated[str, Field(pattern=f"^{_REQUEST_ID_PATTERN}$")]
 _ERRORS = {
     "invalid_input": (422, "Invalid analysis or submission input", False),
     "consent_required": (422, "Explicit standard submission consent is required", False),
@@ -78,17 +88,55 @@ _ERRORS = {
         False,
     ),
     "access_denied": (403, "VTAI rejected this request. Check the credential and access.", False),
+    "permission_denied": (403, "VirusTotal did not permit this analysis request.", False),
+}
+_NETWORK_REJECTIONS = {
+    "invalid_input": "VirusTotal rejected this network indicator. "
+    "Correct it and use a new request_id.",
+    "permission_denied": "VirusTotal does not permit this network analysis. "
+    "Do not retry unchanged.",
+    "rate_limited": "VirusTotal rejected this network analysis because its quota is exhausted. "
+    "Wait before using a new request_id.",
 }
 
 
 class AnalysisReader(Protocol):
-    async def get_analysis(self, analysis_id: str) -> dict[str, Any]: ...
+    async def get_analysis(
+        self, analysis_id: str, *, request_id: str | None = None
+    ) -> dict[str, Any]: ...
 
 
 class SubmissionReader(Protocol):
     async def submit_file(self, sha256: str, content_base64: str) -> dict[str, Any]: ...
 
     async def get_submission(self, sha256: str) -> dict[str, Any]: ...
+
+
+class NetworkSubmissionReader(Protocol):
+    async def submit_network(
+        self, indicator_type: NetworkKind, indicator: str, request_id: str
+    ) -> dict[str, Any]: ...
+
+    async def get_network_submission(self, request_id: str) -> dict[str, Any]: ...
+
+
+def validate_request_id(request_id: str) -> str:
+    """Require the caller's retained canonical lowercase UUIDv4, without generating one."""
+    if not isinstance(request_id, str) or not re.fullmatch(_REQUEST_ID_PATTERN, request_id):
+        raise AnalysisError("invalid_input")
+    return request_id
+
+
+def validate_network_submission(indicator_type: str, indicator: str, request_id: str) -> None:
+    validate_request_id(request_id)
+    if not isinstance(indicator_type, str) or indicator_type not in {"url", "domain", "ip"}:
+        raise AnalysisError("invalid_input")
+    try:
+        validate_indicator(indicator, indicator_type)
+        if any(unicodedata.category(char).startswith("C") for char in indicator):
+            raise AnalysisError("invalid_input")
+    except VTAIError:
+        raise AnalysisError("invalid_input") from None
 
 
 class AnalysisError(VTAIError):
@@ -107,7 +155,8 @@ class AnalysisError(VTAIError):
         super().__init__(
             code,
             message,
-            retryable=retryable,
+            retryable=retryable
+            and not (isinstance(submission, dict) and submission.get("status") == "rejected"),
             http_status=http_status or status,
             retry_after_seconds=retry_after_seconds,
         )
@@ -122,7 +171,7 @@ def analysis_http_error(
     submission: dict | None = None,
 ) -> AnalysisError:
     """Use semantic HTTP status and a closed code, never a provider's message."""
-    if status in (401, 403):
+    if status in (401, 403) and not (status == 403 and code == "permission_denied"):
         code = "access_denied"
     elif not isinstance(code, str) or code not in _ERRORS or _ERRORS[code][0] != status:
         code = {
@@ -256,12 +305,11 @@ class _Coverage(BaseModel):
     categories: list[str]
 
 
-class _Analysis(BaseModel):
+class _AnalysisEvidence(BaseModel):
     model_config = ConfigDict(extra="ignore", strict=True)
     status: Literal["pending", "completed"]
     analysis_id: str
     analysis_status: Literal["queued", "in-progress", "completed"] | None
-    sha256: SHA256
     source: Literal["VirusTotal via VTAI"]
     retrieved_at: str
     analysis_date: str | None
@@ -269,28 +317,70 @@ class _Analysis(BaseModel):
     results: dict[str, _Engine] | None
     detections: list[str]
     coverage: _Coverage
-    report_url: str
     next_poll_after_seconds: Literal[5] | None
     pending_reason: Literal["processing", "not_available_yet", "result_not_ready"] | None
+
+
+class _Analysis(_AnalysisEvidence):
+    sha256: SHA256
+    report_url: str
+
+
+class _NetworkAnalysis(_AnalysisEvidence):
+    request_id: RequestID
+    indicator_type: NetworkKind
+    report_id: str | None
+    report_url: str | None
+
+
+def _validate_network_report(data: _NetworkAnalysis) -> None:
+    validate_request_id(data.request_id)
+    if data.report_id is None:
+        if data.report_url is not None or data.status == "completed":
+            raise ValueError
+        return
+    if data.indicator_type == "url":
+        if not re.fullmatch(r"[0-9a-f]{64}", data.report_id):
+            raise ValueError
+    else:
+        validate_indicator(data.report_id, data.indicator_type)
+    kind = "ip-address" if data.indicator_type == "ip" else data.indicator_type
+    prefix = f"https://www.virustotal.com/gui/{kind}/"
+    if data.report_url not in {prefix + quote(data.report_id, safe=""), prefix + data.report_id}:
+        raise ValueError
 
 
 def format_analysis_response(
     raw: Any,
     analysis_id: str,
     *,
+    request_id: str | None = None,
     forbidden_values: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """Validate only the selected analysis. No I/O, current clock or latest report."""
     validate_analysis_id(analysis_id)
+    if request_id is not None:
+        validate_request_id(request_id)
     _bounded(raw, forbidden_values)
     try:
-        data = _Analysis.model_validate(raw)
+        network = isinstance(raw, dict) and bool({"request_id", "indicator_type"} & raw.keys())
+        if network:
+            if "sha256" in raw:
+                raise ValueError
+            data = _NetworkAnalysis.model_validate(raw)
+            if request_id is not None and data.request_id != request_id:
+                raise ValueError
+            _validate_network_report(data)
+        else:
+            if request_id is not None:
+                raise ValueError
+            data = _Analysis.model_validate(raw)
+            if data.report_url != f"https://www.virustotal.com/gui/file/{data.sha256}":
+                raise ValueError
         if data.analysis_id != analysis_id:
             raise ValueError
         _utc(data.retrieved_at)
         if data.analysis_date is not None and _utc(data.analysis_date).timestamp() < 0:
-            raise ValueError
-        if data.report_url != f"https://www.virustotal.com/gui/file/{data.sha256}":
             raise ValueError
         for key in data.stats or {}:
             _text(key, 128)
@@ -339,10 +429,80 @@ def format_analysis_response(
         elif data.pending_reason != "processing":
             raise ValueError
         result = data.model_dump()
-    except (ValueError, TypeError, AttributeError, OverflowError, OSError):
+    except (ValueError, TypeError, AttributeError, OverflowError, OSError, VTAIError):
         raise AnalysisError("invalid_response") from None
     _bounded(result, forbidden_values)
     return result
+
+
+class _NetworkRejection(BaseModel):
+    model_config = ConfigDict(extra="ignore", strict=True)
+    code: Literal["invalid_input", "permission_denied", "rate_limited"]
+    message: str
+    retryable: Literal[False]
+    retry_after_seconds: int | None = Field(ge=0, le=99_999_999)
+
+
+class _NetworkSubmission(BaseModel):
+    model_config = ConfigDict(extra="ignore", strict=True)
+    status: Literal["submitted", "submission_unknown", "rejected"]
+    mode: Literal["standard"]
+    request_id: RequestID
+    indicator_type: NetworkKind
+    analysis_id: str | None
+    analysis_status: None
+    next_poll_after_seconds: Literal[5] | None
+    can_resubmit: Literal[False]
+    error: _NetworkRejection | None = None
+
+
+def format_network_submission_response(
+    raw: Any,
+    request_id: str,
+    *,
+    indicator_type: NetworkKind | None = None,
+    forbidden_values: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    validate_request_id(request_id)
+    _bounded(raw, forbidden_values)
+    try:
+        data = _NetworkSubmission.model_validate(raw)
+        if (
+            data.request_id != request_id
+            or (indicator_type is not None and data.indicator_type != indicator_type)
+            or raw["can_resubmit"] is not False
+        ):
+            raise ValueError
+        if data.status == "submitted":
+            validate_analysis_id(data.analysis_id)
+            if data.next_poll_after_seconds != 5:
+                raise ValueError
+        elif data.analysis_id is not None or data.next_poll_after_seconds is not None:
+            raise ValueError
+        if data.status == "rejected":
+            if data.error is None or raw["error"]["retryable"] is not False:
+                raise ValueError
+            data.error.message = _NETWORK_REJECTIONS[data.error.code]
+        elif "error" in raw:
+            raise ValueError
+        result = data.model_dump(exclude={"error"} if data.error is None else set())
+    except (ValueError, TypeError, KeyError, VTAIError):
+        raise AnalysisError("invalid_response") from None
+    _bounded(result, forbidden_values)
+    return result
+
+
+def unknown_network_submission(request_id: str, indicator_type: NetworkKind) -> dict[str, Any]:
+    return {
+        "status": "submission_unknown",
+        "mode": "standard",
+        "request_id": request_id,
+        "indicator_type": indicator_type,
+        "analysis_id": None,
+        "analysis_status": None,
+        "next_poll_after_seconds": None,
+        "can_resubmit": False,
+    }
 
 
 class _Submission(BaseModel):

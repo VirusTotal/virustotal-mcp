@@ -86,7 +86,15 @@ async def test_shared_factory_preserves_local_surface_and_four_reports(
             tool
             for tool in local_tools["tools"]
             if tool["name"]
-            not in {"get_analysis", "get_submission", "submit_file", "submit_local_file"}
+            not in {
+                "get_analysis",
+                "get_submission",
+                "submit_file",
+                "submit_local_file",
+                "submit_url",
+                "reanalyze_domain",
+                "reanalyze_ip",
+            }
         ]
         assert local_tools == (await direct_client.list_tools()).model_dump()
         assert bindings == []

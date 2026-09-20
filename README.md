@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.VirusTotal/virustotal-mcp -->
 
-Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file submission and analysis recovery.
+Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file and network analysis submission, and receipt recovery.
 
 Use the free VTAI service with its current access limits. You need a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp); you do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
 
@@ -11,7 +11,7 @@ Use the free VTAI service with its current access limits. You need a **VTAI toke
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.5'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.0'
 vt-mcp --version
 ```
 
@@ -30,13 +30,13 @@ Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the config
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
 ```sh
-uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.8.5'
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.0'
 vt-mcp --version
 ```
 
 A client configured with `uvx ... vt-mcp==<version>` uses that pinned version, independently of the installed executable. Update its pin or use the setup guide. Hosted HTTP connections use the deployed server; they do not need a local package upgrade. Keep existing tokens and submission receipts.
 
-Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. Unknown URLs can use a separate domain report as contextual evidence; it is not a verdict on the URL. Domain and IP lookups do not start new analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never replay an uncertain file submission: recover its receipt first.
+Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. Unknown files can be submitted when the agent has their actual bytes and authority to share them. An unknown URL can use `submit_url`; domain and IP analyses can be refreshed with `reanalyze_domain` and `reanalyze_ip`. Retain a new UUIDv4 `request_id` before an intended network operation, then recover using that ID. Report lookups themselves do not start analyses. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never automatically replay an uncertain submission or replace its request ID: recover its receipt first.
 
 ## Connect your client
 
@@ -95,13 +95,18 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_domain_report(domain)` | Retrieve domain intelligence; no scheme, path or port. |
 | `get_ip_report(ip)` | Retrieve intelligence for one IPv4 or IPv6 address. |
 | `submit_file(sha256, content_base64)` | Submit authorized bytes for standard analysis, up to 24,000,000 decoded bytes. |
-| `get_submission(sha256)` | Recover this account's submission receipt without sending the file again. |
-| `get_analysis(analysis_id)` | Read the selected analysis registered to this VTAI account. |
+| `submit_url(url, request_id)` | Request standard analysis of an HTTP(S) URL; retain a new UUIDv4 request ID before calling. |
+| `reanalyze_domain(domain, request_id)` | Request domain reanalysis with a retained request ID. |
+| `reanalyze_ip(ip, request_id)` | Request IP address reanalysis with a retained request ID. |
+| `get_submission(sha256=None, request_id=None)` | Recover an owned receipt using exactly one file hash or network request ID. |
+| `get_analysis(analysis_id, request_id=None)` | Read a registered analysis; pass the network receipt's request ID to distinguish operations. |
 | `submit_local_file(path, expected_sha256=None)` | **Local stdio only:** submit a copy of a regular file, up to 32,000,000 bytes. An expected digest must match that copy. |
 
-The seven common tools are available through HTTP and stdio. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
+With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio has eleven. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
 
 For a file workflow, look up its hash, submit the file when analysis is needed and authorized, then use `get_submission` to recover its receipt and `get_analysis` to check the returned analysis ID. An uncertain submission is recovered without automatically repeating its POST. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
+
+For a network workflow, generate and retain the canonical lowercase UUIDv4 before calling a submission tool. After interruption, use `get_submission(request_id)`; do not generate another ID to resolve uncertainty. A later intentional analysis requires a new ID. Network receipts contain no raw target. See [analysis and recovery](docs/analysis.md#network-analysis-and-recovery).
 
 MCP submission tools have no per-call human confirmation parameter. Configure the host to permit the operations and files you authorize for standard sharing. **Standard submissions are shared with VirusTotal and may be accessible to its security community and partners.** Inline content also passes through your MCP host. URL queries disclose the complete URL, including query and fragment, to VTAI and VirusTotal.
 
@@ -122,11 +127,11 @@ Removing the MCP connection from a client does not revoke VTAI access. Use [acce
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.8.5/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.0/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
 
-Version 0.8.5 adds actionable missing-report and quota guidance, and preserves service retry delays in the local client. Tool schemas, account rights and quotas retain their behavior. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
+Version 0.9.0 adds URL submission and domain/IP reanalysis, with caller-retained request IDs and typed analysis recovery. Existing file calls and receipt shapes remain compatible. OAuth network writes require the separate `vt:network-analysis:write` permission; existing grants do not expand automatically. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 
 ## License
 
