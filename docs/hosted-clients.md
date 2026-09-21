@@ -2,16 +2,19 @@
 
 The tested client guides remain [Agy](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), then [Codex](clients.md#codex-cli--remote-http).
-This page covers separate hosted connections. Host setup requirements were
-checked on 2026-09-08; VTAI's OAuth status was updated on 2026-09-15. No hosted
-account or end-to-end hosted connection has been validated.
+This page covers separate hosted connections. Host setup requirements below retain
+their 2026-09-08 review date; VTAI capabilities were synchronized on 2026-09-21.
+The [validation scope](#validation-scope) distinguishes actual staged OAuth flows
+from unverified ChatGPT and Claude hosted account/model workflows.
 
 VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It supports MCP OAuth
 and also accepts a static VTAI Agent Token through one credential header,
-including `Authorization: Bearer`. The service exposes seven tools, with file
-submission and receipt recovery. Protected-resource and authorization-server
-metadata are live. A successful CLI session does not establish hosted-account
-access or a validated hosted connection.
+including `Authorization: Bearer`. The service exposes ten tools: four report
+lookups, file and URL submission, domain/IP reanalysis, and receipt and analysis
+reads. Protected-resource and authorization-server metadata, DCR and CIMD are
+live. Local stdio additionally provides `submit_local_file`; remote HTTP cannot
+read local paths. A successful CLI session does not establish a different
+hosted account or model workflow.
 
 ## Claude organization request-header beta
 
@@ -42,7 +45,7 @@ argument. The host may request confirmation independently.
 
 ## ChatGPT public connection and individual OAuth
 
-**Status: VTAI OAuth is live; hosted account and connection validation remain pending.**
+**Status: VTAI OAuth and CIMD are live; ChatGPT and Claude hosted account/model workflows remain unverified.**
 ChatGPT's authenticated public MCP connection uses OAuth. A static VTAI token
 cannot be entered as an OAuth client secret. Its authorization contract includes
 PKCE S256, protected-resource and issuer discovery, and resource-bound access
@@ -55,11 +58,24 @@ quotas and receipt ownership. The resource is `https://ai.virustotal.com/mcp`,
 and the issuer is `https://ai.virustotal.com`. Clients can discover these through
 [protected-resource metadata](https://ai.virustotal.com/.well-known/oauth-protected-resource/mcp)
 and [authorization-server metadata](https://ai.virustotal.com/.well-known/oauth-authorization-server).
-The advertised registration endpoint supports DCR. Client ID Metadata Documents
-(CIMD) are not yet supported; a host requiring them needs a separate compatibility
-update. Configure the MCP URL without static headers for an OAuth connection and
-follow the host's sign-in and explicit consent flow. This infrastructure does not
-by itself establish compatibility with a particular hosted account or client.
+The advertised registration endpoint supports DCR, and discovery advertises
+Client ID Metadata Document (CIMD) support. Configure the MCP URL without static
+headers for OAuth and follow the host's sign-in and consent flow. Support for
+these protocols does not by itself establish compatibility with a hosted account.
+
+**ChatGPT CIMD limitation:** the [ChatGPT client document](https://chatgpt.com/oauth/client.json)
+reviewed on 2026-09-18 declares `private_key_jwt`. VTAI currently supports token
+authentication methods `none`, `client_secret_basic` and `client_secret_post`,
+not `private_key_jwt`. That CIMD route is therefore unsupported. An alternative
+registration route needs its own account-level validation; do not infer ChatGPT
+compatibility from CIMD discovery alone.
+
+For report and receipt reads, request `vt:reports:read`. File submission additionally
+requires `vt:submissions:write`; URL submission and domain/IP reanalysis require
+`vt:network-analysis:write` instead. Both write permissions require reports-read.
+Existing connections do not gain the new network scope through token refresh:
+reconnect and approve it when needed. Consent applies to the connection without
+a VTAI confirmation on every operation; the host's tool permissions still apply.
 
 Claude also supports OAuth for individual accounts. Use the exact callback and
 registration mode documented for the chosen host; a client secret and DCR are
@@ -70,6 +86,21 @@ HTTP. It requires Platform tunnel permissions, a runtime API credential and the
 correct ChatGPT workspace association. It does not replace the authenticated
 public endpoint required for plugin distribution. No tunnel is provisioned or
 validated by this project. [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels).
+
+## Validation scope
+
+On 2026-09-14, a native Codex browser login and domain report succeeded in staging.
+These were direct client calls, not model conversations or a hosted ChatGPT test.
+On 2026-09-15, an owned Smithery hosted connection completed CIMD authorization
+and consent, discovered the then-current seven tools and returned one domain
+report in staging. The check used the documented Smithery Connect API alias with
+a pinned CLI adaptation; it does not certify the unmodified CLI. A later call was
+denied after grant revocation, but its access token had already expired, so that
+observation does not prove immediate rejection of an unexpired token.
+
+Those staged flows establish their stated operations, not a hosted production
+login, every tool or a commercial-model workflow. They predate the new network
+tools and permission. ChatGPT and Claude hosted acceptance remain separate.
 
 ## First hosted acceptance query
 
@@ -83,11 +114,11 @@ Accept the connection only after observing the actual tool call and its result,
 not just a Connected label or an assistant's prose. Record the host/account
 mode, discovered tools, call name, domain, outcome, report link, source,
 analysis date, retrieval time and coverage. Exclude the credential and private
-conversation content from evidence. The current remote tool list has seven
+conversation content from evidence. The current remote tool list has ten
 entries; the local-file tool is available only through stdio.
 
 A missing report remains unknown; errors and incomplete coverage are not safety
-verdicts. A passing query does not validate file submission, refresh, revocation,
+verdicts. A passing query does not validate file or network submission, refresh, revocation,
 other tools or publication in a host's directory. Test those as separate flows.
 For temporary testing, remove the connector and revoke its access: use
 [Your connections](https://ai.virustotal.com/oauth/connections) for OAuth, or the
@@ -96,4 +127,8 @@ For temporary testing, remove the connector and revoke its access: use
 For OAuth acceptance, verify receipt isolation between identities, rejection of
 expired or revoked access, and refresh preserving the same VTAI identity. A
 submission test must use intentionally public inert bytes and recover its
-original receipt without repeating an ambiguous upload.
+original receipt without repeating an ambiguous upload. For an authorized network
+operation, persist a lowercase UUIDv4 before dispatch and recover with
+`get_submission(request_id=request_id)` through the same connection. Read
+`get_analysis(analysis_id, request_id=request_id)` within a finite polling budget.
+See [network analysis and recovery](analysis.md#network-analysis-and-recovery).

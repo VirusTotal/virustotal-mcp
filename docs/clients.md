@@ -2,15 +2,17 @@
 
 For automatic setup on Linux, macOS or Windows, choose your system in the [setup guide](https://ai.virustotal.com/connect/mcp). Manual shell examples below use POSIX syntax. Native package tests cover file handling and MCP protocol behavior; historical client/model validation keeps its original platform and version scope.
 
-These instructions cover **vt-mcp 0.8.5**, retaining the tool contract introduced in 0.8.0: seven common tools over remote HTTP or local stdio, and an eighth local-file tool over stdio. HTTP needs a compatible client and VTAI token, with no local Python installation; stdio needs the verified wheel. Four report tools and `get_analysis` remain read-only. `submit_file(sha256, content_base64)` submits up to 24,000,000 decoded bytes; `get_submission(sha256)` recovers the account’s receipt. Stdio additionally offers `submit_local_file(path, expected_sha256=None)` up to 32,000,000 bytes. See the [submission and recovery guide](analysis.md).
+Current setup targets **vt-mcp 0.9.1** and the compatible VTAI service: ten common tools over remote HTTP or local stdio, plus `submit_local_file` over stdio for eleven. The common tools are four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. HTTP needs no local Python installation and supports an Agent Token or browser OAuth; stdio uses the installed package and an Agent Token. Inline file submission accepts up to 24,000,000 decoded bytes; local file submission accepts up to 32,000,000 bytes. See [installation](../README.md#install-for-local-stdio) and [submission and recovery](analysis.md).
 
-Submission tools have no per-call human confirmation or consent argument. Configure the specific host permissions for files you authorize for standard sharing; host permissions still apply. **The 0.8 submission cycle has been exercised in staging and against a production candidate. The public rollout is accepted, with separate direct SDK checks.** The [historical native-client validation](client-validation-2026-09-07.md) covers five read-only tools in 0.7, not autonomous submission. Set up protected access using the [access guide](access.md), or the [README](../README.md#connect-your-client).
+The current instructions were synchronized on 2026-09-21. Dated validation records below retain their original client versions, tools and transport scope; they do not certify every current tool in each client. OAuth network writes require `vt:reports:read` plus `vt:network-analysis:write`; existing file-write grants do not expand automatically. Reconnect to approve that permission when needed. Host tool permissions and OAuth scopes are separate.
+
+Submission tools have no per-call human confirmation or consent argument. Configure the specific host permissions for files, URLs and network indicators you authorize for standard sharing; host permissions still apply. **The 0.8 submission cycle has been exercised in staging and against a production candidate. The public rollout is accepted, with separate direct SDK checks.** The [historical native-client validation](client-validation-2026-09-07.md) covers five read-only tools in 0.7, not autonomous submission. Set up protected access using the [access guide](access.md), or the [README](../README.md#connect-your-client).
 
 VT-MCP provides the submission capability; the client owner configures whether the host may use it without asking again. Agy, Claude Code and Codex have separate authorization policies. A tool appearing in discovery is not an approval, and a host prompt or denial is not a new VT-MCP consent requirement. The client-specific grants below preserve that distinction.
 
 Start with [Antigravity CLI (`agy`)](#antigravity-cli-agy), [Claude Code](#claude-code), or [Codex CLI](#codex-cli--remote-http). Other client guides follow those three.
 
-VTAI 0.8.1 adds static Bearer authentication as an alternative to `x-apikey`, using the same VTAI token, rights and quotas. The 0.8.5 stdio wrapper continues using `x-apikey`; the historical MIT distribution remains at 0.8.0. Send only one credential method per connection. The [scoped Bearer checks and deployment status](#bearer-authentication-validation) are separate from the historical `x-apikey` workflow evidence. See [authentication and diagnostics](access.md#choose-one-authentication-header).
+VTAI 0.8.1 adds static Bearer authentication as an alternative to `x-apikey`, using the same VTAI token, rights and quotas. The current stdio wrapper continues using `x-apikey`; the historical MIT distribution remains at 0.8.0. Send only one credential method per connection. The [scoped Bearer checks and deployment status](#bearer-authentication-validation) are separate from the historical `x-apikey` workflow evidence. See [authentication and diagnostics](access.md#choose-one-authentication-header).
 
 ## Antigravity CLI (`agy`)
 
@@ -22,7 +24,7 @@ agy mcp add --env VTAI_TOKEN_FILE="$HOME/.config/vt-mcp/token" virustotal vt-mcp
 
 Flags must precede the server name. Use an absolute executable path if needed. CLI 1.1.27 saved this entry in `~/.gemini/config/mcp_config.json`; its fields match [stdio.json](../examples/client-configs/stdio.json). Restart `agy` and inspect `/mcp`. Remove it with `agy mcp remove virustotal`. The native model login is separate from VTAI access; this setup does not require Vertex or ADC. [Official MCP documentation](https://antigravity.google/docs/cli/mcp/).
 
-For the full local 0.8 workflow, merge these eight specific rules into `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`, preserving existing settings. Grant submission tools only for tasks/files authorized for standard sharing; omit those entries for a read-only setup:
+For the current local tools, merge only the permissions your task needs into `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`, preserving existing settings. The eleven names below include optional file and network writes. For read-only access, omit `submit_file`, `submit_local_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. Keep the three network-write entries only for tasks that permit standard sharing of those indicators:
 
 ```json
 {
@@ -35,7 +37,10 @@ For the full local 0.8 workflow, merge these eight specific rules into `permissi
       "mcp(virustotal/get_analysis)",
       "mcp(virustotal/get_submission)",
       "mcp(virustotal/submit_file)",
-      "mcp(virustotal/submit_local_file)"
+      "mcp(virustotal/submit_local_file)",
+      "mcp(virustotal/submit_url)",
+      "mcp(virustotal/reanalyze_domain)",
+      "mcp(virustotal/reanalyze_ip)"
     ]
   }
 }
@@ -43,7 +48,7 @@ For the full local 0.8 workflow, merge these eight specific rules into `permissi
 
 Existing deny or ask rules take precedence over allow rules. Select a model available to your account with `agy models`; `agy -p 'Query the existing VirusTotal report for example.com and show its source, analysis date and coverage.'` runs a single prompt. A successful process exit alone does not prove that a tool ran: check the returned report or `--output-format stream-json` events. [Permissions](https://antigravity.google/docs/cli/permissions/), [headless execution](https://antigravity.google/docs/cli/headless/).
 
-The eight names above describe the server contract. Agy exercised the three-tool submission, receipt and analysis cycle in [staging and a production candidate](#version-08-submission-evidence); this does not establish calls to all eight tools. `get_analysis` and `get_submission` do not upload. agy can save a long tool result in its own generated output file; the historical analysis workflow used `view_file` to read that result. MCP grants do not prevent unrelated host tools from running or authorize arbitrary file disclosure.
+The eleven names above describe the current local server contract. Agy exercised the three-tool submission, receipt and analysis cycle in [staging and a production candidate](#version-08-submission-evidence); this historical run does not establish calls to all eleven current tools. `get_analysis` and `get_submission` do not upload. agy can save a long tool result in its own generated output file; the historical analysis workflow used `view_file` to read that result. MCP grants do not prevent unrelated host tools from running or authorize arbitrary file disclosure.
 
 With v0.7.0, CLI 1.1.27 completed all five read-only tools through stdio with its native login. A separate loopback test found that `$VAR`, `${VAR}` and `${env:VAR}` in HTTP headers were sent literally. Use the protected token-file stdio setup for this version; production HTTP remains unvalidated. See the [session evidence and limits](client-validation-2026-09-07.md).
 
@@ -77,17 +82,23 @@ For the **Bearer alternative on VTAI 0.8.1**, use this entry instead of the frag
 
 Claude Code documents environment expansion in `headers`; the text above is a reference, not a token value. This does not configure a Claude hosted connector or VTAI OAuth. [Official environment expansion](https://code.claude.com/docs/en/mcp). The [Bearer native checks](#bearer-authentication-validation) used this mechanism through QA proxies.
 
-Inspect `/mcp` or `claude mcp list`. Remove the stdio user entry with `claude mcp remove --scope user virustotal`. Remove the HTTP project entry from `.mcp.json` or use `claude mcp remove --scope project virustotal`, then restart/reload. The scope/transport options terminate the variadic `--env` option in the command above. CLI 2.1.257 help was checked on 2026-09-06 and 2.1.263 help on 2026-09-07. This setup is separate from a claude.ai connector. [Official Claude Code MCP documentation](https://code.claude.com/docs/en/mcp).
+Inspect `/mcp` inside the launched Claude Code session. If you run `claude mcp list` separately for an environment-based HTTP entry, launch it with the same protected token environment; a separate terminal does not inherit another session’s variables. Remove the stdio user entry with `claude mcp remove --scope user virustotal`. Remove the HTTP project entry from `.mcp.json` or use `claude mcp remove --scope project virustotal`, then restart/reload. The scope/transport options terminate the variadic `--env` option in the command above. CLI 2.1.257 help was checked on 2026-09-06 and 2.1.263 help on 2026-09-07. This setup is separate from a claude.ai connector. [Official Claude Code MCP documentation](https://code.claude.com/docs/en/mcp).
 
 For a per-run connection, save an adjusted [stdio fragment](../examples/client-configs/stdio.json) in a local file and pass `--strict-mcp-config --mcp-config /absolute/path/vt-mcp.json`. This loads only the specified MCP configuration while preserving your native login. For unattended reports, `--allowedTools` accepts the four exact names `mcp__virustotal__get_file_report`, `mcp__virustotal__get_url_report`, `mcp__virustotal__get_domain_report` and `mcp__virustotal__get_ip_report` as a comma-separated list. The verified run used those grants with `--permission-mode dontAsk`, `--tools ""` and `--print --verbose --output-format stream-json`. Inspect tool results and permission denials as well as the final response. [Claude Code permissions](https://code.claude.com/docs/en/permissions).
 
-For an authorized 0.8 workflow, use these exact common grants as the comma-separated `--allowedTools` value:
+For report reads, file submission and receipt recovery, use these exact grants as the comma-separated `--allowedTools` value; omit `submit_file` for read-only access:
 
 ```text
 mcp__virustotal__get_file_report,mcp__virustotal__get_url_report,mcp__virustotal__get_domain_report,mcp__virustotal__get_ip_report,mcp__virustotal__get_analysis,mcp__virustotal__get_submission,mcp__virustotal__submit_file
 ```
 
-For **stdio only**, append `mcp__virustotal__submit_local_file`. The seven HTTP tools do not read a local path. Keep `--permission-mode dontAsk`, `--tools ""` and the explicit MCP configuration if using the previously documented unattended pattern; a denied tool is a permission failure, not successful completion. Do not replace specific grants with a general permission bypass. The three-tool 0.8 submission cycle ran with specific grants through both transports in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below. The same per-run configuration flags accept the HTTP fragment. In the historical v0.7.0 sessions, CLI 2.1.263 completed all five read-only tools through stdio and public HTTP using a native Claude subscription. The runs used a terminal PTY; this observation does not establish that PTY is required. See the [session evidence](client-validation-2026-09-07.md).
+For authorized URL submission and domain/IP reanalysis, append these optional grants to the same comma-separated value:
+
+```text
+mcp__virustotal__submit_url,mcp__virustotal__reanalyze_domain,mcp__virustotal__reanalyze_ip
+```
+
+For **stdio only**, append `mcp__virustotal__submit_local_file` when local file submission is needed. The ten HTTP tools do not read a local path. Keep `--permission-mode dontAsk`, `--tools ""` and the explicit MCP configuration if using the previously documented unattended pattern; a denied tool is a permission failure, not successful completion. Do not replace specific grants with a general permission bypass. The three-tool 0.8 submission cycle ran with specific grants through both transports in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below. The same per-run configuration flags accept the HTTP fragment. In the historical v0.7.0 sessions, CLI 2.1.263 completed all five read-only tools through stdio and public HTTP using a native Claude subscription. The runs used a terminal PTY; this observation does not establish that PTY is required. See the [session evidence](client-validation-2026-09-07.md).
 
 ## Codex CLI — remote HTTP
 
@@ -134,7 +145,7 @@ Codex reads the variable named by `bearer_token_env_var` and sends `Authorizatio
 
 Restart and inspect `/mcp`, then [check the tools](#try-the-tools). Remove the connection with `codex mcp remove virustotal` and restart. Reuse the same active VTAI credential if you reconnect.
 
-With the 0.8 service, discovery should list the four reports plus `get_analysis`, `get_submission` and `submit_file`. Authorize those specific MCP operations through your normal host policy for the assigned task; the server does not add a per-call confirmation. Do not disable unrelated host safeguards. `submit_local_file` is absent over HTTP. The three-tool 0.8 workflow was exercised in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below.
+Current HTTP discovery should list the four reports plus `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. Authorize those specific MCP operations through your normal host policy for the assigned task; the server does not add a per-call confirmation. Do not disable unrelated host safeguards. `submit_local_file` is absent over HTTP. The three-tool 0.8 workflow was exercised in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below.
 
 For persistent authorization of the HTTP submission tool, use the [per-tool approval setting](#codex-approval-for-submission-tools) below.
 
@@ -148,14 +159,14 @@ codex mcp add virustotal --env VTAI_TOKEN_FILE="$HOME/.config/vt-mcp/token" -- v
 
 After adding the local server, set `tool_timeout_sec = 180` under `[mcp_servers.virustotal]` in `~/.codex/config.toml`, or use the [stdio configuration fragment](../examples/client-configs/codex-stdio.toml). This covers the 150-second local submission budget; Codex otherwise defaults to 60 seconds per tool. [Official timeout setting](https://learn.chatgpt.com/docs/extend/mcp).
 
-Local 0.8 discovery should additionally include `submit_local_file`, for eight tools. The path belongs to the local vt-mcp process; its optional expected SHA-256 must match the copied bytes. Allow this specific tool only for authorized standard-sharing tasks. Restart Codex and use `/mcp` to inspect the integration. Remove it with `codex mcp remove virustotal`. The command syntax was checked against Codex CLI `0.153.4` and [official OpenAI documentation](https://learn.chatgpt.com/docs/extend/mcp) on 2026-09-06.
+Current local discovery should additionally include `submit_local_file`, for eleven tools. The path belongs to the local vt-mcp process; its optional expected SHA-256 must match the copied bytes. Allow this specific tool only for authorized standard-sharing tasks. Restart Codex and use `/mcp` to inspect the integration. Remove it with `codex mcp remove virustotal`. The command syntax was checked against Codex CLI `0.153.4` and [official OpenAI documentation](https://learn.chatgpt.com/docs/extend/mcp) on 2026-09-06.
 
 ### Codex approval for submission tools
 
 For tasks you authorize for standard sharing, merge the matching table into your
 existing `~/.codex/config.toml`. Use your configured server name in place of
 `virustotal` if different. Preserve the other tools, server defaults and host
-settings; these fragments set persistent approval for one submission tool only.
+settings; select only the tool-specific approvals needed for your task.
 
 For local stdio:
 
@@ -171,15 +182,30 @@ For remote HTTP:
 approval_mode = "approve"
 ```
 
+For network analysis over either transport, optional tool-specific tables are:
+
+```toml
+[mcp_servers.virustotal.tools.submit_url]
+approval_mode = "approve"
+
+[mcp_servers.virustotal.tools.reanalyze_domain]
+approval_mode = "approve"
+
+[mcp_servers.virustotal.tools.reanalyze_ip]
+approval_mode = "approve"
+```
+
+Omit those tables for read-only tasks. These apply the same per-tool setting to the new names; the historical native validation below covered the file tools, not network writes. With OAuth, the connection also needs the network-write scope.
+
 `enabled_tools` is a separate allowlist of exposed names, not an approval grant.
 If you use it, the intended submission tool, `get_submission` and `get_analysis`
 must be available for the full cycle; `disabled_tools` still takes precedence.
 Do not replace the server-wide approval default or disable unrelated host controls.
-The setting does not restrict which file arguments are authorized or enlarge VTAI
+The setting does not restrict which file or network arguments are authorized or enlarge VTAI
 rights. [Official MCP settings](https://learn.chatgpt.com/docs/extend/mcp),
 [configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
-Both per-tool approval fragments were exercised with Codex CLI 0.153.4 in the
+Both file-tool approval fragments were exercised with Codex CLI 0.153.4 in the
 [0.8 staging and production-candidate workflows](#version-08-submission-evidence),
 without per-call approval prompts. These native sessions retain their candidate-route
 scope; the accepted public rollout and direct SDK checks are separate observations.
@@ -355,15 +381,15 @@ These are application integrations, not claims that Z.ai/DeepSeek chat websites 
 
 Current OpenAI documentation says ChatGPT Desktop's local Codex host can share configuration with CLI/IDE; a CLI test does not prove Desktop behavior. ChatGPT web does not load local Codex configuration. Its MCP testing guide requires an account/workspace permitting Developer mode, a reachable endpoint and the appropriate authentication flow. The retrieved guide does not establish a subscription tier that guarantees that permission. [OpenAI MCP surfaces](https://learn.chatgpt.com/docs/extend/mcp), [connection testing](https://developers.openai.com/plugins/deploy/connect-chatgpt).
 
-OpenAI documents OAuth 2.1 for authenticated hosted MCP. VTAI's static token headers (`x-apikey` or Bearer) do not implement it. ChatGPT web acceptance remains pending maintained OAuth integration and an actual account test. Do not put the VTAI credential in an OAuth field or disable VTAI access controls. [OpenAI authentication requirements](https://developers.openai.com/plugins/build/auth).
+OpenAI documents OAuth 2.1 for authenticated hosted MCP. VTAI provides OAuth separately from its static token headers and supports DCR and CIMD. ChatGPT web acceptance remains unverified: its reviewed CIMD route requires `private_key_jwt`, which VTAI does not support. See the [current hosted compatibility limits](hosted-clients.md#chatgpt-public-connection-and-individual-oauth). Do not put the VTAI credential in an OAuth field or disable VTAI access controls. [OpenAI authentication requirements](https://developers.openai.com/plugins/build/auth).
 
 Claude remote connectors are separate from Claude Code and local Claude Desktop MCP. Documented remote plans include Free, Pro, Max, Team and Enterprise; Free has one custom connector, and Team/Enterprise require an Owner to add one. Requests originate from Anthropic infrastructure even when using Desktop. Account permissions and connectivity still need testing. [Claude remote connector requirements](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
-Claude's fixed-header organization beta can use VTAI Bearer when an eligible organization deliberately shares one identity, quota and submission ownership. The [hosted setup guide](hosted-clients.md) documents that option and its acceptance query; it has not been tested in a hosted account. Individual OAuth and account validation remain pending. An OAuth client secret is not universally required. [Claude authentication](https://claude.com/docs/connectors/building/authentication), [request-header beta](https://claude.com/docs/connectors/custom/remote-mcp#authenticating-with-request-headers).
+Claude's fixed-header organization beta can use VTAI Bearer when an eligible organization deliberately shares one identity, quota and submission ownership. The [hosted setup guide](hosted-clients.md) documents that option and its acceptance query; it has not been tested in a hosted account. VTAI OAuth is live; a Claude hosted account and model workflow remain unverified. An OAuth client secret is not universally required. [Claude authentication](https://claude.com/docs/connectors/building/authentication), [request-header beta](https://claude.com/docs/connectors/custom/remote-mcp#authenticating-with-request-headers).
 
 ## Try the tools
 
-Version 0.8 discovery has seven common tools, or eight for local stdio. For an
+Current discovery has ten common tools, or eleven for local stdio. For an
 existing report, use the read-only examples below. For an authorized file, use
 `submit_file` with SHA-256 and base64 bytes, or local stdio `submit_local_file`
 with its path. Follow the [autonomous workflow](analysis.md#autonomous-mcp-workflow):
@@ -372,11 +398,13 @@ analysis ID. A tool invocation is not proof of upload or completion: inspect
 `exists`, `submitted`, `submission_unknown`, `pending` and `completed` faithfully.
 Do not repeat submission to resolve an ambiguous response.
 
+For an authorized network operation, generate and persist a lowercase UUIDv4 before calling `submit_url`, `reanalyze_domain` or `reanalyze_ip`. Recover with `get_submission(request_id=request_id)` using the same connection, then read `get_analysis(analysis_id, request_id=request_id)`. Do not generate a new ID to resolve uncertainty. Follow the [network workflow](analysis.md#network-analysis-and-recovery), including standard sharing, rejected receipts and finite polling.
+
 Ask your client to query an existing report for `example.com`, `https://example.com/`, or an IP you are authorized to disclose. For file regression, use the SHA-256 of the empty file: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
-Ask for the source, analysis date and coverage, with missing data stated explicitly. A 404 is a valid unknown result. These queries never start a scan. A URL query discloses the complete URL to VTAI and VirusTotal; use domain scope when sufficient. Removing a client configuration does not revoke the VTAI credential.
+Ask for the source, analysis date and coverage, with missing data stated explicitly. A 404 is a valid unknown result. These lookups send no explicit analysis POST from VTAI; VirusTotal controls upstream processing. A URL query discloses the complete URL to VTAI and VirusTotal; use domain scope when sufficient. Removing a client configuration does not revoke the VTAI credential.
 
-To read a selected analysis, supply the exact `analysis_id` returned by an authorized [submission or recovery](analysis.md) under the same VTAI account. Ask the client to call `get_analysis` once and preserve the ID, SHA-256, status, analysis date and coverage. A completed analysis is not a safety verdict; an existing file report is not a substitute for that analysis.
+To read a selected analysis, use the exact `analysis_id` returned by an authorized [submission or recovery](analysis.md) through the same Agent Token or OAuth connection. Preserve the ID, status, analysis date and coverage, plus the file SHA-256 or network request ID. For network analyses, pass `request_id` to `get_analysis` to select the intended receipt. A completed analysis is not a safety verdict; an existing report is not a substitute for that selected analysis.
 
 ## Connection problems
 
@@ -439,7 +467,7 @@ and whether subsequent POST tool calls work; a separate helper's GET does not
 prove the client handled it. Do not select legacy SSE transport for this endpoint.
 [MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
 
-For a complete client check, confirm discovery of seven HTTP tools (eight with
+For a current client check, confirm discovery of ten HTTP tools (eleven with
 local stdio), then ask the model to use `get_domain_report` for `virustotal.com`
 and preserve the returned source, analysis date and coverage. Check the actual
 tool result, not only the final answer. Repeat a report lookup after any observed

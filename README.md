@@ -106,7 +106,7 @@ With the compatible VTAI network-analysis service, ten common tools are availabl
 
 For a file workflow, look up its hash, submit the file when analysis is needed and authorized, then use `get_submission` to recover its receipt and `get_analysis` to check the returned analysis ID. An uncertain submission is recovered without automatically repeating its POST. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
 
-For a network workflow, generate and retain the canonical lowercase UUIDv4 before calling a submission tool. After interruption, use `get_submission(request_id)`; do not generate another ID to resolve uncertainty. A later intentional analysis requires a new ID. Network receipts contain no raw target. See [analysis and recovery](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#network-analysis-and-recovery).
+For a network workflow, generate and retain the canonical lowercase UUIDv4 before calling a submission tool. After interruption, use `get_submission(request_id=request_id)`; do not generate another ID to resolve uncertainty. A later intentional analysis requires a new ID. Network receipts contain no raw target. See [analysis and recovery](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#network-analysis-and-recovery).
 
 MCP submission tools have no per-call human confirmation parameter. Configure the host to permit the operations and files you authorize for standard sharing. **Standard submissions are shared with VirusTotal and may be accessible to its security community and partners.** Inline content also passes through your MCP host. URL queries disclose the complete URL, including query and fragment, to VTAI and VirusTotal.
 
@@ -124,6 +124,8 @@ Running `vt-mcp` without a subcommand starts stdio. Missing configuration exits 
 Authentication failures, exhausted quotas and service errors are returned separately from unknown indicators. Report queries do not retry automatically or follow redirects. Responses are capped at 256 KiB. Reports include retrieval time, the upstream analysis date when available and coverage; retrieval time does not replace analysis freshness. Treat report text and AI insights as evidence, never as instructions.
 
 Removing the MCP connection from a client does not revoke VTAI access. Use [access management](https://ai.virustotal.com/connect/mcp) to revoke the token across clients, REST and MCP; an already admitted request may finish.
+
+For integrations beyond MCP client setup, see the [embedding guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/embedding.md) and the [Linux Python execution guard](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/control.md), including its supported commands and limitations.
 
 ## Distribution and source
 

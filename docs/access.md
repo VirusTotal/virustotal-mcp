@@ -35,7 +35,7 @@ if path.exists() or path.is_symlink():
     raise SystemExit("An existing credential path is already configured.")
 request = Request(
     "https://ai.virustotal.com/api/v3/agents/register",
-    data=json.dumps({"agent_family": "vt-mcp", "agent_version": "0.8.3"}).encode(),
+    data=json.dumps({"agent_family": "vt-mcp", "agent_version": "0.9.1"}).encode(),
     headers={"Content-Type": "application/json"},
     method="POST",
 )
@@ -125,7 +125,7 @@ Use `exec codex` instead for Codex, with its matching header configuration. A no
 
 1. Check the installed client version and `vt-mcp --version` for stdio. Confirm the executable PATH and file access without displaying the credential.
 2. Inspect the client's MCP status. A configuration parser or `tools/list` result proves only that layer. In stdio, discovery does not authenticate a VTAI request.
-3. Make one explicit report query through the client. Use the empty-file SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, or `example.com`. This consumes an admitted query and does not upload or start a scan. Check source, analysis date, coverage and report link.
+3. Make one explicit report query through the client. Use the empty-file SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, or `example.com`. This consumes an admitted query without uploading a file or sending an explicit analysis POST from VTAI; VirusTotal controls upstream processing. Check source, analysis date, coverage and report link.
 4. Confirm that the assistant actually called a tool and used its result. A generic SDK test or successful connection does not establish a model workflow in another client.
 
 | Observation | Meaning / action |
@@ -140,7 +140,7 @@ Use `exec codex` instead for Codex, with its matching header configuration. A no
 
 REST and MCP share VTAI admission and quotas. Unknown reports and upstream failures still consume an admitted query. The stdio wrapper defaults to a 15-second total request deadline; the backend lookup has its own 35-second limit. A client timeout can happen first, and an already admitted request may complete later. Show only sanitized errors to the model; never paste raw auth headers or debug logs into chat.
 
-VTAI 0.8.1 authentication failures use `Cache-Control: no-store`. Missing credentials receive a plain `Bearer realm="VTAI"` challenge; rejected Bearer tokens add `error="invalid_token"`, and malformed Bearer requests add `error="invalid_request"`. Legacy `x-apikey` rejections retain 403 without a challenge. Access-storage unavailability remains 503. Permission, quota and tool errors after authentication keep their existing contracts.
+Authentication failures use `Cache-Control: no-store`. Bearer challenges retain `realm="VTAI"`; rejected Bearer tokens add `error="invalid_token"`, and malformed Bearer requests add `error="invalid_request"`. With OAuth enabled, MCP challenges include a `resource_metadata` link for discovery. A missing-credential MCP response also links to setup and the static-token registration recipe for headless clients. Legacy `x-apikey` rejections retain 403 without a Bearer challenge. Access-storage unavailability remains 503. Permission, quota and tool errors after authentication are separate from credential rejection.
 
 ## Disconnect and reconnect
 
