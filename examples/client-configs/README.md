@@ -2,11 +2,11 @@
 
 For automatic setup on Linux, macOS or Windows, choose your system in the [setup guide](https://ai.virustotal.com/connect/mcp). Manual shell examples below use POSIX syntax. Native package tests cover file handling and MCP protocol behavior; historical client/model validation keeps its original platform and version scope.
 
-These fragments configure the VirusTotal MCP server: seven common tools with the compatible VTAI 0.8 backend, plus local stdio `submit_local_file` for eight. Common tools are the four report lookups, `get_analysis`, `submit_file` and `get_submission`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
+These fragments configure vt-mcp 0.9.1 and the compatible VTAI service: ten common tools, plus local stdio `submit_local_file` for eleven. Common tools are the four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
 
-The 0.8.3 source archive contains this complete directory: twelve configuration files and this README, including Cursor, VS Code, Copilot CLI and Cascade. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup; packaging a recipe does not extend its validation.
+Source archives include consumer configuration examples, including Cursor, VS Code, Copilot CLI and Cascade. Published archives retain their release-time recipes; use the current source for updated permission examples. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup; packaging a recipe does not extend its validation.
 
-Install the current Apache-2.0 distribution using the [README](../../README.md#install-for-local-stdio). The [historical v0.8.0 directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs) retains its original MIT archive and earlier examples. The corporate development repository is still private; the current PyPI source archive provides these consumer files without repository access. See [discovery status](../../docs/discovery.md).
+Install the current Apache-2.0 distribution using the [README](../../README.md#install-for-local-stdio). The [historical v0.8.0 directory](https://github.com/king-tero/vt-mcp/tree/v0.8.0/examples/client-configs) retains its original MIT archive and earlier examples. The [corporate source repository](https://github.com/VirusTotal/virustotal-mcp) is public; the PyPI source archive also provides these consumer files. See [discovery status](../../docs/discovery.md).
 
 | File | Client / destination | Historical v0.7.0 configuration evidence |
 |---|---|---|
@@ -50,15 +50,16 @@ No HTTP fragment is provided for Antigravity or Kimi. agy 1.1.27 sent `$VAR`, `$
 
 ## Specific permissions for autonomous tasks
 
-[agy-permissions.json](agy-permissions.json) lists the eight local 0.8 tools. Merge
+[agy-permissions.json](agy-permissions.json) lists the eleven current local tools, including optional file and network writes. Merge
 only its `permissions.allow` entries into
 `~/.gemini/antigravity-cli/settings.json`, preserving other settings and existing
-deny/ask rules. Omit `submit_file` and `submit_local_file` for a read-only setup.
+deny/ask rules. Select only entries needed for your task. Omit `submit_file`,
+`submit_local_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip` for a read-only setup.
 The fragment contains no credential and does not authorize arbitrary file disclosure.
 
-Claude Code uses the seven exact `mcp__virustotal__...` grants in the
-[client guide](../../docs/clients.md#claude-code); append
-`mcp__virustotal__submit_local_file` only for stdio. Codex uses the same server entry
+Claude Code uses the exact `mcp__virustotal__...` grants in the
+[client guide](../../docs/clients.md#claude-code), with three optional network-write
+grants; append `mcp__virustotal__submit_local_file` only for stdio. Codex uses the same server entry
 and its normal host policy for the specific tool names. Do not substitute broad
 permission bypasses. Host policies and native login remain separate from VTAI.
 The [0.8 submission-workflow evidence](../../docs/clients.md#version-08-submission-evidence)
