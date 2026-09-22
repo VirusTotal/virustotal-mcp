@@ -11,6 +11,20 @@ original MIT license and files.
 Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), or [Codex](clients.md#codex-cli--remote-http).
 
+## Google client distribution
+
+The [Gemini CLI extension](google-clients.md#gemini-cli-extension) configures the
+hosted OAuth endpoint from the root `gemini-extension.json`. Install from `main`
+because older Python package archives do not include that manifest. The guide
+also provides [Antigravity's native OAuth configuration](google-clients.md#antigravity-native-oauth)
+and preserves the existing stdio setup.
+
+Google's [extension gallery](https://geminicli.com/docs/extensions/releasing/)
+discovers public repositories carrying `gemini-cli-extension` and validates their
+root manifests during its periodic crawl. Configuration publication, gallery
+listing and an actual authenticated tool workflow are distinct results; this
+does not establish Antigravity Store placement.
+
 ## MCP Registry
 
 Select

@@ -29,6 +29,17 @@ Additional recipes reviewed on 2026-09-12, with their own evidence:
 | [stdio.json](stdio.json) | Devin CLI v3000.3 / Local 3.6 onward, `~/.config/devin/mcp_config.json` | CLI 3000.10.21 initialized the wrapper through ACP/stdio; this configuration file, tool discovery and model/VTAI workflow remain unverified |
 | [cascade-http.json](cascade-http.json) | Cascade → **MCP Servers** → raw configuration file | Open the path selected by your app version; token-file expansion, transport and native workflow pending |
 
+Native OAuth distribution added on 2026-09-23:
+
+| File | Client / destination | Validation scope |
+|---|---|---|
+| [antigravity-oauth.json](antigravity-oauth.json) | Antigravity MCP manager's raw configuration | Official `serverUrl` recipe; native OAuth and tool calls unverified |
+| [gemini-extension.json](../../gemini-extension.json) | Install through `gemini extensions install` | CLI 0.58.0 native extension installation/loading checked in isolation; OAuth and tool calls unverified |
+
+Both use browser OAuth without static credential headers. Follow the
+[Google client guide](../../docs/google-clients.md) for installation, consent,
+updates, revocation and account requirements.
+
 The [setup guide](../../docs/clients.md#cursor) explains restart, discovery and
 removal. Do not copy VS Code's `servers`/`inputs` format into Copilot CLI's
 `mcpServers` file. Devin Local and Cascade also have separate recipes.
@@ -46,7 +57,7 @@ With v0.7.0, Antigravity CLI (`agy`), Claude Code and Codex completed the five t
 
 OpenCode has separate [V1](https://opencode.ai/docs/mcp-servers/) and [V2](https://opencode.ai/v2/docs/mcp-servers) layouts. On 2026-09-06, the [public schema](https://opencode.ai/config.json) accepted V1 `mcp.<name>` but rejected the documented V2 `mcp.servers.<name>`. These fragments target V1 only. Pin and test a V2 binary before translating them; changing the name of this file does not establish V2 support.
 
-No HTTP fragment is provided for Antigravity or Kimi. agy 1.1.27 sent `$VAR`, `${VAR}` and `${env:VAR}` header references literally in a local discovery test. Safe header expansion remains unestablished for the reviewed Antigravity IDE and Kimi versions. Use the shared stdio fragment. No bridge package or provider-specific MCP server is needed.
+No static-header HTTP fragment is provided for Antigravity or Kimi. agy 1.1.27 sent `$VAR`, `${VAR}` and `${env:VAR}` header references literally in a local discovery test. Safe header expansion remains unestablished for the reviewed Antigravity IDE and Kimi versions. Use the shared stdio fragment or the separately documented Antigravity OAuth recipe, which contains no header credential reference. No bridge package or provider-specific MCP server is needed.
 
 ## Specific permissions for autonomous tasks
 
