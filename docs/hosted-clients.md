@@ -65,12 +65,14 @@ these protocols does not by itself establish compatibility with a hosted account
 
 **CIMD authentication negotiation:** ChatGPT's current client metadata offers
 `none` and `private_key_jwt` in `token_endpoint_auth_methods_supported`, alongside
-a legacy singular preference for `private_key_jwt`. VTAI can select `none` when a
+a legacy singular preference for `private_key_jwt`. VTAI OAuth **0.10.2 or later** can select `none` when a
 CIMD document explicitly offers it, using mandatory PKCE S256. This does not add
 JWT client authentication: a client requiring only `private_key_jwt` remains
 unsupported. DCR continues to support `none`, `client_secret_basic` and
 `client_secret_post`. Public-client negotiation does not change redirect checks,
 resource binding, approved scopes or grant revocation.
+Check the deployed version at [`/oauth/health`](https://ai.virustotal.com/oauth/health).
+With an earlier server version, select DCR where the host offers it.
 [OpenAI's negotiation rules](https://developers.openai.com/plugins/build/auth).
 Actual hosted consent, report calls, refresh and revocation still require their
 own account-level acceptance; do not infer a ChatGPT workflow from metadata alone.

@@ -4,7 +4,7 @@
 
 Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file and network analysis submission, and receipt recovery.
 
-Use the free VTAI service with its current access limits. Compatible remote clients can sign in with OAuth; local stdio and configurable-header clients use a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp). You do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
+Use the free VTAI service with its current access limits. Compatible remote clients can sign in with OAuth; local stdio and configurable-header clients use a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp). You do not need your own VirusTotal API key. OAuth connections share the signed-in VTAI account's free quota and use the permissions approved for each connection. Agent Tokens retain their existing VTAI rights and quotas.
 
 ## Install for local stdio
 
