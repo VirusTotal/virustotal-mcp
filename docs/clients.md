@@ -16,6 +16,10 @@ VTAI 0.8.1 adds static Bearer authentication as an alternative to `x-apikey`, us
 
 ## Antigravity CLI (`agy`)
 
+For a native remote connection with browser sign-in, see the
+[Antigravity OAuth recipe](google-clients.md#antigravity-native-oauth). Its current
+validation is separate from the tested stdio setup below.
+
 Use your native Antigravity login, then install the verified vt-mcp wheel and configure its credential-file path:
 
 ```bash
@@ -320,6 +324,11 @@ HTTP transport, file-token expansion and tool/model workflows remain unverified.
 
 ## Gemini CLI
 
+The [Gemini CLI extension](google-clients.md#gemini-cli-extension) adds the hosted
+server with OAuth, without a local Python process or static token. Native extension
+installation and loading were checked with CLI 0.58.0; OAuth and model workflows
+remain separate. The manual static-token alternatives below remain available.
+
 Google retired Gemini CLI access through **Sign in with Google** for Gemini Code Assist for individuals, Google AI Pro and Google AI Ultra on 2026-06-18. Use [Antigravity CLI (`agy`)](#antigravity-cli-agy) for those accounts. Standard and Enterprise are unaffected by that retirement; Gemini API-key authentication is a separate option. These remaining routes require their own account and model checks. [Official retirement notice](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals), [Gemini authentication](https://geminicli.com/docs/get-started/authentication/).
 
 ```bash
@@ -337,7 +346,10 @@ Open **MCP Servers → Manage MCP Servers → View raw config** in the agent pan
 
 The tested IDE is `1.20.6`; its CLI/base reports `1.107.0`, commit `135ccf460c67c4b900dc10aa71c978f27d78601c`, x64. Its bundled schema accepts `command`, `args`, `env`, `serverUrl`, `headers`, `disabled` and `disabledTools`. Current online documentation includes newer paths and fields rejected by that installed schema. Use **View raw config** to locate the file; do not apply the Gemini CLI path by analogy.
 
-Safe HTTP-header environment expansion was not established for this version. Use stdio with a token file. The real stdio report workflow is recorded in the validation table below. [Official Antigravity MCP documentation](https://antigravity.google/docs/mcp).
+Safe HTTP-header environment expansion was not established for this version. The
+stdio token-file setup retains its report workflow evidence below. For a remote
+connection without a static header, use the [native OAuth recipe](google-clients.md#antigravity-native-oauth),
+with its separate validation limits. [Official Antigravity MCP documentation](https://antigravity.google/docs/mcp).
 
 If discovery succeeds but lookups return `unavailable`, check the MCP process's HTTPS configuration. In the tested Linux environment, Antigravity supplied an incomplete `SSL_CERT_FILE` bundle. Setting `SSL_CERT_FILE` to `/etc/ssl/certs/ca-certificates.crt` in this server's `env` and reloading resolved certificate verification errors. Use the trusted CA bundle appropriate to your machine; this Linux path is not portable. TLS verification remained enabled and proxy settings were preserved.
 

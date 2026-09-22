@@ -49,11 +49,13 @@ addopts = "-q"
 [tool.uv.build-backend]
 source-include = [
     "server.json",
+    "gemini-extension.json",
     "glama.json",
     "docs/discovery.md",
     "docs/access.md",
     "docs/clients.md",
     "docs/hosted-clients.md",
+    "docs/google-clients.md",
     "docs/publishing.md",
     "docs/client-validation-2026-09-07.md",
     "docs/analysis.md",

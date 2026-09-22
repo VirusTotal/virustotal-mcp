@@ -4,7 +4,7 @@
 
 Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file and network analysis submission, and receipt recovery.
 
-Use the free VTAI service with its current access limits. You need a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp); you do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
+Use the free VTAI service with its current access limits. Compatible remote clients can sign in with OAuth; local stdio and configurable-header clients use a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp). You do not need your own VirusTotal API key. Both local and remote connections use the same account rights and quotas.
 
 ## Install for local stdio
 
@@ -40,13 +40,13 @@ Missing-report, quota and temporary-service errors include `next_steps` and a do
 
 ## Connect your client
 
-1. Reuse your existing VTAI access or [create a token](https://ai.virustotal.com/connect/mcp).
+1. For compatible remote clients, connect with OAuth using the MCP URL. Otherwise, reuse your existing VTAI token or [create one](https://ai.virustotal.com/connect/mcp).
 2. For stdio, save the token in a file readable only by your user, such as `~/.config/vt-mcp/token`. Set the MCP server's environment variable `VTAI_TOKEN_FILE` to that path and its command to `vt-mcp`. The file contains only the token; never put the token itself in chat, command arguments or project files.
 3. Follow the client-specific setup, restart or reconnect the client, and inspect its available tools.
 
 | Client | Setup |
 |---|---|
-| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) |
+| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
 | Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
 | Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
 | Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
@@ -54,7 +54,8 @@ Missing-report, quota and temporary-service errors include `next_steps` and a do
 | GitHub Copilot CLI | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=copilot&transport=stdio) |
 | Devin Local | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=devin&transport=stdio) |
 | Windsurf / Devin Desktop | [Cascade HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cascade&transport=http) |
-| Antigravity IDE | [Local stdio configuration](#antigravity-ide) |
+| Antigravity IDE | [Local stdio configuration](#antigravity-ide) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
+| Gemini CLI | [Install the OAuth extension](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-cli-extension) |
 
 The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
 
@@ -82,7 +83,7 @@ In the agent panel, open **MCP Servers → Manage MCP Servers → View raw confi
 }
 ```
 
-Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation; its HTTP credential expansion was not established. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
+Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation. For browser sign-in without a local process, use the [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth), whose hosted login and tool workflow remain unverified. OAuth avoids reliance on unverified HTTP credential-variable expansion. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
 
 The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. Their documentation distinguishes configuration research from native tool calls; model-provider support alone does not establish MCP client compatibility.
 

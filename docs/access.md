@@ -78,7 +78,7 @@ Remote MCP uses `https://ai.virustotal.com/mcp`, not the REST URL ending `/api/v
 
 Use the host's supported environment-header reference from the [configuration fragments](../examples/client-configs/README.md). `VTAI_MCP_TOKEN` is an arbitrary host-side variable name, chosen to avoid conflict with a stdio server's `VTAI_TOKEN_FILE`.
 
-For Antigravity CLI (`agy`) 1.1.27, use the [stdio token-file setup](clients.md#antigravity-cli-agy); tested HTTP header variables were sent literally. Claude Code and Codex support the remote configurations described here.
+For the verified Antigravity CLI (`agy`) token setup, use [stdio with a token file](clients.md#antigravity-cli-agy); version 1.1.27 sent tested HTTP header variables literally. A separate [native Antigravity OAuth recipe](google-clients.md#antigravity-native-oauth) avoids static header expansion and retains its own validation limits. Claude Code and Codex support the remote configurations described here.
 
 ### Choose one authentication header
 
