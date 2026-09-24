@@ -49,6 +49,7 @@ Missing-report, quota and temporary-service errors include `next_steps` and a do
 | Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
 | Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
 | Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
+| ChatGPT Work | [Personal OAuth connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-public-connection-and-individual-oauth) |
 | Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
 | VS Code with GitHub Copilot | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=vscode&transport=http) |
 | GitHub Copilot CLI | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=copilot&transport=stdio) |
@@ -58,6 +59,8 @@ Missing-report, quota and temporary-service errors include `next_steps` and a do
 | Gemini CLI | [Install the OAuth extension](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-cli-extension) |
 
 The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
+
+In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent and an IP report have been verified; the guide records the remaining validation limits.
 
 For a first query, ask your agent:
 

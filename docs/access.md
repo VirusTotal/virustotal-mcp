@@ -96,7 +96,9 @@ header and use the client's OAuth login flow. This grants a separate OAuth
 connection; it does not create a static Agent Token. OAuth access applies to MCP,
 while local stdio and direct REST access continue to use an Agent Token. See the
 [current connection guide](https://ai.virustotal.com/connect/mcp) and the
-[hosted-client validation limits](hosted-clients.md).
+[hosted setup and validation guide](hosted-clients.md). For ChatGPT Work, follow
+the [account connection steps](hosted-clients.md#connect-chatgpt-work) after
+creating the application; no static Agent Token is needed for that OAuth flow.
 
 OAuth URL submission and domain/IP reanalysis require `vt:reports:read` plus
 `vt:network-analysis:write`. Existing file-write grants do not include that scope

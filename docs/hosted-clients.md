@@ -2,10 +2,10 @@
 
 The tested client guides remain [Agy](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), then [Codex](clients.md#codex-cli--remote-http).
-This page covers separate hosted connections. Host setup requirements below retain
-their 2026-09-08 review date; the CIMD negotiation guidance was updated on 2026-09-23.
-The [validation scope](#validation-scope) distinguishes actual staged OAuth flows
-from unverified ChatGPT and Claude hosted account/model workflows.
+This page covers separate hosted connections. ChatGPT setup and validation were
+updated on 2026-09-24; the Claude setup review remains dated 2026-09-08.
+The [validation scope](#validation-scope) records the verified initial ChatGPT
+connection and IP report, earlier staging checks and remaining hosted workflows.
 
 VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It supports MCP OAuth
 and also accepts a static VTAI Agent Token through one credential header,
@@ -45,7 +45,43 @@ argument. The host may request confirmation independently.
 
 ## ChatGPT public connection and individual OAuth
 
-**Status: VTAI OAuth and CIMD are live; ChatGPT and Claude hosted account/model workflows remain unverified.**
+**Status: initial OAuth consent and an MCP IP report verified in ChatGPT Work on 2026-09-24.**
+Hosted refresh, revocation, incremental authorization and write workflows remain
+unverified. Claude hosted acceptance is separate and remains unverified.
+
+### Connect ChatGPT Work
+
+Use an account and workspace that permit Developer mode. Enable it under
+**Settings → Security and login → Developer mode** if needed. Availability
+depends on the account and workspace policy.
+
+1. In **Plugins**, use **+** to create a plugin/application named **VirusTotal**
+   with the MCP endpoint **`https://ai.virustotal.com/mcp`**. Choose **OAuth**;
+   leave optional Client ID and Client secret fields blank for automatic
+   negotiation. Reuse an existing application configured with that endpoint.
+2. Open the plugin's linked application and check **Connected accounts**.
+   Creating the application alone may not connect your account. If necessary,
+   choose **Connect** or **Connect another account**, sign in, review the
+   permissions and select **Allow access**.
+3. Install the personal plugin if it is not already installed, then start a
+   **new Work chat**. Type **@**, select **VirusTotal**, and request an explicit
+   MCP lookup:
+
+   > Use the VirusTotal MCP tool get_ip_report for 8.8.8.8. Explain the report's
+   > source, analysis date and coverage.
+
+Confirm that the conversation contains the MCP tool result. An answer based on
+browsing the public VirusTotal website, including a message about JavaScript,
+does not establish that MCP was used. If the application has no connected account
+or tools, complete the account connection, refresh its tools and start a new
+chat. Keep a working account connection; a new Agent Token is not needed for OAuth.
+
+This is a personal Developer mode setup, not a claim of availability in ChatGPT's
+public directory. See OpenAI's [connection guide](https://developers.openai.com/plugins/deploy/connect-chatgpt)
+and [Work chat quickstart](https://developers.openai.com/plugins/quickstart).
+
+### OAuth compatibility
+
 ChatGPT's authenticated public MCP connection uses OAuth. A static VTAI token
 cannot be entered as an OAuth client secret. Its authorization contract includes
 PKCE S256, protected-resource and issuer discovery, and resource-bound access
@@ -74,8 +110,8 @@ resource binding, approved scopes or grant revocation.
 Check the deployed version at [`/oauth/health`](https://ai.virustotal.com/oauth/health).
 With an earlier server version, select DCR where the host offers it.
 [OpenAI's negotiation rules](https://developers.openai.com/plugins/build/auth).
-Actual hosted consent, report calls, refresh and revocation still require their
-own account-level acceptance; do not infer a ChatGPT workflow from metadata alone.
+The initial ChatGPT consent and report check below exercised a real hosted
+connection. Protocol negotiation alone does not validate its remaining workflows.
 
 For report and receipt reads, request `vt:reports:read`. File submission additionally
 requires `vt:submissions:write`; URL submission and domain/IP reanalysis require
@@ -96,6 +132,13 @@ validated by this project. [Secure MCP Tunnel](https://developers.openai.com/api
 
 ## Validation scope
 
+On 2026-09-24, a ChatGPT Work application completed personal browser consent
+against production and returned an IP report through MCP. The successful result
+was corroborated by a report request linked to that OAuth connection. This verifies
+initial hosted authorization and one report read. It does not verify hosted token
+refresh, revocation, incremental authorization, write workflows or public-directory
+distribution. The account connection was retained for continued use.
+
 On 2026-09-14, a native Codex browser login and domain report succeeded in staging.
 These were direct client calls, not model conversations or a hosted ChatGPT test.
 On 2026-09-15, an owned Smithery hosted connection completed CIMD authorization
@@ -107,7 +150,8 @@ observation does not prove immediate rejection of an unexpired token.
 
 Those staged flows establish their stated operations, not a hosted production
 login, every tool or a commercial-model workflow. They predate the new network
-tools and permission. ChatGPT and Claude hosted acceptance remain separate.
+tools and permission. The later ChatGPT result above has its own limited scope;
+Claude hosted account and model workflows remain unverified.
 
 ## First hosted acceptance query
 
