@@ -99,6 +99,10 @@ while local stdio and direct REST access continue to use an Agent Token. See the
 [hosted setup and validation guide](hosted-clients.md). For ChatGPT Work, follow
 the [account connection steps](hosted-clients.md#connect-chatgpt-work) after
 creating the application; no static Agent Token is needed for that OAuth flow.
+Initial consent, an IP report, automatic token renewal and a subsequent report
+after token expiry were verified in ChatGPT Work on 2026-09-24. Revocation from
+the hosted application, incremental permissions and write workflows remain
+separate checks; see the [validation scope](hosted-clients.md#validation-scope).
 
 OAuth URL submission and domain/IP reanalysis require `vt:reports:read` plus
 `vt:network-analysis:write`. Existing file-write grants do not include that scope
