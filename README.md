@@ -60,7 +60,7 @@ Missing-report, quota and temporary-service errors include `next_steps` and a do
 
 The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
 
-In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent and an IP report have been verified; the guide records the remaining validation limits.
+In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent, an IP report, automatic token renewal and a subsequent report after token expiry were verified on 2026-09-24; the guide records the remaining validation limits.
 
 For a first query, ask your agent:
 

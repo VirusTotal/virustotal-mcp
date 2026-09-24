@@ -4,8 +4,8 @@ The tested client guides remain [Agy](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), then [Codex](clients.md#codex-cli--remote-http).
 This page covers separate hosted connections. ChatGPT setup and validation were
 updated on 2026-09-24; the Claude setup review remains dated 2026-09-08.
-The [validation scope](#validation-scope) records the verified initial ChatGPT
-connection and IP report, earlier staging checks and remaining hosted workflows.
+The [validation scope](#validation-scope) records the verified ChatGPT connection,
+IP reports and automatic renewal, earlier staging checks and remaining hosted workflows.
 
 VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It supports MCP OAuth
 and also accepts a static VTAI Agent Token through one credential header,
@@ -45,9 +45,9 @@ argument. The host may request confirmation independently.
 
 ## ChatGPT public connection and individual OAuth
 
-**Status: initial OAuth consent and an MCP IP report verified in ChatGPT Work on 2026-09-24.**
-Hosted refresh, revocation, incremental authorization and write workflows remain
-unverified. Claude hosted acceptance is separate and remains unverified.
+**Status: initial OAuth consent, MCP IP reports and automatic token renewal verified in ChatGPT Work on 2026-09-24.**
+Revocation from the hosted application, incremental authorization and write
+workflows remain unverified. Claude hosted acceptance is separate and remains unverified.
 
 ### Connect ChatGPT Work
 
@@ -110,7 +110,7 @@ resource binding, approved scopes or grant revocation.
 Check the deployed version at [`/oauth/health`](https://ai.virustotal.com/oauth/health).
 With an earlier server version, select DCR where the host offers it.
 [OpenAI's negotiation rules](https://developers.openai.com/plugins/build/auth).
-The initial ChatGPT consent and report check below exercised a real hosted
+The ChatGPT consent, report and renewal checks below exercised a real hosted
 connection. Protocol negotiation alone does not validate its remaining workflows.
 
 For report and receipt reads, request `vt:reports:read`. File submission additionally
@@ -133,10 +133,13 @@ validated by this project. [Secure MCP Tunnel](https://developers.openai.com/api
 ## Validation scope
 
 On 2026-09-24, a ChatGPT Work application completed personal browser consent
-against production and returned an IP report through MCP. The successful result
-was corroborated by a report request linked to that OAuth connection. This verifies
-initial hosted authorization and one report read. It does not verify hosted token
-refresh, revocation, incremental authorization, write workflows or public-directory
+against production and returned an IP report through MCP. The same connection
+later renewed its token automatically and returned another IP report after the
+previous access token had expired, without another consent step. Report requests
+linked to the same OAuth connection and refresh-state transitions corroborated
+these operations. This verifies initial hosted authorization, report reads and
+automatic renewal for that connection. It does not verify revocation from the
+hosted application, incremental authorization, write workflows or public-directory
 distribution. The account connection was retained for continued use.
 
 On 2026-09-14, a native Codex browser login and domain report succeeded in staging.
