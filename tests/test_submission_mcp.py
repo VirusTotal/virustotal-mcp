@@ -70,6 +70,38 @@ async def test_optional_binder_compatibility_and_submission_schemas(analysis, su
         assert tools["get_submission"].annotations.idempotent_hint
 
 
+@pytest.mark.parametrize("file,network", [(True, False), (False, True), (True, True)])
+async def test_receipt_discovery_is_bounded_for_each_submission_binding(file, network):
+    def never(_):
+        pytest.fail("Discovery must not bind a reader")
+
+    server = create_report_server(
+        lifespan=lifespan,
+        bind_reports=never,
+        bind_analyses=never,
+        bind_submissions=never if file else None,
+        bind_network_submissions=never if network else None,
+    )
+    async with Client(server) as client:
+        tools = {tool.name: tool for tool in (await client.list_tools()).tools}
+    receipt = tools["get_submission"]
+    assert receipt.annotations.model_dump(by_alias=True, exclude_none=True) == {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    }
+    assert set(receipt.input_schema["properties"]) == (
+        {"sha256", "request_id"} if network else {"sha256"}
+    )
+    assert receipt.input_schema.get("required", []) == ([] if network else ["sha256"])
+    assert all(
+        tool.annotations.open_world_hint is True
+        for name, tool in tools.items()
+        if name != "get_submission"
+    )
+
+
 async def test_local_has_eleven_tools_and_no_confirmation_argument():
     server = create_server(
         Settings(TOKEN), transport=httpx.MockTransport(lambda _: pytest.fail("Discovery HTTP"))

@@ -2,7 +2,7 @@
 
 For automatic setup on Linux, macOS or Windows, choose your system in the [setup guide](https://ai.virustotal.com/connect/mcp). Manual shell examples below use POSIX syntax. Native package tests cover file handling and MCP protocol behavior; historical client/model validation keeps its original platform and version scope.
 
-These fragments configure vt-mcp 0.9.1 and the compatible VTAI service: ten common tools, plus local stdio `submit_local_file` for eleven. Common tools are the four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
+These fragments configure vt-mcp 0.9.2 and the compatible VTAI service: ten common tools, plus local stdio `submit_local_file` for eleven. Common tools are the four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. Remote HTTP never exposes the local-path tool. Choose **stdio or HTTP** for a client, merge the selected entry into its existing configuration, and preserve unrelated servers. Do not replace an entire settings file with a fragment.
 
 Source archives include consumer configuration examples, including Cursor, VS Code, Copilot CLI and Cascade. Published archives retain their release-time recipes; use the current source for updated permission examples. The wheel does not install fragments as client settings. Check [client validation levels](../../docs/clients.md) before choosing a setup; packaging a recipe does not extend its validation.
 
