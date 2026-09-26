@@ -1,7 +1,7 @@
 # Find and connect to VirusTotal MCP
 
 Connect to the hosted endpoint or install
-[`vt-mcp` 0.9.1 from PyPI](https://pypi.org/project/vt-mcp/0.9.1/) for local stdio.
+[`vt-mcp` 0.9.2 from PyPI](https://pypi.org/project/vt-mcp/0.9.2/) for local stdio.
 The package and the public source repository,
 [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), use
 Apache-2.0. Installation from PyPI does not require a GitHub account. The historical
@@ -61,7 +61,10 @@ credential for local stdio and direct REST access; MCP OAuth tokens are not REST
 API keys. Reuse credentials rather than registering again after an error or quota
 response.
 
-The stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.1`, so uv
+The Registry stdio configuration pins `vt-mcp==0.9.1`; the current package is
+0.9.2. Use the [manual setup](../README.md#install-for-local-stdio) for its receipt
+metadata correction until the Registry entry is updated. The Registry uses
+`uvx --python 3.12`, so uv
 selects a supported interpreter. Set `VTAI_TOKEN_FILE` to the path of a protected
 file containing only your VTAI token, for example `/home/user/.config/vt-mcp/token`.
 The Registry input is the file path; the credential stays in that file. Restrict

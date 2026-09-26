@@ -11,7 +11,7 @@ Use the free VTAI service with its current access limits. Compatible remote clie
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.1'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.2'
 vt-mcp --version
 ```
 
@@ -30,7 +30,7 @@ Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the config
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
 ```sh
-uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.1'
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.2'
 vt-mcp --version
 ```
 
@@ -133,9 +133,11 @@ For integrations beyond MCP client setup, see the [embedding guide](https://gith
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.1/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.2/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
+
+Version 0.9.2 corrects `get_submission` discovery to advertise `openWorldHint: false`, reflecting its read of the current account's bounded receipt. Tool schemas and receipt behavior remain compatible.
 
 Version 0.9.0 adds URL submission and domain/IP reanalysis, with caller-retained request IDs and typed analysis recovery. Existing file calls and receipt shapes remain compatible. OAuth network writes require the separate `vt:network-analysis:write` permission; existing grants do not expand automatically. Native OS protocol tests do not certify every client or model workflow. Previously published [MIT releases through 0.8.0](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retain their original files and license.
 

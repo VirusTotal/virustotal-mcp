@@ -130,8 +130,21 @@ def test_stdio_inline_and_local_first_post_then_restart_get_only(tmp_path):
         )
         with anyio.fail_after(30):
             async with Client(parameters, read_timeout_seconds=15) as client:
-                names = {tool.name for tool in (await client.list_tools()).tools}
-                assert {"submit_file", "submit_local_file"} <= names
+                tools = {tool.name: tool for tool in (await client.list_tools()).tools}
+                assert {"submit_file", "submit_local_file"} <= tools.keys()
+                receipt = tools["get_submission"]
+                assert receipt.annotations.model_dump(by_alias=True, exclude_none=True) == {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "idempotentHint": True,
+                    "openWorldHint": False,
+                }
+                assert set(receipt.input_schema["properties"]) == {"sha256", "request_id"}
+                assert all(
+                    tool.annotations.open_world_hint is True
+                    for name, tool in tools.items()
+                    if name != "get_submission"
+                )
                 for _ in range(2):
                     for tool, arguments, sha in [
                         (

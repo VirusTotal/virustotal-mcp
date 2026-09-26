@@ -422,7 +422,7 @@ def create_report_server[Resources](
         receipt_tool = server.tool(
             title="Get a VTAI submission receipt",
             annotations=ToolAnnotations(
-                readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True
+                readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
             ),
             structured_output=False,
         )
