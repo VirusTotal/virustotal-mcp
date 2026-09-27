@@ -16,6 +16,26 @@ live. Local stdio additionally provides `submit_local_file`; remote HTTP cannot
 read local paths. A successful CLI session does not establish a different
 hosted account or model workflow.
 
+## File transfer depends on the host
+
+When the client can supply the actual bytes, use `submit_file` with their SHA-256
+and base64 content. Remote HTTP does not by itself prevent file transfer, and an
+attachment in chat does not by itself prove that the host can access its bytes.
+
+If the client cannot transmit those bytes, offer the user the existing
+[VirusTotal upload page](https://www.virustotal.com/gui/home/upload). Standard
+uploads are not confidential and share content with the security community and
+partners. Ask before sharing the user's own documents, internal code, credentials
+or personal data, including sensitive content inside an attachment or unfamiliar
+file. This alternative does not bypass host permissions or quota errors.
+
+After the user uploads through the website, obtain its file hash and use
+`get_file_report(hash)`. The report may not be available yet. Web uploads do not
+create VTAI receipts or register analysis IDs: do not use `get_submission` or
+`get_analysis` for that external upload. Every repeated report query consumes
+quota, including missing reports and cache hits; keep later reads within a finite
+task budget. See [file transfer and recovery](analysis.md#when-the-client-cannot-transmit-file-bytes).
+
 ## Claude organization request-header beta
 
 **Status: documented setup for eligible organizations; not tested in Claude.**

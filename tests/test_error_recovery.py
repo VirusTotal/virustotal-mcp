@@ -38,6 +38,14 @@ def test_missing_file_describes_available_submission_and_recovery(interface):
     assert "does not establish safety" in error["message"]
     assert "actual file bytes" in steps and "not confidential" in steps
     assert "hash alone cannot start" in steps
+    web_index = next(
+        i
+        for i, step in enumerate(error["next_steps"])
+        if "https://www.virustotal.com/gui/home/upload" in step
+    )
+    web_read = error["next_steps"][web_index + 1]
+    assert "do not create VTAI receipts or register analysis IDs" in web_read
+    assert "get_submission" not in web_read and "get_analysis" not in web_read
     assert (
         "submit_local_file" in steps if interface == "stdio" else "submit_local_file" not in steps
     )
@@ -46,8 +54,11 @@ def test_missing_file_describes_available_submission_and_recovery(interface):
         assert "Content-Type: application/octet-stream" in steps
         assert "X-VTAI-Consent: standard-v1" in steps
         assert "GET /api/v3/analyses/{analysis_id}" in steps
+        assert "GET /api/v3/files/{hash}" in web_read
+        assert "get_file_report" not in web_read
     else:
         assert "submit_file" in steps and "get_submission" in steps and "get_analysis" in steps
+        assert "get_file_report(hash)" in web_read
     assert error["documentation_url"] == "https://ai.virustotal.com/install.md"
     assert "quota_source" not in error
 
@@ -59,6 +70,7 @@ def test_missing_indicators_describe_explicit_submission_without_transferring_do
 ):
     error = report_http_error(404, kind, interface=interface).error
     steps = " ".join(error["next_steps"])
+    assert "https://www.virustotal.com/gui/home/upload" not in steps
     assert "retrieves existing reports" in steps or "retrieve existing reports" in steps
     assert "submit_file" not in steps
     assert "UUIDv4 request_id" in steps and "uncertain POST" in steps

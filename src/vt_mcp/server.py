@@ -41,7 +41,13 @@ from vt_mcp.analyses import (
     validate_sha256,
 )
 from vt_mcp.client import AnalysisClient
-from vt_mcp.reports import SHARING_NOTICE, ReportReader, VTAIError, file_not_found_steps
+from vt_mcp.reports import (
+    SHARING_NOTICE,
+    WEB_UPLOAD_URL,
+    ReportReader,
+    VTAIError,
+    file_not_found_steps,
+)
 from vt_mcp.submissions import LocalSubmissions
 from vt_mcp.vtai_client import Settings
 
@@ -284,14 +290,22 @@ def create_report_server[Resources](
             "and categories. A domain report does not describe every URL on that domain. "
             "Full URLs, including queries/fragments, are disclosed to VTAI and VirusTotal; "
             "avoid secret URLs. "
-            + (SHARING_NOTICE + " " if bind_submissions or bind_network_submissions else "")
+            + SHARING_NOTICE
+            + " "
             + (
                 "File submission accepts actual bytes: SHA256 plus base64, at most 24000000 "
                 "decoded bytes. Bytes also pass through the MCP host. This tool cannot read "
-                "a client's local path or fetch file bytes from URLs. After uncertainty, "
+                "a client's local path or fetch file bytes from URLs. "
+                "After a tool upload is uncertain, "
                 "recover with get_submission by SHA256; never repeat the upload. "
                 if bind_submissions is not None
                 else "This connection has no file submission tools. "
+            )
+            + (
+                f"If this client cannot send file bytes, offer {WEB_UPLOAD_URL} under the "
+                "same sharing rules; never bypass permissions or quotas. After web upload, "
+                "use get_file_report(hash), not VTAI receipt or selected-analysis recovery. "
+                "Reports may be delayed; repeated lookups count again. "
             )
             + (
                 "For network analysis, save a canonical lowercase UUIDv4 request_id before "
@@ -301,7 +315,7 @@ def create_report_server[Resources](
                 else "This connection has no network submission tools. "
             )
             + (
-                "Use the receipt's registered analysis ID with get_analysis; "
+                "Use the VTAI receipt's registered analysis ID with get_analysis; "
                 "respect polling delays."
                 if bind_analyses is not None
                 else "No analysis-read tool is configured."
