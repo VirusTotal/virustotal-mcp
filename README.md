@@ -11,7 +11,7 @@ Use the free VTAI service with its current access limits. Compatible remote clie
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.3'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.5'
 vt-mcp --version
 ```
 
@@ -30,7 +30,7 @@ Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the config
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
 ```sh
-uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.3'
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.5'
 vt-mcp --version
 ```
 
@@ -110,7 +110,7 @@ With the compatible VTAI network-analysis service, ten common tools are availabl
 
 For a file workflow, look up its hash, submit an unfamiliar file with no report under the sharing guidance below, then use `get_submission` to recover its receipt and `get_analysis` to check the returned analysis ID. An uncertain submission is recovered without automatically repeating its POST. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
 
-If the client cannot transmit file bytes, offer the user the [existing VirusTotal web upload and subsequent hash lookup](docs/analysis.md#when-the-client-cannot-transmit-file-bytes). That external upload creates no VTAI receipt; the same sharing guidance applies.
+If the client cannot transmit file bytes, offer the user the [existing VirusTotal web upload and subsequent hash lookup](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#when-the-client-cannot-transmit-file-bytes). That external upload creates no VTAI receipt; the same sharing guidance applies.
 
 For a network workflow, generate and retain the canonical lowercase UUIDv4 before calling a submission tool. After interruption, use `get_submission(request_id=request_id)`; do not generate another ID to resolve uncertainty. A later intentional analysis requires a new ID. Network receipts contain no raw target. See [analysis and recovery](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#network-analysis-and-recovery).
 
@@ -135,11 +135,11 @@ For integrations beyond MCP client setup, see the [embedding guide](https://gith
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.3/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.5/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
 
-Version 0.9.3 clarifies which samples to contribute and when to ask before sharing. Missing file reports offer a submission next step matched to the available tools and transport. Repeated report queries still count toward existing quotas. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.3/docs/releases/v0.9.3.md).
+Version 0.9.5 offers the existing VirusTotal web upload when a client cannot transmit file bytes, followed by a hash report lookup. Clients that can supply bytes keep the existing submission tools. Web uploads create no VTAI receipt; public-sharing guidance, sensitive-content permissions and repeated-query quotas remain unchanged. This release also fixes the package description's documentation link. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.5/docs/releases/v0.9.5.md).
 
 Version 0.9.2 corrects `get_submission` discovery to advertise `openWorldHint: false`, reflecting its read of the current account's bounded receipt. Tool schemas and receipt behavior remain compatible.
 
