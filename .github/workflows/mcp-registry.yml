@@ -21,11 +21,17 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Verify identity, publish, retire or restore one reviewed Registry version
+        description: Verify, publish, or change one reviewed Registry version's status
         required: true
         default: verify-identity
         type: choice
-        options: [verify-identity, publish, retire, restore]
+        options: [verify-identity, publish, retire, restore, deprecate-legacy, restore-legacy]
+      target_version:
+        description: Only for legacy status actions; leave empty for other operations
+        required: false
+        default: ''
+        type: choice
+        options: ['', '0.8.2', '0.8.3', '0.8.4', '0.8.5', '0.8.6', '0.8.7']
       reviewed_sha:
         description: Full main commit SHA accepted by independent QA
         required: true
@@ -89,6 +95,7 @@ jobs:
         env:
           REVIEWED_SHA: ${{ inputs.reviewed_sha }}
           REGISTRY_OPERATION: ${{ inputs.operation }}
+          REGISTRY_TARGET_VERSION: ${{ inputs.target_version }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/registry.py run
       - name: Retain sanitized Registry result, including uncertain operations

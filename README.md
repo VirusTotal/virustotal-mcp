@@ -2,9 +2,65 @@
 
 <!-- mcp-name: io.github.VirusTotal/virustotal-mcp -->
 
-Give your agent VirusTotal intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file and network analysis submission, and receipt recovery.
+The official VirusTotal MCP server gives your agent threat intelligence before it opens a link, runs a downloaded file or investigates suspicious infrastructure. **vt-mcp** connects MCP clients to [VTAI](https://ai.virustotal.com), with reports for files, URLs, domains and IP addresses, file and network analysis submission, and receipt recovery.
 
-Use the free VTAI service with its current access limits. Compatible remote clients can sign in with OAuth; local stdio and configurable-header clients use a **VTAI token**, available from [connection setup](https://ai.virustotal.com/connect/mcp). You do not need your own VirusTotal API key. OAuth connections share the signed-in VTAI account's free quota and use the permissions approved for each connection. Agent Tokens retain their existing VTAI rights and quotas.
+Use the free VTAI service with its current access limits. You do not need your own VirusTotal API key.
+
+## Connect remotely with OAuth
+
+Use **`https://ai.virustotal.com/mcp`** in a compatible remote MCP client. Sign in
+with your VTAI account and approve the connection's permissions; no local Python
+installation, static token or personal VirusTotal API key is required.
+
+For Claude Code:
+
+```sh
+claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
+```
+
+Open Claude Code, run `/mcp`, select **virustotal** and complete browser sign-in.
+See the [Claude Code OAuth instructions](https://code.claude.com/docs/en/mcp#authenticate-with-remote-mcp-servers)
+and the [VirusTotal connection guide](https://ai.virustotal.com/connect/mcp?client=claude&transport=http).
+Adding a server configures it; complete authentication and a tool call to check
+that your connection works.
+
+OAuth connections share the signed-in VTAI account's free quota and use the
+permissions approved for each connection. Existing Agent Tokens keep their rights
+and quotas. If your client needs configurable HTTP headers, use one protected
+`Authorization: Bearer` or `x-apikey` credential instead of OAuth. For local file
+access, use the [local stdio installation](#install-for-local-stdio) below.
+
+## Connect your client
+
+1. For compatible remote clients, connect with OAuth using the MCP URL. Otherwise, reuse your existing VTAI token or [create one](https://ai.virustotal.com/connect/mcp).
+2. For stdio, save the token in a file readable only by your user, such as `~/.config/vt-mcp/token`. Set the MCP server's environment variable `VTAI_TOKEN_FILE` to that path and its command to `vt-mcp`. The file contains only the token; never put the token itself in chat, command arguments or project files.
+3. Follow the client-specific setup, restart or reconnect the client, and inspect its available tools.
+
+| Client | Setup |
+|---|---|
+| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
+| Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
+| Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
+| ChatGPT Work | [Personal OAuth connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-public-connection-and-individual-oauth) |
+| Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
+| VS Code with GitHub Copilot | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=vscode&transport=http) |
+| GitHub Copilot CLI | [HTTP OAuth recipe](https://ai.virustotal.com/connect/mcp?client=copilot&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=copilot&transport=stdio) |
+| Devin CLI | [HTTP OAuth recipe](https://ai.virustotal.com/connect/mcp?client=devin&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=devin&transport=stdio) |
+| Windsurf / Devin Desktop | [Cascade HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cascade&transport=http) |
+| Antigravity IDE | [Local stdio configuration](#antigravity-ide) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
+| Gemini CLI | [Install the OAuth extension](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-cli-extension) |
+
+Remote OAuth configuration for [GitHub Copilot CLI](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) and [Devin CLI](https://docs.devin.ai/cli/extensibility/mcp/configuration) follows their official documentation; an OAuth-authenticated VirusTotal tool workflow has not yet been verified in either client.
+
+The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
+
+In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent, an IP report, automatic token renewal and a subsequent report after token expiry were verified on 2026-09-24; the guide records the remaining validation limits.
+
+For a first query, ask your agent:
+
+> Use VirusTotal to look up the SHA-256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Explain the source, analysis date, coverage and limitations.
+
+This is the empty-file hash. A report lookup does not read or upload local files. A missing report remains unknown, and zero detections do not establish safety.
 
 ## Install for local stdio
 
@@ -21,8 +77,6 @@ For automatic client configuration, use the [setup guide](https://ai.virustotal.
 
 The command installs the package from the official PyPI index in an isolated tool environment. Python 3.12 or newer is required. Keep `vt-mcp` on the MCP client's PATH, or use its absolute executable path. The package does not modify client configuration.
 
-For a connection without a local Python process, use **`https://ai.virustotal.com/mcp`** with a supported HTTP client. Supply the VTAI token through either `Authorization: Bearer` or `x-apikey`, using the client's protected credential settings. Send only one authentication header. Compatible HTTP clients can instead use the hosted [OAuth connection](https://ai.virustotal.com/connect/mcp?client=codex&transport=http), with browser sign-in and per-application permissions.
-
 ## Maintain an existing connection
 
 Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the configured transport and update a setup-managed installation without creating another token. Restart the client after an update. A configuration check does not exercise a tool or certify the model's behavior.
@@ -37,36 +91,6 @@ vt-mcp --version
 A client configured with `uvx ... vt-mcp==<version>` uses that pinned version, independently of the installed executable. Update its pin or use the setup guide. Hosted HTTP connections use the deployed server; they do not need a local package upgrade. Keep existing tokens and submission receipts.
 
 Missing-report, quota and temporary-service errors include `next_steps` and a documentation link. For unfamiliar files without a report, submit their actual bytes using the available file submission tools and the sharing guidance below. A hash alone cannot start an analysis. An unknown URL can use `submit_url`; domain and IP analyses can be refreshed with `reanalyze_domain` and `reanalyze_ip`. Retain a new UUIDv4 `request_id` before an intended network operation, then recover using that ID. VTAI report lookups do not explicitly submit an analysis request. On quota or temporary service failures, honor `retry_after_seconds` when present, retain credentials and avoid tight retry loops. Never automatically replay an uncertain submission or replace its request ID: recover its receipt first.
-
-## Connect your client
-
-1. For compatible remote clients, connect with OAuth using the MCP URL. Otherwise, reuse your existing VTAI token or [create one](https://ai.virustotal.com/connect/mcp).
-2. For stdio, save the token in a file readable only by your user, such as `~/.config/vt-mcp/token`. Set the MCP server's environment variable `VTAI_TOKEN_FILE` to that path and its command to `vt-mcp`. The file contains only the token; never put the token itself in chat, command arguments or project files.
-3. Follow the client-specific setup, restart or reconnect the client, and inspect its available tools.
-
-| Client | Setup |
-|---|---|
-| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
-| Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
-| Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
-| ChatGPT Work | [Personal OAuth connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-public-connection-and-individual-oauth) |
-| Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
-| VS Code with GitHub Copilot | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=vscode&transport=http) |
-| GitHub Copilot CLI | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=copilot&transport=stdio) |
-| Devin Local | [Local stdio recipe](https://ai.virustotal.com/connect/mcp?client=devin&transport=stdio) |
-| Windsurf / Devin Desktop | [Cascade HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cascade&transport=http) |
-| Antigravity IDE | [Local stdio configuration](#antigravity-ide) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
-| Gemini CLI | [Install the OAuth extension](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-cli-extension) |
-
-The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
-
-In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent, an IP report, automatic token renewal and a subsequent report after token expiry were verified on 2026-09-24; the guide records the remaining validation limits.
-
-For a first query, ask your agent:
-
-> Use VirusTotal to look up the SHA-256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Explain the source, analysis date, coverage and limitations.
-
-This is the empty-file hash. A report lookup does not read or upload local files. A missing report remains unknown, and zero detections do not establish safety.
 
 ## Antigravity IDE
 
