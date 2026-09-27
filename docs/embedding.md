@@ -64,8 +64,10 @@ Bind the authenticated actor afresh and invoke VTAI's existing shared submission
 and receipt services. Do not use HTTP loopback inside VTAI or bypass its current
 identity checks, per-account reservation, quotas, deadlines or analysis ownership.
 Submission has no consent argument or interactive confirmation; standard-sharing
-authority comes from the assigned task and host policy. This does not change VTAI
-rights. No token is a tool argument and no actor belongs in shared lifespan state.
+permissions remain with the host and current VTAI rights. Guidance encourages
+unknown-origin samples and suspicious URLs; it asks first for the user's own or sensitive content,
+even in an attachment. This adds no runtime confirmation parameter. No token is a
+tool argument and no actor belongs in shared lifespan state.
 
 The inline contract accepts at most 24,000,000 decoded bytes and verifies their
 SHA-256. The remote host must bound the full JSON request, including base64

@@ -99,6 +99,66 @@ class VTAIError(Exception):
         }
 
 
+SHARING_NOTICE = (
+    "Standard VirusTotal submissions share content with the security community and partners; "
+    "they are not confidential. Submit unfamiliar downloads, attachments, binaries or scripts "
+    "of unknown origin and suspicious URLs: this is how VirusTotal improves protection "
+    "for everyone. "
+    "Ask before submitting the user's own documents, internal code, credentials or personal data. "
+    "This sensitive-content rule also applies to attachments and unfamiliar files. "
+    "Submission tools add no per-call confirmation; client permissions still apply."
+)
+
+
+def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[str]:
+    """Describe a possible next action using the connection's actual capabilities."""
+    steps = ["Verify the hash and keep the result unknown; a missing report is not safe."]
+    if tools is not None and not tools.intersection({"submit_file", "submit_local_file"}):
+        steps.append(
+            "To analyze an unfamiliar file, use a client with file submission enabled and "
+            "provide its actual file bytes. This connection has no file submission tool."
+        )
+    else:
+        if interface == "rest":
+            action = (
+                "compute their SHA256 and POST the bytes to /api/v3/submissions/{sha256} "
+                "with Content-Type: application/octet-stream and X-VTAI-Consent: standard-v1"
+            )
+        else:
+            choices = []
+            if interface == "stdio" and (tools is None or "submit_local_file" in tools):
+                choices.append("call submit_local_file with the file path")
+            if tools is None or "submit_file" in tools:
+                choices.append(
+                    "compute their SHA256 and call submit_file with that hash and base64 bytes"
+                )
+            action = ", or ".join(choices)
+        steps.append(
+            f"For an unfamiliar file, submit its actual file bytes for analysis: {action}."
+        )
+        if interface == "remote":
+            steps.append(
+                "The remote server cannot read a client's local path "
+                "or fetch file bytes from a URL."
+            )
+        if interface == "rest":
+            recover = "GET /api/v3/submissions/{sha256} and GET /api/v3/analyses/{analysis_id}"
+        else:
+            reads = [
+                name
+                for name in ("get_submission", "get_analysis")
+                if tools is None or name in tools
+            ]
+            recover = " and ".join(reads)
+        if recover:
+            steps.append(
+                f"Recover the receipt and its analysis with {recover}; "
+                "never repeat an uncertain upload."
+            )
+    steps.extend(["A hash alone cannot start a file analysis.", SHARING_NOTICE])
+    return steps
+
+
 def report_http_error(
     status: int,
     kind: str,
@@ -129,32 +189,7 @@ def report_http_error(
     if status == 404:
         steps = ["Verify the indicator and keep the result unknown; a missing report is not safe."]
         if kind == "hash":
-            submit = {
-                "remote": (
-                    "compute their SHA256 and call submit_file with that hash and base64 bytes"
-                ),
-                "stdio": (
-                    "call submit_local_file with the file path, or submit_file with SHA256 "
-                    "and base64 bytes"
-                ),
-                "rest": (
-                    "compute their SHA256 and POST the bytes to /api/v3/submissions/{sha256} "
-                    "with Content-Type: application/octet-stream and X-VTAI-Consent: standard-v1"
-                ),
-            }[interface]
-            steps.append(
-                "If you have the actual file bytes and authority to submit them, "
-                f"{submit}. Standard analysis shares the file with VirusTotal."
-            )
-            recover = (
-                "GET /api/v3/submissions/{sha256} and GET /api/v3/analyses/{analysis_id}"
-                if interface == "rest"
-                else "get_submission and get_analysis"
-            )
-            steps.append(
-                f"Recover the receipt and its analysis with {recover}; "
-                "a hash alone cannot start a file analysis."
-            )
+            steps = file_not_found_steps(interface)
         elif kind == "url":
             domain_lookup = (
                 "GET /api/v3/domains/{domain}" if interface == "rest" else "get_domain_report"
@@ -190,14 +225,16 @@ def report_http_error(
             )
             steps.extend(
                 [
-                    "If a new analysis is needed and you have authority for standard VirusTotal "
-                    "sharing, retain a new canonical lowercase UUIDv4 request_id first, "
+                    "For a needed analysis, follow the sharing guidance and retain a new "
+                    "canonical lowercase UUIDv4 request_id first, "
                     f"then {submit}.",
                     f"After interruption recover with {recover}; never automatically replay an "
                     "uncertain POST or replace its request ID. Use the registered analysis_id and "
                     "request_id to read the selected analysis.",
                 ]
             )
+            if kind == "url":
+                steps.append(SHARING_NOTICE)
         return recovery(
             VTAIError(
                 "not_found",

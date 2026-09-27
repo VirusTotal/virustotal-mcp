@@ -36,7 +36,7 @@ def test_missing_file_describes_available_submission_and_recovery(interface):
     steps = " ".join(error["next_steps"])
     assert error["code"] == "not_found" and error["retryable"] is False
     assert "does not establish safety" in error["message"]
-    assert "actual file bytes" in steps and "shares the file with VirusTotal" in steps
+    assert "actual file bytes" in steps and "not confidential" in steps
     assert "hash alone cannot start" in steps
     assert (
         "submit_local_file" in steps if interface == "stdio" else "submit_local_file" not in steps
