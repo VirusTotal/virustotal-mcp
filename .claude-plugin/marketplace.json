@@ -1,0 +1,12 @@
+{
+  "name": "virustotal",
+  "owner": {"name": "VirusTotal", "url": "https://www.virustotal.com"},
+  "metadata": {"description": "Official VirusTotal integrations for Claude Code."},
+  "plugins": [
+    {
+      "name": "virustotal",
+      "source": "./plugins/claude-code",
+      "description": "Official VirusTotal threat intelligence and local file submission through OAuth."
+    }
+  ]
+}
