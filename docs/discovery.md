@@ -1,6 +1,7 @@
 # Find and connect to VirusTotal MCP
 
-Connect to the hosted endpoint or install
+Connect to **`https://ai.virustotal.com/mcp`** with browser OAuth in a compatible
+client; no static token or local Python package is needed. Alternatively, install
 [`vt-mcp` 0.9.5 from PyPI](https://pypi.org/project/vt-mcp/0.9.5/) for local stdio.
 The package and the public source repository,
 [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), use
@@ -35,8 +36,11 @@ public source repository. GitHub Actions OIDC establishes the corporate namespac
 publication is bound to repository ID `1361592455`. The package README carries the
 matching `mcp-name` ownership marker.
 
-Registry metadata **0.9.3** updates the local package to **vt-mcp 0.9.5**. When a
-client cannot transmit file bytes, missing-file guidance offers the existing
+Registry metadata **0.9.5** aligns its version with the existing **vt-mcp 0.9.5** package.
+The description identifies this as the official VirusTotal MCP server: “official”
+refers to VirusTotal ownership, not a Registry endorsement or compatibility badge.
+
+When a client cannot transmit file bytes, missing-file guidance offers the existing
 VirusTotal web upload followed by a hash report lookup. That external upload
 creates no VTAI receipt or registered analysis ID. Sharing guidance and permissions
 still apply, and repeated queries still count toward existing quotas.
@@ -108,14 +112,31 @@ published entry anonymously and compares its manifest and active status. No
 permanent Registry secret or VTAI token is needed. CI validates the schema and
 manifest contract without requiring an already-published PyPI package.
 
-`retire` and `restore` change only corporate metadata version **0.9.3**. Retirement
-preserves its manifest and status message in the `include_deleted=true` view;
-restoration reactivates the same entry and requires the matching PyPI release.
-Corporate versions **0.8.2–0.8.7** and **0.9.0–0.9.2** retain their original manifests
-and active status. Metadata **0.9.0** continues to reference package **0.9.1**,
-metadata **0.9.1** continues to reference package **0.9.2**, and metadata **0.9.2**
-continues to reference package **0.9.3**.
-The personal **0.8.0** entry remains retired with its corporate migration message. The Registry may update its computed latest-version flag.
+`retire` and `restore` change only current corporate metadata version **0.9.5**.
+Retirement preserves its manifest and status message in the `include_deleted=true`
+view; restoration reactivates the same entry and requires the matching PyPI release.
+The personal **0.8.0** entry remains retired with its corporate migration message.
+Corporate **0.9.0–0.9.3** retain their original manifests and active status; differing
+Registry/package version numbers in those historical entries are intentional pins,
+not evidence of a broken package. The Registry may update its computed latest flag.
+
+After publishing **0.9.5**, the same workflow can mark an individual corporate
+**0.8.2–0.8.7** entry as deprecated. Choose `deprecate-legacy`, its exact version in
+`target_version`, and the independently reviewed main SHA. This is a metadata
+warning: the entry remains visible and its manifest and package bytes are unchanged.
+The fixed message points clients to the current **0.9.5** entry. There is no bulk
+operation, package deletion or automatic deprecation during publication.
+
+Each run reads all pinned entries before changing exactly one version, records its
+intent, and checks that every other entry is unchanged afterward. A failed or timed
+out run is reconciled by reading the status and preserved intent before another
+mutation; it is never automatically retried. To undo an accepted deprecation, use
+`restore-legacy` with the same version and reviewed SHA. It restores `active`
+without a status message. The allowlist excludes **0.9.x** and the personal namespace.
+
+These operations use the Registry's official
+[per-version status command](https://github.com/modelcontextprotocol/registry/blob/main/docs/reference/cli/commands.md#mcp-publisher-status).
+No PyPI release or hosted-service deployment is part of this metadata update.
 
 Publication never overwrites an existing name/version or automatically retries a
 mutation. After a failure or timeout, inspect every pinned version in both

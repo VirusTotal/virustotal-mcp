@@ -39,8 +39,8 @@ IDENTITIES = {
         "id": 1361592455,
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
-        "version": "0.9.3",
-        "manifest_sha256": "cd05d73567bb82d89ed000b2596c2a89b778896685b53335c0a4c95357e8c03b",
+        "version": "0.9.5",
+        "manifest_sha256": "c6e6563b26842b894d50d5b25c050e945756c27cf7bee7a1212ff9c2b8152016",
         "package_release": {
             "version": "0.9.5",
             "source_sha": "e8ea36430e765db022bc4865798d596e8d741a29",
@@ -94,9 +94,16 @@ PREVIOUS = {
             "version": "0.9.2",
             "manifest_sha256": "16f520a86c93931a85f8cd677428263f2d48ee30787ad1cb6120491c86950b0e",
         },
+        {
+            "version": "0.9.3",
+            "manifest_sha256": "cd05d73567bb82d89ed000b2596c2a89b778896685b53335c0a4c95357e8c03b",
+        },
     )
 }
-OPERATIONS = {"verify-identity", "publish", "retire", "restore"}
+LEGACY_VERSIONS = {"0.8.2", "0.8.3", "0.8.4", "0.8.5", "0.8.6", "0.8.7"}
+LEGACY_OPERATIONS = {"deprecate-legacy", "restore-legacy"}
+LEGACY_MESSAGE = "Superseded by io.github.VirusTotal/virustotal-mcp 0.9.5. Use the current entry."
+OPERATIONS = {"verify-identity", "publish", "retire", "restore"} | LEGACY_OPERATIONS
 RETIRE_MESSAGES = {
     "king-tero/vt-mcp": "Moved to io.github.VirusTotal/virustotal-mcp.",
     "VirusTotal/virustotal-mcp": "Temporarily retired for Registry identity recovery.",
@@ -136,6 +143,14 @@ def context(environ):
     sha = environ.get("GITHUB_SHA", "")
     operation = environ.get("REGISTRY_OPERATION", "verify-identity")
     require(operation in OPERATIONS, "invalid_operation")
+    target = environ.get("REGISTRY_TARGET_VERSION", "")
+    if operation in LEGACY_OPERATIONS:
+        require(
+            repository == "VirusTotal/virustotal-mcp" and target in LEGACY_VERSIONS,
+            "invalid_legacy_target",
+        )
+    else:
+        require(not target, "unexpected_target_version")
     require(
         re.fullmatch(r"[a-f0-9]{40}", sha)
         and environ.get("REVIEWED_SHA") == sha
@@ -145,7 +160,13 @@ def context(environ):
         == f"{repository}/.github/workflows/mcp-registry.yml@refs/heads/main",
         "reviewed_main_required",
     )
-    return {"repository": repository, "sha": sha, "operation": operation, **selected}
+    return {
+        "repository": repository,
+        "sha": sha,
+        "operation": operation,
+        "target_version": target,
+        **selected,
+    }
 
 
 def child_env(environ, *, oidc=False):
@@ -426,7 +447,16 @@ def snapshot():
             )
             is_current = version == selected["version"]
             if not is_current:
-                require(exact["status"] == "active", "previous_version_status_changed")
+                legacy = repository == "VirusTotal/virustotal-mcp" and version in LEGACY_VERSIONS
+                require(
+                    exact["status"] == "active"
+                    or (
+                        legacy
+                        and exact["status"] == "deprecated"
+                        and exact["status_message_sha256"] == digest(LEGACY_MESSAGE)
+                    ),
+                    "previous_version_status_changed",
+                )
             observed[repository if is_current else f"{repository}@{version}"] = exact
     return observed
 
@@ -452,6 +482,17 @@ def action(current, before):
             and personal["status_message_sha256"] == digest(RETIRE_MESSAGES["king-tero/vt-mcp"]),
             "personal_retirement_changed",
         )
+    if operation in LEGACY_OPERATIONS:
+        require(own == "active", "current_entry_must_be_active")
+        version = current["target_version"]
+        target = before[f"{current['repository']}@{version}"]
+        status = "deprecated" if operation == "deprecate-legacy" else "active"
+        if target["status"] == status:
+            return None
+        args = ["status", "--status", status]
+        if status == "deprecated":
+            args += ["--message", LEGACY_MESSAGE]
+        return args + [current["name"], version]
     if operation == "publish":
         require(own in {"absent", "active"}, "existing_version_requires_restore")
         return ["publish", "server.json"] if own == "absent" else None
@@ -604,7 +645,9 @@ def write_json(path, value, *, exclusive=False):
 
 def operate(environ, result):
     current = context(environ)
-    result.update({k: current[k] for k in ("repository", "id", "sha", "operation")})
+    result.update(
+        {k: current[k] for k in ("repository", "id", "sha", "operation", "target_version")}
+    )
     manifest_contract(json.loads(Path("server.json").read_text()), current)
     result["phase"] = "github_preflight"
     github_preflight(current, environ)  # Must pass before requesting OIDC.
@@ -627,6 +670,7 @@ def operate(environ, result):
             Path(environ["RUNNER_TEMP"]) / "registry-mutation-intent.json",
             {
                 "operation": current["operation"],
+                "target_version": current["target_version"],
                 "sha": current["sha"],
                 "before": before,
                 "state": "may_have_been_applied_reconcile_before_another_attempt",
@@ -637,16 +681,27 @@ def operate(environ, result):
         command([publisher, *args], child_env(environ, oidc=True))  # Exactly one, never retried.
         result["phase"] = "postcondition"
         result["after"] = after = snapshot()
-        own = after[current["repository"]]
-        expected = "deleted" if current["operation"] == "retire" else "active"
+        changed = current["repository"]
+        if current["operation"] in LEGACY_OPERATIONS:
+            changed += "@" + current["target_version"]
+        own = after[changed]
+        expected = {
+            "retire": "deleted",
+            "deprecate-legacy": "deprecated",
+        }.get(current["operation"], "active")
         require(own["status"] == expected, "postcondition_failed")
-        if expected == "deleted":
+        if expected in {"deleted", "deprecated"}:
+            message = (
+                LEGACY_MESSAGE
+                if expected == "deprecated"
+                else RETIRE_MESSAGES[current["repository"]]
+            )
             require(
-                own["status_message_sha256"] == digest(RETIRE_MESSAGES[current["repository"]]),
+                own["status_message_sha256"] == digest(message),
                 "postcondition_failed",
             )
         require(
-            all(after[r] == value for r, value in before.items() if r != current["repository"]),
+            all(after[r] == value for r, value in before.items() if r != changed),
             "counterpart_changed",
         )
         result["status"] = "completed"

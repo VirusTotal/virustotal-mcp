@@ -44,6 +44,11 @@ def manifest(repository, version=None):
     result = json.loads((ROOT / "server.json").read_text())
     selected = registry.IDENTITIES[repository]
     result.update(name=selected["name"], version=version or selected["version"])
+    if version in {"0.9.0", "0.9.1", "0.9.2", "0.9.3"}:
+        result["description"] = (
+            "VirusTotal reports, file and URL submissions, domain/IP reanalysis, "
+            "and analysis recovery."
+        )
     if repository == PERSONAL or version in {"0.8.2", "0.8.3", "0.8.4", "0.8.5", "0.8.6", "0.8.7"}:
         result["description"] = (
             "VirusTotal reports for files, URLs, domains and IPs, plus file submission "
@@ -102,6 +107,8 @@ def entry(repository, status, version=None):
         official["statusMessage"] = "Previous public lifecycle message"
     if repository == PERSONAL and status == "deleted":
         official["statusMessage"] = registry.RETIRE_MESSAGES[PERSONAL]
+    if repository == CORPORATE and version in registry.LEGACY_VERSIONS and status == "deprecated":
+        official["statusMessage"] = registry.LEGACY_MESSAGE
     return {"server": manifest(repository, version), "_meta": {registry.OFFICIAL: official}}
 
 
@@ -180,6 +187,7 @@ def harness(tmp_path, monkeypatch):
                 "0.9.0",
                 "0.9.1",
                 "0.9.2",
+                "0.9.3",
             )
         },
         pypi_reads=[],
@@ -348,17 +356,31 @@ def harness(tmp_path, monkeypatch):
                 if operation == "publish":
                     state.entries[repository] = entry(repository, "active")
                 else:
-                    assert argv[2:4] in (["--status", "active"], ["--status", "deleted"])
+                    assert argv[2:4] in (
+                        ["--status", "active"],
+                        ["--status", "deleted"],
+                        ["--status", "deprecated"],
+                    )
                     new_status = argv[3]
-                    state.entries[repository] = entry(repository, new_status)
-                    if new_status == "deleted":
-                        assert argv[4:6] == ["--message", registry.RETIRE_MESSAGES[repository]]
-                        state.entries[repository]["_meta"][registry.OFFICIAL]["statusMessage"] = (
-                            registry.RETIRE_MESSAGES[repository]
+                    version = argv[-1]
+                    if version in registry.LEGACY_VERSIONS:
+                        assert repository == CORPORATE
+                        assert version == intent["target_version"]
+                        state.previous[version] = updated = entry(repository, new_status, version)
+                    else:
+                        assert version == selected["version"]
+                        state.entries[repository] = updated = entry(repository, new_status)
+                    if new_status != "active":
+                        message = (
+                            registry.LEGACY_MESSAGE
+                            if new_status == "deprecated"
+                            else registry.RETIRE_MESSAGES[repository]
                         )
+                        assert argv[4:6] == ["--message", message]
+                        updated["_meta"][registry.OFFICIAL]["statusMessage"] = message
                     else:
                         assert "--message" not in argv
-                    assert argv[-2:] == [selected["name"], selected["version"]]
+                    assert argv[-2] == selected["name"]
             if state.after_mutation:
                 state.after_mutation()
         if operation == state.fail:
@@ -386,7 +408,7 @@ def test_verify_identity_authenticates_but_never_changes_entries(harness, capsys
     assert registry.main([]) == 0
     result = harness.result()
     assert result["status"] == "verified" and result["identity_verified"]
-    assert result["before"] == result["after"] and len(harness.reads) == 26
+    assert result["before"] == result["after"] and len(harness.reads) == 28
     assert not result["mutation_attempted"] and not harness.mutations()
     assert result["credential_cleanup"] == "removed"
     assert not registry.credential_paths()[0].exists()
@@ -664,6 +686,7 @@ def test_publish_keeps_previous_manifests_and_uses_existing_package(harness):
         ("0.9.0", "c5a0553072f11e1c5f51d8d1b57353825c79333ccc72c0bc8b76a3775a75864b"),
         ("0.9.1", "972d39aaa03bb52172c1f4e3b615ab0d28985282ef3da69d369c3033f95e6adf"),
         ("0.9.2", "16f520a86c93931a85f8cd677428263f2d48ee30787ad1cb6120491c86950b0e"),
+        ("0.9.3", "cd05d73567bb82d89ed000b2596c2a89b778896685b53335c0a4c95357e8c03b"),
     ):
         previous = f"{CORPORATE}@{version}"
         assert result["before"][previous] == result["after"][previous]
@@ -671,7 +694,7 @@ def test_publish_keeps_previous_manifests_and_uses_existing_package(harness):
         assert result["after"][previous]["status"] == "active"
     assert result["before"][PERSONAL] == result["after"][PERSONAL]
     assert result["after"][PERSONAL]["status"] == "deleted"
-    assert result["after"][CORPORATE]["version"] == "0.9.3"
+    assert result["after"][CORPORATE]["version"] == "0.9.5"
     assert result["pypi"]["version"] == "0.9.5"
     assert result["pypi"]["source_sha"] == PACKAGE_SOURCE_SHA != result["sha"]
     assert result["pypi"]["files"] == {
@@ -875,7 +898,7 @@ def test_manifest_uses_only_a_path_for_stdio_credential():
     value = manifest(CORPORATE)
     (package,) = value["packages"]
     assert package["registryType"] == "pypi" and package["identifier"] == "vt-mcp"
-    assert package["version"] == "0.9.5" and value["version"] == "0.9.3"
+    assert package["version"] == "0.9.5" and value["version"] == "0.9.5"
     assert package["transport"] == {"type": "stdio"} and package["runtimeHint"] == "uvx"
     (setting,) = package["environmentVariables"]
     assert setting["name"] == "VTAI_TOKEN_FILE"
@@ -896,9 +919,140 @@ def test_manifest_uses_only_a_path_for_stdio_credential():
 def test_workflow_keeps_publisher_pin_scoped_oidc_and_sanitized_artifact():
     text = (ROOT / ".github/workflows/mcp-registry.yml").read_text()
     assert text.count("a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc") == 2
-    assert "options: [verify-identity, publish, retire, restore]" in text
+    assert (
+        "options: [verify-identity, publish, retire, restore, deprecate-legacy, restore-legacy]"
+        in text
+    )
+    assert "REGISTRY_TARGET_VERSION: ${{ inputs.target_version }}" in text
     assert (
         text.count("id-token: write") == 1 and "id-token: write" not in text.split("  registry:")[0]
     )
     assert '"$RUNNER_TEMP/mcp-publisher"' not in text
     assert "registry-mutation-intent.json" in text and "token.json" not in text
+
+
+@pytest.mark.parametrize("version", sorted(registry.LEGACY_VERSIONS))
+@pytest.mark.parametrize(
+    "operation,before_status,after_status",
+    [("deprecate-legacy", "active", "deprecated"), ("restore-legacy", "deprecated", "active")],
+)
+def test_legacy_status_changes_one_exact_version_only(
+    harness, version, operation, before_status, after_status
+):
+    harness.select(CORPORATE, operation)
+    harness.env["REGISTRY_TARGET_VERSION"] = version
+    harness.entries = {CORPORATE: entry(CORPORATE, "active"), PERSONAL: entry(PERSONAL, "deleted")}
+    harness.previous[version] = entry(CORPORATE, before_status, version)
+    assert registry.main([]) == 0
+    result = harness.result()
+    changed = f"{CORPORATE}@{version}"
+    assert result["status"] == "completed" and result["target_version"] == version
+    assert result["after"][changed]["status"] == after_status
+    assert (
+        result["after"][changed]["manifest_sha256"] == result["before"][changed]["manifest_sha256"]
+    )
+    assert all(
+        result["after"][key] == value for key, value in result["before"].items() if key != changed
+    )
+    assert len(harness.mutations()) == 1 and not harness.pypi_reads
+    assert harness.mutations()[0][-2:] == [registry.IDENTITIES[CORPORATE]["name"], version]
+    assert result["credential_cleanup"] == "removed"
+
+
+@pytest.mark.parametrize(
+    "operation,status", [("deprecate-legacy", "deprecated"), ("restore-legacy", "active")]
+)
+def test_legacy_status_already_applied_is_read_only_noop(harness, operation, status):
+    harness.select(CORPORATE, operation)
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    harness.entries = {CORPORATE: entry(CORPORATE, "active"), PERSONAL: entry(PERSONAL, "deleted")}
+    harness.previous["0.8.3"] = entry(CORPORATE, status, "0.8.3")
+    assert registry.main([]) == 0
+    assert harness.result()["status"] == "noop" and not harness.mutations()
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["", "0.8.0", "0.8.1", "0.8.8", "0.9.0", "0.9.3", "0.9.5", "latest", "--all-versions"],
+)
+def test_legacy_target_rejected_before_authentication(harness, version):
+    harness.select(CORPORATE, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = version
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "invalid_legacy_target"
+    assert not harness.calls and not harness.mutations()
+
+
+def test_legacy_operation_rejects_personal_namespace(harness):
+    harness.select(PERSONAL, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    assert registry.main([]) == 1 and not harness.calls
+
+
+@pytest.mark.parametrize("operation", ["verify-identity", "publish", "retire", "restore"])
+def test_target_cannot_redirect_current_version_operations(harness, operation):
+    harness.select(CORPORATE, operation)
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "unexpected_target_version" and not harness.calls
+
+
+@pytest.mark.parametrize("status", ["absent", "deprecated", "deleted"])
+def test_legacy_deprecation_requires_active_replacement(harness, status):
+    harness.select(CORPORATE, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    harness.entries = {CORPORATE: entry(CORPORATE, status), PERSONAL: entry(PERSONAL, "deleted")}
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "current_entry_must_be_active" and not harness.mutations()
+
+
+@pytest.mark.parametrize("problem", ["deleted", "wrong_message", "missing", "changed_manifest"])
+def test_legacy_drift_fails_closed_before_mutation(harness, problem):
+    harness.select(CORPORATE, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    harness.entries = {CORPORATE: entry(CORPORATE, "active"), PERSONAL: entry(PERSONAL, "deleted")}
+    row = entry(CORPORATE, "deprecated", "0.8.3")
+    if problem == "deleted":
+        row["_meta"][registry.OFFICIAL]["status"] = "deleted"
+    elif problem == "wrong_message":
+        row["_meta"][registry.OFFICIAL]["statusMessage"] = "Unreviewed message"
+    elif problem == "changed_manifest":
+        row["server"]["description"] += " changed"
+    harness.previous["0.8.3"] = None if problem == "missing" else row
+    assert registry.main([]) == 1 and not harness.mutations()
+
+
+def test_legacy_lost_response_preserves_intent_and_never_replays(harness, capsys):
+    harness.select(CORPORATE, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    harness.entries = {CORPORATE: entry(CORPORATE, "active"), PERSONAL: entry(PERSONAL, "deleted")}
+    harness.fail = "status"
+    assert registry.main([]) == 1
+    result = harness.result()
+    assert result["reconciliation_required"] and result["mutation_attempted"]
+    assert result["target_version"] == "0.8.3" and result["credential_cleanup"] == "removed"
+    assert harness.previous["0.8.3"]["_meta"][registry.OFFICIAL]["status"] == "deprecated"
+    intent = json.loads((harness.temporary / "registry-mutation-intent.json").read_text())
+    assert intent["target_version"] == "0.8.3" and intent["before"] == result["before"]
+    assert registry.main([]) == 1 and len(harness.mutations()) == 1
+    assert MARKER not in capsys.readouterr().out
+
+
+def test_legacy_postcondition_rejects_change_to_another_version(harness):
+    harness.select(CORPORATE, "deprecate-legacy")
+    harness.env["REGISTRY_TARGET_VERSION"] = "0.8.3"
+    harness.entries = {CORPORATE: entry(CORPORATE, "active"), PERSONAL: entry(PERSONAL, "deleted")}
+    harness.after_mutation = lambda: harness.previous.update(
+        {"0.8.4": entry(CORPORATE, "deprecated", "0.8.4")}
+    )
+    assert registry.main([]) == 1
+    assert harness.result()["error"] == "counterpart_changed" and len(harness.mutations()) == 1
+
+
+def test_publication_preserves_previously_deprecated_legacy_entry(harness):
+    harness.select(CORPORATE, "publish")
+    harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
+    harness.previous["0.8.3"] = entry(CORPORATE, "deprecated", "0.8.3")
+    assert registry.main([]) == 0
+    result = harness.result()
+    assert result["after"][f"{CORPORATE}@0.8.3"] == result["before"][f"{CORPORATE}@0.8.3"]
