@@ -108,6 +108,7 @@ SHARING_NOTICE = (
     "This sensitive-content rule also applies to attachments and unfamiliar files. "
     "Submission tools add no per-call confirmation; client permissions still apply."
 )
+WEB_UPLOAD_URL = "https://www.virustotal.com/gui/home/upload"
 
 
 def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[str]:
@@ -152,9 +153,22 @@ def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[
             recover = " and ".join(reads)
         if recover:
             steps.append(
-                f"Recover the receipt and its analysis with {recover}; "
+                "For uploads through this connection, recover the receipt and its analysis "
+                f"with {recover}; "
                 "never repeat an uncertain upload."
             )
+    lookup = "GET /api/v3/files/{hash}" if interface == "rest" else "get_file_report(hash)"
+    steps.extend(
+        [
+            "If this client cannot transmit the file bytes, offer the user "
+            f"{WEB_UPLOAD_URL} under the same sharing guidance. "
+            "Do not use this option to bypass permissions or quota errors.",
+            "After the user uploads via the website, obtain the file's hash and read its "
+            f"report with {lookup}. Web uploads do not create VTAI receipts or register "
+            "analysis IDs here. The report may not be available yet; every repeated lookup "
+            "consumes quota, including missing or cached reports.",
+        ]
+    )
     steps.extend(["A hash alone cannot start a file analysis.", SHARING_NOTICE])
     return steps
 

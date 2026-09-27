@@ -57,7 +57,7 @@ executes the file or adds a comment. Empty files are permitted. The 24 MB inline
 ceiling accounts for base64 expansion inside the bounded HTTP request; it is not
 32 MB of decoded content. The local/binary path retains the 32,000,000-byte limit.
 
-File submission paths use the same VTAI identity, rights, quota policy and existing per-account
+The MCP and API file submission paths use the same VTAI identity, rights, quota policy and existing per-account
 submission receipts. VTAI checks for a report before starting a new submission:
 only confirmed absence allows a new upload. An `exists` response describes that
 existing report; it does not establish a new analysis.
@@ -100,6 +100,23 @@ on the assistant's machine. Keep the SHA-256 and use `get_submission` with the s
 account. Do not change accounts or delete local state to work around an unknown
 outcome. A repeated successful receipt read is recovery, not evidence of another
 upload or scan.
+
+### When the client cannot transmit file bytes
+
+Use the available submission tool when the client can supply the actual bytes.
+If it cannot, offer the user the existing [VirusTotal upload page](https://www.virustotal.com/gui/home/upload)
+under the same public-sharing and sensitive-content guidance above. This is a
+transfer alternative, not a way to bypass denied permissions or quota errors.
+Remote HTTP alone does not establish whether a host can access an attachment or
+transmit its bytes; capabilities depend on the actual client and workflow.
+
+After the user uploads through the website, obtain the file's hash and call
+`get_file_report(hash)`. A web upload creates no VTAI receipt or registered analysis
+ID: `get_submission` and `get_analysis` cannot recover that external upload.
+The report may not be available immediately; a missing report stays unknown.
+Limit later reads to the task's time and request budget. Every repeated lookup
+counts toward quota, including missing reports and cache hits. Do not upload again
+just because a report is not yet available.
 
 The [client guide](clients.md) lists exact grants in Agy → Claude Code → Codex order.
 The [0.8 submission evidence](clients.md#version-08-submission-evidence) records

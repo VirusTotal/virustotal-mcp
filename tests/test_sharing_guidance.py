@@ -8,12 +8,13 @@ import httpx
 import pytest
 from mcp import Client
 
-from vt_mcp.reports import report_http_error
+from vt_mcp.reports import SHARING_NOTICE, report_http_error
 from vt_mcp.server import create_report_server, create_server
 from vt_mcp.vtai_client import Settings
 
 pytestmark = pytest.mark.anyio
 HASHES = ("a" * 32, "b" * 40, "c" * 64)
+WEB_UPLOAD = "https://www.virustotal.com/gui/home/upload"
 
 
 @pytest.mark.parametrize("surface", ["stdio", "remote", "read_only", "files_without_analysis"])
@@ -51,6 +52,14 @@ async def test_missing_file_guidance_uses_only_available_tools_and_keeps_read_co
     async with Client(server, mode="legacy") as client:
         names = {tool.name for tool in (await client.list_tools()).tools}
         assert len(client.instructions) < 2048
+        assert SHARING_NOTICE in client.instructions
+        assert WEB_UPLOAD in client.instructions
+        assert "get_file_report(hash)" in client.instructions
+        assert "not VTAI receipt or selected-analysis recovery" in client.instructions
+        assert (
+            len(names)
+            == {"stdio": 11, "remote": 10, "read_only": 4, "files_without_analysis": 6}[surface]
+        )
         if surface != "stdio":
             assert "submit_local_file" not in client.instructions
         for value in HASHES:
@@ -72,6 +81,16 @@ async def test_missing_file_guidance_uses_only_available_tools_and_keeps_read_co
                 "documentation_url",
             }
             steps = " ".join(error["next_steps"])
+            web_index = next(i for i, step in enumerate(error["next_steps"]) if WEB_UPLOAD in step)
+            web_offer, web_read = error["next_steps"][web_index : web_index + 2]
+            assert web_offer.startswith("If this client cannot transmit the file bytes")
+            assert "permissions or quota errors" in web_offer
+            assert "get_file_report(hash)" in web_read
+            assert not re.search(r"\bget_(?:submission|analysis)\b", web_read)
+            assert "do not create VTAI receipts" in web_read
+            assert "may not be available yet" in web_read
+            assert "every repeated lookup consumes quota" in web_read
+            assert error["next_steps"][-1] == SHARING_NOTICE
             mentioned = set(
                 re.findall(r"\b(?:submit_(?:local_file|file)|get_(?:submission|analysis))\b", steps)
             )
@@ -80,6 +99,7 @@ async def test_missing_file_guidance_uses_only_available_tools_and_keeps_read_co
                 assert not mentioned
             else:
                 assert "submit_file" in mentioned and "SHA256" in steps
+                assert "submit_file" in " ".join(error["next_steps"][:web_index])
                 assert (
                     value not in steps
                 )  # Never present an MD5/SHA1 lookup as the submission SHA256.
@@ -103,3 +123,21 @@ async def test_guidance_does_not_offer_removed_local_or_recovery_tools():
             re.findall(r"\b(?:submit_(?:local_file|file)|get_(?:submission|analysis))\b", steps)
         )
         assert mentioned == {"submit_local_file"} and mentioned <= names
+
+
+@pytest.mark.parametrize("status", [401, 403, 429, 503])
+async def test_transfer_fallback_is_not_offered_for_access_quota_or_service_errors(status):
+    calls = []
+
+    def http(request):
+        calls.append(request.method)
+        return httpx.Response(status, json={})
+
+    server = create_server(Settings("synthetic-only"), transport=httpx.MockTransport(http))
+    async with Client(server, mode="legacy") as client:
+        result = await client.call_tool("get_file_report", {"hash": HASHES[-1]})
+        assert result.is_error
+        error = result.structured_content["error"]
+        assert error["http_status"] == status and error["code"] != "not_found"
+        assert WEB_UPLOAD not in json.dumps(result.structured_content)
+    assert calls == ["GET"]
