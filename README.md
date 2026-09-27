@@ -11,7 +11,7 @@ Use the free VTAI service with its current access limits. Compatible remote clie
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.2'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.3'
 vt-mcp --version
 ```
 
@@ -30,7 +30,7 @@ Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the config
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
 ```sh
-uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.2'
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.3'
 vt-mcp --version
 ```
 
@@ -133,9 +133,11 @@ For integrations beyond MCP client setup, see the [embedding guide](https://gith
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.2/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.3/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
+
+Version 0.9.3 clarifies which samples to contribute and when to ask before sharing. Missing file reports offer a submission next step matched to the available tools and transport. Repeated report queries still count toward existing quotas. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.3/docs/releases/v0.9.3.md).
 
 Version 0.9.2 corrects `get_submission` discovery to advertise `openWorldHint: false`, reflecting its read of the current account's bounded receipt. Tool schemas and receipt behavior remain compatible.
 
