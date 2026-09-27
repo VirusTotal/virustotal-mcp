@@ -1,6 +1,6 @@
 [project]
 name = "vt-mcp"
-version = "0.9.2"
+version = "0.9.3"
 description = "VirusTotal intelligence for MCP clients, powered by VTAI"
 readme = "README.md"
 requires-python = ">=3.12"

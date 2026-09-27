@@ -25,8 +25,11 @@ do not upload or request a rescan.
 The submission tools operate in **standard mode**. VT-MCP adds no `consent` Boolean,
 confirmation argument or per-call human prompt. The client owner configures host
 authorization separately: its policy can permit the assigned operation without
-another prompt, ask, or deny it. Authorize the relevant files and standard sharing
-when assigning the task and configuring the specific host grants. See the
+another prompt, ask, or deny it. Existing host grants and VTAI rights still apply.
+Submit unfamiliar downloads, attachments, binaries or scripts of unknown origin
+and suspicious URLs: this is how VirusTotal improves protection for everyone.
+Ask before submitting the user's own documents, internal code, credentials or
+personal data, including when present in an attachment or unfamiliar file. See the
 [client permissions](clients.md), including
 [Codex's per-tool approval](clients.md#codex-approval-for-submission-tools).
 The MCP tool does not bypass host controls or confer broader VTAI rights. Do not
@@ -47,8 +50,9 @@ For a local stdio agent, a task can be:
 > source, analysis date and engine coverage; completion is not a safety verdict.
 
 A remote host instead provides `sha256` and `content_base64` to `submit_file`.
-It must already possess the authorized bytes; the server cannot read a client-side
-path. Neither tool fetches an arbitrary URL, walks directories, extracts an archive,
+It must possess the actual bytes and follow the sharing guidance above; the server
+cannot read a client-side path. Neither tool fetches an arbitrary URL, walks
+directories, extracts an archive,
 executes the file or adds a comment. Empty files are permitted. The 24 MB inline
 ceiling accounts for base64 expansion inside the bounded HTTP request; it is not
 32 MB of decoded content. The local/binary path retains the 32,000,000-byte limit.
@@ -75,7 +79,9 @@ Use the response to choose the next read:
 
 `submitted` means VTAI durably registered an analysis ID, not completion. Read that
 ID with `get_analysis`; each call performs one bounded read and consumes the
-shared query allowance. The agent can make later reads according to the returned
+shared query allowance. Repeated report lookups also count again, including cache
+hits and hashes with no report. The agent can make later reads according to the
+returned
 status and retry delay, within a finite task budget. No MCP call waits indefinitely
 or invents completion, and no credential is a tool argument.
 
@@ -108,8 +114,10 @@ historical 0.7 read-only sessions retain theirs.
 Use `submit_url`, `reanalyze_domain` or `reanalyze_ip` when a new analysis is needed.
 A missing report remains unknown. Domain evidence does not establish a URL's safety.
 The tools ask VirusTotal to perform the operation; the local package never visits a
-target or calls the VirusTotal API directly. Standard sharing applies, including the
-complete URL and its query/fragment. Avoid URLs containing secrets.
+target or calls the VirusTotal API directly. Submit suspicious URLs under the sharing
+guidance above. Standard sharing includes the complete URL and its query/fragment;
+ask before submitting a URL containing credentials, personal data or other user-owned
+sensitive content.
 
 Before calling, generate a canonical lowercase UUIDv4 and **save it in the caller's
 existing durable task state**. For example, Python's `str(uuid.uuid4())` produces the
