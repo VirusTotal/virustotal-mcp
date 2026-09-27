@@ -685,7 +685,9 @@ def test_publication_allows_registry_to_update_computed_latest_flag(harness):
 
 @pytest.mark.parametrize("after_mutation", [False, True])
 @pytest.mark.parametrize("drift", ["missing", "status", "manifest"])
-@pytest.mark.parametrize("version", ["0.8.2", "0.8.3", "0.8.4", "0.8.5", "0.8.6", "0.8.7", "0.9.0", "0.9.1"])
+@pytest.mark.parametrize(
+    "version", ["0.8.2", "0.8.3", "0.8.4", "0.8.5", "0.8.6", "0.8.7", "0.9.0", "0.9.1"]
+)
 def test_previous_version_drift_is_rejected(harness, drift, after_mutation, version):
     harness.select(CORPORATE, "publish")
     harness.entries[PERSONAL] = entry(PERSONAL, "deleted")
