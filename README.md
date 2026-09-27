@@ -28,7 +28,8 @@ OAuth connections share the signed-in VTAI account's free quota and use the
 permissions approved for each connection. Existing Agent Tokens keep their rights
 and quotas. If your client needs configurable HTTP headers, use one protected
 `Authorization: Bearer` or `x-apikey` credential instead of OAuth. For local file
-access, use the [local stdio installation](#install-for-local-stdio) below.
+access in Claude Code, use the [VirusTotal plugin](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md)
+with OAuth. Other local clients can use the [stdio installation](#install-for-local-stdio) below.
 
 ## Connect your client
 
@@ -39,7 +40,7 @@ access, use the [local stdio installation](#install-for-local-stdio) below.
 | Client | Setup |
 |---|---|
 | Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
-| Claude Code | [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
+| Claude Code | [OAuth plugin with local file uploads](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md), [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
 | Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
 | ChatGPT Work | [Personal OAuth connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-public-connection-and-individual-oauth) |
 | Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |
