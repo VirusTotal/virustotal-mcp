@@ -9,11 +9,12 @@ IP reports and automatic renewal, earlier staging checks and remaining hosted wo
 
 VTAI's public endpoint is `https://ai.virustotal.com/mcp`. It supports MCP OAuth
 and also accepts a static VTAI Agent Token through one credential header,
-including `Authorization: Bearer`. The service exposes ten tools: four report
+including `Authorization: Bearer`. The service's ten common tools cover four report
 lookups, file and URL submission, domain/IP reanalysis, and receipt and analysis
 reads. Protected-resource and authorization-server metadata, DCR and CIMD are
-live. Local stdio additionally provides `submit_local_file`; remote HTTP cannot
-read local paths. A successful CLI session does not establish a different
+live. A backend with the ChatGPT attachment binding additionally exposes
+`submit_chatgpt_file`. Local stdio instead adds `submit_local_file`; remote HTTP
+cannot read local paths. A successful CLI session does not establish a different
 hosted account or model workflow.
 
 ## File transfer depends on the host
@@ -21,6 +22,35 @@ hosted account or model workflow.
 When the client can supply the actual bytes, use `submit_file` with their SHA-256
 and base64 content. Remote HTTP does not by itself prevent file transfer, and an
 attachment in chat does not by itself prove that the host can access its bytes.
+
+### ChatGPT attachments
+
+When the deployed backend advertises `submit_chatgpt_file`, ChatGPT can supply
+an attached file through its [file-input contract](https://developers.openai.com/plugins/reference#define-file-inputs).
+The tool accepts one `file` object with required `download_url` and `file_id`
+strings and optional `mime_type` and `file_name` strings. ChatGPT supplies these
+values; do not invent a URL or paste credentials. The metadata
+`openai/fileParams: ["file"]` identifies this input to the host.
+
+The backend downloads an allowed host-provided attachment with bounded time and
+size (24,000,000 bytes), hashes its original bytes and uses the existing file
+submission permission and receipt flow. A successful response supplies the
+SHA256 for `get_submission`; use its registered analysis ID with `get_analysis`.
+Never replay an uncertain upload. If interrupted before receiving its SHA256,
+do not invent a receipt or retry to find out whether it was sent.
+
+Standard sharing and sensitive-content permission still apply. A supplied
+`file_name` is checked against the same short credential-name list as the Claude
+plugin. It is optional, unverified metadata, not proof of the real filename or
+file contents. Do not omit or rename it, encode bytes or change upload channels
+to evade a denial.
+
+This is a hosted-only capability; stdio does not expose the tool. If it is absent,
+refresh the connection's tool inventory after the backend deployment. These
+instructions and protocol tests do not establish an end-to-end ChatGPT attachment
+test or availability in every account.
+
+### Existing web fallback
 
 If the client cannot transmit those bytes, offer the user the existing
 [VirusTotal upload page](https://www.virustotal.com/gui/home/upload). Standard
@@ -188,8 +218,8 @@ Accept the connection only after observing the actual tool call and its result,
 not just a Connected label or an assistant's prose. Record the host/account
 mode, discovered tools, call name, domain, outcome, report link, source,
 analysis date, retrieval time and coverage. Exclude the credential and private
-conversation content from evidence. The current remote tool list has ten
-entries; the local-file tool is available only through stdio.
+conversation content from evidence. Use the connection's discovered tool list;
+the local-file tool is available only through stdio.
 
 A missing report remains unknown; errors and incomplete coverage are not safety
 verdicts. A passing query does not validate file or network submission, refresh, revocation,

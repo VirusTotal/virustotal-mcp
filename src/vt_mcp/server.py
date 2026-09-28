@@ -40,6 +40,7 @@ from vt_mcp.analyses import (
     validate_request_id,
     validate_sha256,
 )
+from vt_mcp.chatgpt_files import ChatGPTFile, ChatGPTSubmissionReader, validate_chatgpt_file
 from vt_mcp.client import AnalysisClient
 from vt_mcp.reports import (
     SHARING_NOTICE,
@@ -47,6 +48,7 @@ from vt_mcp.reports import (
     ReportReader,
     VTAIError,
     file_not_found_steps,
+    validate_report_values,
 )
 from vt_mcp.submissions import LocalSubmissions
 from vt_mcp.vtai_client import Settings
@@ -63,6 +65,13 @@ def _tool_result(result: dict, *, is_error: bool = False) -> CallToolResult:
 async def _validate_arguments(ctx: ServerRequestContext, call_next: CallNext) -> HandlerResult:
     if ctx.method == "tools/call" and ctx.params:
         tool, args = ctx.params.get("name"), ctx.params.get("arguments")
+        if tool == "submit_chatgpt_file":
+            try:
+                if not isinstance(args, dict) or set(args) != {"file"}:
+                    raise AnalysisError("invalid_input")
+                validate_chatgpt_file(args["file"])
+            except AnalysisError as error:
+                return _tool_result({"status": "error", "error": error.error}, is_error=True)
         network_tools = {"submit_url": "url", "reanalyze_domain": "domain", "reanalyze_ip": "ip"}
         if isinstance(tool, str) and (
             tool in network_tools or tool in {"get_submission", "get_analysis"}
@@ -192,6 +201,10 @@ async def _report_result(
                 payload = {"status": "error", "error": AnalysisError("invalid_response").error}
         return _tool_result(payload, is_error=True)
     except VTAIError as exc:
+        try:
+            validate_report_values(exc.error, forbidden_values=forbidden_values)
+        except (ValueError, TypeError):
+            exc = AnalysisError("invalid_response")
         return _tool_result({"status": "error", "error": exc.error}, is_error=True)
     except Exception:
         # Neither a host binding failure nor an unexpected reader exception may
@@ -264,6 +277,7 @@ def create_report_server[Resources](
     bind_analyses: Callable[[Context[Resources]], AnalysisReader] | None = None,
     bind_submissions: Callable[[Context[Resources]], SubmissionReader] | None = None,
     bind_network_submissions: Callable[[Context[Resources]], NetworkSubmissionReader] | None = None,
+    bind_chatgpt_submissions: Callable[[Context[Resources]], ChatGPTSubmissionReader] | None = None,
 ) -> MCPServer[Resources]:
     """Register report tools and optional analysis reads with per-call binding.
 
@@ -276,8 +290,13 @@ def create_report_server[Resources](
     ``bind_submissions`` adds submit_file and get_submission. The host must enforce
     submission capacity/deadlines and bind its own current actor on every call.
     ``bind_network_submissions`` adds three network writes and request-ID receipt recovery.
+    ``bind_chatgpt_submissions`` enables ChatGPT file inputs only on a host with a
+    safe downloader; file receipts and analysis reads must also be bound. The host
+    validates download destinations, bounds bytes/time and enforces current access.
     No local filesystem tool is registered by this shared factory.
     """
+    if bind_chatgpt_submissions is not None and (bind_submissions is None or bind_analyses is None):
+        raise ValueError("ChatGPT file submission requires file receipts and analysis reads")
     server = MCPServer(
         "VirusTotal",
         version=__version__,
@@ -293,13 +312,19 @@ def create_report_server[Resources](
             + SHARING_NOTICE
             + " "
             + (
-                "File submission accepts actual bytes: SHA256 plus base64, at most 24000000 "
+                "submit_file accepts actual bytes: SHA256 plus base64, at most 24000000 "
                 "decoded bytes. Bytes also pass through the MCP host. This tool cannot read "
                 "a client's local path or fetch file bytes from URLs. "
                 "After a tool upload is uncertain, "
                 "recover with get_submission by SHA256; never repeat the upload. "
                 if bind_submissions is not None
                 else "This connection has no file submission tools. "
+            )
+            + (
+                "For ChatGPT attachments use submit_chatgpt_file with the host file object; "
+                "retain its SHA256. "
+                if bind_chatgpt_submissions is not None
+                else ""
             )
             + (
                 f"If this client cannot send file bytes, offer {WEB_UPLOAD_URL} under the "
@@ -520,6 +545,49 @@ def create_report_server[Resources](
                 return format_submission_response(raw, sha256)
 
             return await _report_result(submit, submission_sha256=sha256)
+
+    if bind_chatgpt_submissions is not None:
+
+        @server.tool(
+            title="Submit a ChatGPT attachment to VirusTotal",
+            annotations=ToolAnnotations(
+                readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=True
+            ),
+            meta={"openai/fileParams": ["file"]},
+            structured_output=False,
+        )
+        async def submit_chatgpt_file(file: ChatGPTFile, ctx: Context[Resources]) -> CallToolResult:
+            """Submit one ChatGPT attachment, at most 24000000 original bytes.
+
+            Use only the file object supplied by ChatGPT, never an invented URL or local path.
+            The authorized host downloads and hashes the bytes, then submits them under the
+            current identity and existing file-write permission. Submit unfamiliar downloads,
+            attachments, binaries or scripts of unknown origin to improve protection for
+            everyone. Ask before sharing the user's own documents, internal code, credentials
+            or personal data. Standard submissions are shared with VirusTotal's community and
+            partners and are not confidential. Filename metadata is optional and does not
+            establish permission. A credential-name denial must not be bypassed by omitting
+            or renaming it, inline encoding or another upload channel.
+            Retain the returned SHA256 and receipt. An uncertain upload must never be repeated:
+            recover using get_submission(SHA256), then get_analysis with its registered ID.
+            If interrupted before receiving SHA256, do not invent a receipt or replay the call.
+            Every report query, including a repeat, counts toward quota.
+            """
+            file = validate_chatgpt_file(file)
+
+            async def submit():
+                raw = await bind_chatgpt_submissions(ctx).submit_chatgpt_file(file)
+                if not isinstance(raw, dict):
+                    raise AnalysisError("invalid_response")
+                try:
+                    sha256 = validate_sha256(raw.get("sha256"))
+                except AnalysisError:
+                    raise AnalysisError("invalid_response") from None
+                return format_submission_response(
+                    raw, sha256, forbidden_values=(file["download_url"],)
+                )
+
+            return await _report_result(submit, forbidden_values=(file["download_url"],))
 
     if bind_network_submissions is not None:
 

@@ -114,7 +114,9 @@ WEB_UPLOAD_URL = "https://www.virustotal.com/gui/home/upload"
 def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[str]:
     """Describe a possible next action using the connection's actual capabilities."""
     steps = ["Verify the hash and keep the result unknown; a missing report is not safe."]
-    if tools is not None and not tools.intersection({"submit_file", "submit_local_file"}):
+    if tools is not None and not tools.intersection(
+        {"submit_file", "submit_local_file", "submit_chatgpt_file"}
+    ):
         steps.append(
             "To analyze an unfamiliar file, use a client with file submission enabled and "
             "provide its actual file bytes. This connection has no file submission tool."
@@ -127,6 +129,11 @@ def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[
             )
         else:
             choices = []
+            if tools is not None and "submit_chatgpt_file" in tools:
+                choices.append(
+                    "for a ChatGPT attachment, call submit_chatgpt_file with its host-provided "
+                    "file object and retain the returned SHA256"
+                )
             if interface == "stdio" and (tools is None or "submit_local_file" in tools):
                 choices.append("call submit_local_file with the file path")
             if tools is None or "submit_file" in tools:
@@ -140,7 +147,11 @@ def file_not_found_steps(interface: str, tools: set[str] | None = None) -> list[
         if interface == "remote":
             steps.append(
                 "The remote server cannot read a client's local path "
-                "or fetch file bytes from a URL."
+                + (
+                    "and only submit_chatgpt_file can fetch an allowed host-provided attachment."
+                    if tools is not None and "submit_chatgpt_file" in tools
+                    else "or fetch file bytes from a URL."
+                )
             )
         if interface == "rest":
             recover = "GET /api/v3/submissions/{sha256} and GET /api/v3/analyses/{analysis_id}"

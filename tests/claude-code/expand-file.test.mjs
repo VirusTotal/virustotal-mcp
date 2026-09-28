@@ -74,7 +74,8 @@ test('credential filenames are denied before any filesystem access, with no chan
   const names = ['.env', '.ENV.production', 'certificate.PEM', 'private.key', 'id_rsa', 'id_rsa.pub',
     'ID_ED25519_sk', 'id_dsa.old', 'id_ecdsa_sk.pub', 'id_xmss', 'ssh_host_ed25519_key.pub',
     '.NETRC', '.npmrc', '.pypirc', 'credentials', 'CREDENTIALS.json', 'vault.KDBX', 'KubeConfig',
-    '.env\nproduction', 'credentials\nx'];
+    '.env\nproduction', 'credentials\nx', '.git-credentials', '.pgpass', '.htpasswd',
+    'certificate.P12', 'backup.pfx', 'ssh.ppk', 'java.JKS', 'android.keystore'];
   const io = new Proxy({}, { get() { throw new Error('No filesystem operation is allowed'); } });
   for (const name of names) {
     const value = { ...event, tool_input: { ...event.tool_input, content_base64: `file:${path.join(dir, name)}` } };

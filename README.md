@@ -15,15 +15,19 @@ installation, static token or personal VirusTotal API key is required.
 ### Claude Code: install the plugin
 
 The official plugin includes the OAuth connection, a threat-intelligence skill
-and local file uploads without model-generated base64. Use Claude Code 2.1.283+
-and Node.js 22 or 24. If you already added a manual VirusTotal server, follow the
-[migration steps](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection)
-first; keep personal claude.ai connections and existing receipts.
+and local file uploads without model-generated base64.
 
+<!-- client-contract:claude-code:start -->
 ```sh
 claude plugin marketplace add VirusTotal/virustotal-mcp
 claude plugin install virustotal@virustotal
 ```
+
+Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
+<!-- client-contract:claude-code:end -->
+
+If you previously used `claude mcp add virustotal`, run `claude mcp remove virustotal`
+(use the same `--scope` if specified); see [migration and recovery details](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection).
 
 Start a new session or use `/reload-plugins`, then `/mcp` to complete browser
 sign-in when needed. The plugin already supplies the MCP connection; do not add
@@ -142,6 +146,7 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_domain_report(domain)` | Retrieve domain intelligence; no scheme, path or port. |
 | `get_ip_report(ip)` | Retrieve intelligence for one IPv4 or IPv6 address. |
 | `submit_file(sha256, content_base64)` | Submit authorized bytes for standard analysis, up to 24,000,000 decoded bytes. |
+| `submit_chatgpt_file(file)` | **Hosted adapter when enabled:** submit a ChatGPT-provided attachment, up to 24,000,000 bytes; returns its SHA256 for recovery. |
 | `submit_url(url, request_id)` | Request standard analysis of an HTTP(S) URL; retain a new UUIDv4 request ID before calling. |
 | `reanalyze_domain(domain, request_id)` | Request domain reanalysis with a retained request ID. |
 | `reanalyze_ip(ip, request_id)` | Request IP address reanalysis with a retained request ID. |
@@ -149,7 +154,7 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_analysis(analysis_id, request_id=None)` | Read a registered analysis; pass the network receipt's request ID to distinguish operations. |
 | `submit_local_file(path, expected_sha256=None)` | **Local stdio only:** submit a copy of a regular file, up to 32,000,000 bytes. An expected digest must match that copy. |
 
-With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio has eleven. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
+With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio additionally has `submit_local_file`. A hosted backend can also enable `submit_chatgpt_file` with the [ChatGPT attachment contract](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-attachments). It is available after that backend deploys the binding; protocol tests do not establish a native ChatGPT attachment workflow. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
 
 For a file workflow, look up its hash, submit an unfamiliar file with no report under the sharing guidance below, then use `get_submission` to recover its receipt and `get_analysis` to check the returned analysis ID. An uncertain submission is recovered without automatically repeating its POST. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
 
