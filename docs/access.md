@@ -140,11 +140,15 @@ Use `exec codex` instead for Codex, with its matching header configuration. A no
 | 401 | No supported credential, or an invalid, unknown, expired or revoked Bearer token. Check the mapping and environment source without displaying the value. |
 | 403 / `access_denied` | Legacy `x-apikey` was rejected, or the operation was denied after authentication. Check the structured error and current access. |
 | 429 / `rate_limited` | Wait for a supplied retry delay; repeated retries consume resources. |
+| 429 / `contribution_limited` | The independent file allowance is exhausted; honor the delay and follow [contribution recovery](analysis.md#file-contribution-limits). |
+| 503 / `contribution_unavailable` | File admission could not be confirmed, so no upload starts; retain state and honor the retry delay. |
 | Tool result `not_found` | No report was found; this is not a safety verdict. |
 | HTTP 404 for `/mcp` or `/connect/mcp` | Check endpoint, prefix and deployment flags; this is not an unknown indicator result. |
 | Timeout / service error | A failed lookup is not a clean report. Check service status; do not silently submit a sample. |
 
 REST and MCP share VTAI admission and quotas. Report and analysis reads consume query quota on every call; missing reports, cache hits and repeats still count. Contributing a file confirmed unknown by the server and recovering an owned receipt consume no query quota. A known file is not uploaded: returning its existing report requires one query and fails without a report when quota is exhausted. See [file workflow quota](analysis.md#query-quota-for-file-workflows).
+
+Unknown-file contributions are limited separately to **20 files per fixed minute and 500 per UTC day**, per Agent Token identity or signed-in OAuth account, shared across upload paths. Admitted attempts count even if later processing is uncertain. Do not create additional identities or accounts to evade these or query limits. See [contribution limits](analysis.md#file-contribution-limits).
 
 Upstream failures still consume an admitted query. The stdio wrapper defaults to a 15-second total request deadline; the backend lookup has its own 35-second limit. A client timeout can happen first, and an already admitted request may complete later. Show only sanitized errors to the model; never paste raw auth headers or debug logs into chat.
 

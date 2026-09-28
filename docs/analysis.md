@@ -109,6 +109,34 @@ an existing report or reading analysis results until quota is available. Receipt
 recovery does not start another upload. Network-analysis dispatch retains its
 [separate query accounting](#network-analysis-and-recovery).
 
+### File contribution limits
+
+Unknown files have an independent allowance of **20 files per fixed 60-second
+window and 500 per UTC day**. Agent Tokens use their registered identity; OAuth
+connections share the signed-in account's allowance across grants. The same limit
+covers MCP, local/binary and legacy multipart file submission paths. Existing size
+and permission checks still apply.
+
+VTAI validates bytes and confirms the hash is unknown before reserving this
+allowance. Known reports, owned receipt recovery and failed validation or hash
+prechecks do not use it. An admitted attempt remains counted if later processing
+fails or becomes uncertain. Concurrent attempts for the same hash can consume more
+than one admission even though the durable receipt prevents another dispatch.
+The allowance limits files, not bytes, and uses a separate counter from query quota.
+
+A `contribution_limited` error (HTTP 429) includes a retry delay; the file has not
+been dispatched and no new receipt has been reserved. A
+`contribution_unavailable` error (HTTP 503) means admission could not be confirmed;
+no upload starts. Honor `Retry-After` or `retry_after_seconds` and avoid tight
+loops. A remote HTTP caller can deliberately try again after the delay for these
+specific errors. Do not apply that rule to an uncertain submission.
+
+The local stdio tools and CLI retain their durable reference even after a rejected
+attempt. A later call for that hash only recovers the receipt and can return
+`not_found`; it does not resend automatically. Keep that state and do not change
+identity to force a retry. New identities or accounts must not be created to evade
+either contribution or query limits.
+
 ### MCP recovery state
 
 Both file submission tools in the local stdio server reuse the CLI's
