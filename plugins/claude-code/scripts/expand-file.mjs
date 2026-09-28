@@ -9,10 +9,20 @@ import { fileURLToPath } from 'node:url';
 export const MAX_BYTES = 24_000_000;
 export const MAX_INPUT_BYTES = 4 * Math.ceil(MAX_BYTES / 3) + 65_536;
 
-const SERVERS = [
-  ['plugin', 'plugin:virustotal:virustotal', 'mcp__plugin_virustotal_virustotal__submit_file'],
-  ['claudeai', 'claude.ai ai.virustotal.com', 'mcp__claude_ai_ai_virustotal_com__submit_file'],
-];
+const IMPORTED_ALIASES = ['virustotal', 'ai.virustotal.com'];
+const CREDENTIAL_NAME = /^(?:\.env.*|id_(?:rsa|dsa|ecdsa|ed25519|xmss).*|ssh_host_.*_key.*|\.netrc|\.npmrc|\.pypirc|credentials.*|kubeconfig)$|\.(?:pem|key|kdbx)$/is;
+
+function trustedTool(server, tool) {
+  if (!object(server) || typeof server.name !== 'string' || typeof tool !== 'string') return false;
+  if (server.source === 'plugin') {
+    return server.name === 'plugin:virustotal:virustotal' && tool === 'mcp__plugin_virustotal_virustotal__submit_file';
+  }
+  if (server.source !== 'claudeai' || !server.name.startsWith('claude.ai ') ||
+      !tool.startsWith('mcp__claude_ai_') || !tool.endsWith('__submit_file')) return false;
+  const alias = server.name.slice('claude.ai '.length).toLowerCase();
+  return IMPORTED_ALIASES.includes(alias) &&
+    tool.slice('mcp__claude_ai_'.length, -'__submit_file'.length).toLowerCase() === alias.replaceAll('.', '_');
+}
 
 class UploadError extends Error {}
 const reject = (message) => { throw new UploadError(message); };
@@ -113,12 +123,21 @@ export async function expandFile(event, { io = fs, rootsJSON = process.env.VTAI_
   const input = event.tool_input;
   if (typeof input.content_base64 !== 'string' || !input.content_base64.startsWith('file:')) return null;
   const server = event.mcp_server;
-  if (event.hook_event_name !== 'PreToolUse' || !object(server) ||
-      !SERVERS.some(([source, name, tool]) => server.source === source && server.name === name && event.tool_name === tool)) {
+  if (event.hook_event_name !== 'PreToolUse' || !trustedTool(server, event.tool_name)) {
     reject('The local file reference requires the VirusTotal plugin or verified imported VirusTotal connection.');
   }
+  const filename = absoluteFile(input.content_base64.slice(5));
+  if (CREDENTIAL_NAME.test(path.basename(filename))) {
+    return {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason: 'This filename may contain credentials. Ask the user for human review. Do not rename, encode or reroute it to bypass this block.',
+      },
+    };
+  }
   if (typeof input.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(input.sha256)) reject('Compute the original file SHA256 before submitting.');
-  const bytes = await readFile(absoluteFile(input.content_base64.slice(5)), event.cwd, rootsJSON, io);
+  const bytes = await readFile(filename, event.cwd, rootsJSON, io);
   if (createHash('sha256').update(bytes).digest('hex') !== input.sha256) reject('The file bytes do not match the supplied SHA256.');
   return {
     hookSpecificOutput: {

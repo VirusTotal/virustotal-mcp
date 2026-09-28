@@ -2,8 +2,9 @@
 
 The VirusTotal plugin connects Claude Code to the remote OAuth MCP server and
 lets it submit a local file without copying its base64 through the model.
-Report lookups alone also work with the [direct HTTP connection](https://ai.virustotal.com/connect/mcp?client=claude&transport=http),
-without this plugin or Node.js.
+Install the plugin for reports, the threat-intelligence skill and local uploads.
+The [manual HTTP alternative](#manual-http-alternative-without-nodejs) below works
+without the plugin or Node.js.
 
 ## Install and connect
 
@@ -11,6 +12,10 @@ Use Claude Code **2.1.283 or newer** and a maintained Node.js release, such as
 **Node.js 22 or 24**, on Claude Code's `PATH`. The hook uses Node 20-compatible
 APIs, but Node 20 is not a recommended maintained runtime. No Python, npm
 dependencies, VirusTotal API key or copied OAuth token is needed.
+
+If you already configured a manual VirusTotal MCP server, follow
+[Replace an existing manual connection](#replace-an-existing-manual-connection)
+before installing. An imported personal claude.ai connection can remain active.
 
 ```sh
 claude plugin marketplace add VirusTotal/virustotal-mcp
@@ -20,13 +25,48 @@ claude plugin install virustotal@virustotal
 Start a new Claude Code session or reload plugins with `/reload-plugins`. Use
 `/mcp` to authenticate the VirusTotal connection in your browser when needed.
 The plugin includes `https://ai.virustotal.com/mcp`; do not add a second manual
-MCP server for file uploads. If your personal `claude.ai ai.virustotal.com`
-connection is already active, the hook also works with that imported connection.
+MCP server for file uploads. If your personal claude.ai connection is already
+active under `VirusTotal` or `ai.virustotal.com`, the hook also supports that
+imported connection. Alias spelling is case-insensitive.
 Keep submission and receipt recovery on the same connection.
 
 Ask Claude to investigate a hash, URL, domain or IP address, or to inspect an
 unfamiliar local download. The plugin's threat-intelligence skill is also
 available as `/virustotal:threat-intelligence`.
+
+### Replace an existing manual connection
+
+Only if you previously added a manual VirusTotal entry, identify its exact name
+and scope with `claude mcp list` and `claude mcp get <name>`. Recover any uncertain
+submission on its original connection before removing that entry. Remove it
+from the scope in which you configured it before installing the plugin. For
+example, for an entry named `virustotal` in the current project's local scope:
+
+```sh
+claude mcp remove --scope local virustotal
+```
+
+Use `--scope user` or `--scope project` only when that is the existing entry's
+scope, and substitute its actual name. If the same manual entry exists in more
+than one scope, review each one instead of removing an unrelated server.
+[Removing a remote server](https://code.claude.com/docs/en/mcp#managing-your-servers)
+also clears its locally stored OAuth tokens and client registration, so expect
+to sign in again for the plugin. Do not manually delete credentials, revoke
+server grants, delete submission receipts or disconnect the personal claude.ai
+connection. Fresh installations need no removal command.
+
+### Manual HTTP alternative without Node.js
+
+For reports without the local file hook, configure the remote server directly:
+
+```sh
+claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
+```
+
+Open `/mcp` and complete browser sign-in. This is an alternative to the plugin;
+do not add both as duplicate server entries. The direct connection cannot expand
+`file:` paths. It can still submit original bytes if the client can transmit
+them, or use the existing web-upload fallback described below.
 
 ## Local files
 
@@ -51,6 +91,21 @@ chooses what to share using the policy below; the hook adds no confirmation for
 each file. It does not obtain OAuth tokens or grant server permissions. Existing
 VTAI scopes, quotas and receipt handling still apply. Inline base64 calls pass
 through without a hook permission decision.
+
+The hook denies filenames commonly used for credentials before accessing the
+filesystem. It asks for human review and supplies no bytes. The check uses only
+the file's basename, without distinguishing letter case on any operating system:
+
+- `.env*`; `*.pem`, `*.key`, `*.kdbx`.
+- `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`, `id_xmss*` and `ssh_host_*_key*`,
+  including their public-key and backup variants.
+- `.netrc`, `.npmrc`, `.pypirc`, `credentials*` and `kubeconfig`.
+
+This short list is a precaution, not a universal secret detector. It can block
+public certificates and keys too; harmless names can still contain secrets.
+Inline base64 has no filename and is unchanged by this check. If blocked, stop
+for human review: do not rename, encode, use another tool or upload through the
+website to bypass the block. There is no automatic override.
 
 The local validation limit is **1 to 24,000,000 bytes**. This is a parser and file
 limit, not a claim that every client/network supports a 24 MB upload. A missing
@@ -90,8 +145,9 @@ hooks through Claude Code's managed policy. Hook errors contain no file bytes,
 base64, credential values or local paths, and the hook writes no diagnostic logs.
 
 The hook accepts only the plugin server's `plugin` provenance and exact identity,
-or the verified `claudeai` provenance/name pair for the imported personal
-VirusTotal connection. Project/user aliases with the same name and unknown
+or `claudeai` provenance with the imported name `claude.ai VirusTotal` or
+`claude.ai ai.virustotal.com` and its corresponding `submit_file` tool. Only the
+two alias spellings are case-insensitive. Project/user aliases with the same name and unknown
 provenance are rejected before reading a file. The imported name is a configured
 identity, not independent authentication of its endpoint: connect the official
 `https://ai.virustotal.com/mcp` service and retain control of your client setup.
