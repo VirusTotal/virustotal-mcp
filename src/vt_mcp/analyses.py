@@ -77,6 +77,16 @@ _ERRORS = {
     "receipt_conflict": (409, "The existing submission receipt is incompatible", False),
     "not_found": (404, "No registered submission or analysis found", False),
     "rate_limited": (429, "VTAI or VirusTotal query quota exceeded", True),
+    "contribution_limited": (
+        429,
+        "VTAI file contribution limit exceeded; wait before submitting another unknown file",
+        True,
+    ),
+    "contribution_unavailable": (
+        503,
+        "File contribution admission is temporarily unavailable",
+        True,
+    ),
     "capacity_exceeded": (503, "Submission capacity is temporarily full", True),
     "invalid_response": (502, "Invalid VirusTotal analysis response", True),
     "response_too_large": (502, "Analysis response exceeds the supported size", True),
@@ -184,9 +194,12 @@ def analysis_http_error(
             503: "unavailable",
             504: "timeout",
         }.get(status, "unavailable")
-    if code not in {"rate_limited", "capacity_exceeded"} and not (
-        code == "unavailable" and status == 503
-    ):
+    if code not in {
+        "rate_limited",
+        "capacity_exceeded",
+        "contribution_limited",
+        "contribution_unavailable",
+    } and not (code == "unavailable" and status == 503):
         retry_after_seconds = None
     return AnalysisError(
         code, http_status=status, retry_after_seconds=retry_after_seconds, submission=submission

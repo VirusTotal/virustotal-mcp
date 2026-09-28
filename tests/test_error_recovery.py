@@ -14,6 +14,7 @@
 
 """Actionable errors remain bounded, private and free of implicit write retries."""
 
+import base64
 import io
 import json
 from datetime import UTC, datetime
@@ -28,6 +29,66 @@ from vt_mcp.client import AnalysisClient
 from vt_mcp.reports import VTAIError, parse_retry_after, report_http_error
 from vt_mcp.server import create_server
 from vt_mcp.vtai_client import Settings, VTAIClient
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("interface", ["http", "mcp"])
+@pytest.mark.parametrize(
+    "status,code",
+    [(429, "contribution_limited"), (503, "contribution_unavailable")],
+)
+async def test_file_contribution_errors_are_distinct_bounded_and_not_replayed(
+    interface, status, code, tmp_path, monkeypatch
+):
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
+    calls = []
+
+    async def handler(request):
+        calls.append((request.method, await request.aread()))
+        if request.method == "GET":
+            return httpx.Response(404)
+        return httpx.Response(
+            status,
+            headers={"Retry-After": "17"},
+            json={"detail": {"code": code, "message": TOKEN, "retry_after_seconds": 23}},
+        )
+
+    transport = httpx.MockTransport(handler)
+    if interface == "http":
+        async with AnalysisClient(Settings(TOKEN), transport=transport) as client:
+            with pytest.raises(AnalysisError) as caught:
+                await client.submit(io.BytesIO(BODY), SHA, len(BODY))
+        error = caught.value.error
+        assert calls == [("POST", BODY)]
+    else:
+        server = create_server(Settings(TOKEN), transport=transport)
+        args = {"sha256": SHA, "content_base64": base64.b64encode(BODY).decode()}
+        async with Client(server) as client:
+            result = await client.call_tool("submit_file", args)
+            assert result.is_error
+            error = result.structured_content["error"]
+            # The existing durable reference still forbids implicit POST replay.
+            recovery = await client.call_tool("submit_file", args)
+        assert recovery.is_error
+        assert recovery.structured_content["error"]["code"] == "not_found"
+        assert calls == [("POST", BODY), ("GET", b"")]
+    assert error["code"] == code and error["http_status"] == status
+    assert error["retry_after_seconds"] == 17
+    assert "contribution" in error["message"].lower()
+    assert "query quota" not in error["message"].lower()
+    assert TOKEN not in json.dumps(error)
+
+
+@pytest.mark.parametrize(
+    "status,code,expected",
+    [
+        (503, "contribution_limited", "unavailable"),
+        (429, "contribution_unavailable", "rate_limited"),
+        (403, "contribution_limited", "access_denied"),
+    ],
+)
+def test_contribution_codes_cannot_override_http_status(status, code, expected):
+    assert analysis_http_error(status, code=code).error["code"] == expected
 
 
 @pytest.mark.parametrize("interface", ["remote", "stdio", "rest"])
