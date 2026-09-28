@@ -130,9 +130,12 @@ gets at most one recovery GET, never a repeated POST. Uncertainty can be permane
 
 The same state directory is used for both fixtures and reruns on that runner.
 Across runners, continuity comes from the stable actor's backend receipts; the
-credential or private state directory is not cached/uploaded. A lost acknowledgement
-can leave quota consumed or a submission accepted despite local failure. Stopping
-locally does not withdraw an accepted file.
+credential or private state directory is not cached/uploaded. Contributions of
+confirmed unknown files and receipt recovery consume no query quota; an existing
+report returned by `exists` and each analysis read consume one query. A lost
+acknowledgement can leave a report query charged or a submission accepted despite
+local failure. Stopping locally does not withdraw an accepted file. See
+[file workflow quota](analysis.md#query-quota-for-file-workflows).
 
 The total subprocess budget is350 seconds per fixture. Initial/recovery reads
 allow40 seconds each; submission allows150 seconds including the client's15-second

@@ -63,6 +63,11 @@ local-path tool is not exposed by the remote embedding factory.
 Bind the authenticated actor afresh and invoke VTAI's existing shared submission
 and receipt services. Do not use HTTP loopback inside VTAI or bypass its current
 identity checks, per-account reservation, quotas, deadlines or analysis ownership.
+For file contributions, VTAI verifies the bytes and checks their hash before any
+upload. Confirmed absence permits an upload without a query charge. A known file
+is not uploaded, and its report must pass query admission before being returned.
+Owned receipt recovery remains free of query charges; report and analysis reads
+still count. See [file workflow quota](analysis.md#query-quota-for-file-workflows).
 Submission has no consent argument or interactive confirmation; standard-sharing
 permissions remain with the host and current VTAI rights. Guidance encourages
 unknown-origin samples and suspicious URLs; it asks first for the user's own or sensitive content,

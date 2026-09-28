@@ -57,10 +57,17 @@ executes the file or adds a comment. Empty files are permitted. The 24 MB inline
 ceiling accounts for base64 expansion inside the bounded HTTP request; it is not
 32 MB of decoded content. The local/binary path retains the 32,000,000-byte limit.
 
-The MCP and API file submission paths use the same VTAI identity, rights, quota policy and existing per-account
-submission receipts. VTAI checks for a report before starting a new submission:
-only confirmed absence allows a new upload. An `exists` response describes that
-existing report; it does not establish a new analysis.
+The MCP and API file submission paths use the same VTAI identity, rights and
+per-account receipts. For a new submission attempt, VTAI verifies the original
+bytes and checks their hash before uploading: only a confirmed missing report
+allows an upload. This internal check does not charge a query when the file is
+unknown. A separate client-side hash lookup is not required.
+
+If the file is already known, VTAI does not upload it. Returning its report in
+`exists` consumes one query; if quota is exhausted, the request fails without
+returning the report or uploading the file. `exists` describes the existing report,
+not a new analysis. Authentication, sharing permission, file limits, service
+capacity and submission recovery still apply.
 
 Keep the returned SHA-256 and any analysis ID. If sending was ambiguous, use
 `get_submission(sha256)`; **do not call either submission tool again to resolve
@@ -85,6 +92,23 @@ returned
 status and retry delay, within a finite task budget. No MCP call waits indefinitely
 or invents completion, and no credential is a tool argument.
 
+### Query quota for file workflows
+
+| Operation | Query cost |
+|---|---:|
+| Contribute valid file bytes after the server confirms the hash is unknown | 0 |
+| Submit a known file and receive its existing report; no upload occurs | 1 |
+| Explicit report lookup, including a missing report, cache hit or repeat | 1 |
+| Recover an owned receipt with `get_submission` | 0 |
+| Read a registered analysis with `get_analysis`, including a repeat | 1 |
+
+An explicit hash lookup that returns no report still consumes its query. A later
+contribution of that unknown file adds no query charge. Exhausted query quota
+does not prevent contributing a file confirmed unknown, but it prevents obtaining
+an existing report or reading analysis results until quota is available. Receipt
+recovery does not start another upload. Network-analysis dispatch retains its
+[separate query accounting](#network-analysis-and-recovery).
+
 ### MCP recovery state
 
 Both file submission tools in the local stdio server reuse the CLI's
@@ -104,17 +128,20 @@ upload or scan.
 ### When the client cannot transmit file bytes
 
 Use the available submission tool when the client can supply the actual bytes.
-If it cannot, offer the user the existing [VirusTotal upload page](https://www.virustotal.com/gui/home/upload)
-under the same public-sharing and sensitive-content guidance above. This is a
-transfer alternative, not a way to bypass denied permissions or quota errors.
+If it cannot, first calculate the file's SHA-256 locally, or ask the user for it,
+and call `get_file_report(hash)`. Use an existing report without uploading the
+file. Only a confirmed missing report permits offering the existing
+[VirusTotal upload page](https://www.virustotal.com/gui/home/upload), under the
+same public-sharing and sensitive-content guidance above. Permission, quota or
+service errors do not establish absence and do not permit an upload.
 Remote HTTP alone does not establish whether a host can access an attachment or
 transmit its bytes; capabilities depend on the actual client and workflow.
 
-After the user uploads through the website, obtain the file's hash and call
-`get_file_report(hash)`. A web upload creates no VTAI receipt or registered analysis
+After the user uploads the confirmed unknown file through the website, read
+`get_file_report(hash)` using the same hash. A web upload creates no VTAI receipt or registered analysis
 ID: `get_submission` and `get_analysis` cannot recover that external upload.
 The report may not be available immediately; a missing report stays unknown.
-Limit later reads to the task's time and request budget. Every repeated lookup
+Limit later reads to the task's time and request budget. Every lookup
 counts toward quota, including missing reports and cache hits. Do not upload again
 just because a report is not yet available.
 
