@@ -9,12 +9,16 @@ on:
       - '.claude-plugin/**'
       - 'plugins/claude-code/**'
       - 'tests/claude-code/**'
+      - 'src/vt_mcp/client_contracts.json'
+      - 'scripts/client_docs.py'
       - '.github/workflows/claude-code-plugin.yml'
   pull_request:
     paths:
       - '.claude-plugin/**'
       - 'plugins/claude-code/**'
       - 'tests/claude-code/**'
+      - 'src/vt_mcp/client_contracts.json'
+      - 'scripts/client_docs.py'
       - '.github/workflows/claude-code-plugin.yml'
   workflow_dispatch:
 

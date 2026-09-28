@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createHash } from 'node:crypto';
-import { constants, promises as fs } from 'node:fs';
+import { constants, promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +10,8 @@ export const MAX_BYTES = 24_000_000;
 export const MAX_INPUT_BYTES = 4 * Math.ceil(MAX_BYTES / 3) + 65_536;
 
 const IMPORTED_ALIASES = ['virustotal', 'ai.virustotal.com'];
-const CREDENTIAL_NAME = /^(?:\.env.*|id_(?:rsa|dsa|ecdsa|ed25519|xmss).*|ssh_host_.*_key.*|\.netrc|\.npmrc|\.pypirc|credentials.*|kubeconfig)$|\.(?:pem|key|kdbx)$/is;
+const CONTRACT = JSON.parse(readFileSync(new URL('../client-contracts.json', import.meta.url), 'utf8'));
+const CREDENTIAL_NAME = new RegExp(CONTRACT.credential_filename_pattern, 'is');
 
 function trustedTool(server, tool) {
   if (!object(server) || typeof server.name !== 'string' || typeof tool !== 'string') return false;
@@ -127,7 +128,8 @@ export async function expandFile(event, { io = fs, rootsJSON = process.env.VTAI_
     reject('The local file reference requires the VirusTotal plugin or verified imported VirusTotal connection.');
   }
   const filename = absoluteFile(input.content_base64.slice(5));
-  if (CREDENTIAL_NAME.test(path.basename(filename))) {
+  const basename = path.basename(filename);
+  if ([basename, basename.split('\\').at(-1)].some((name) => CREDENTIAL_NAME.test(name))) {
     return {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',

@@ -8,19 +8,18 @@ without the plugin or Node.js.
 
 ## Install and connect
 
-Use Claude Code **2.1.283 or newer** and a maintained Node.js release, such as
-**Node.js 22 or 24**, on Claude Code's `PATH`. The hook uses Node 20-compatible
-APIs, but Node 20 is not a recommended maintained runtime. No Python, npm
-dependencies, VirusTotal API key or copied OAuth token is needed.
-
-If you already configured a manual VirusTotal MCP server, follow
-[Replace an existing manual connection](#replace-an-existing-manual-connection)
-before installing. An imported personal claude.ai connection can remain active.
-
+<!-- client-contract:claude-code:start -->
 ```sh
 claude plugin marketplace add VirusTotal/virustotal-mcp
 claude plugin install virustotal@virustotal
 ```
+
+Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
+<!-- client-contract:claude-code:end -->
+
+If you previously used `claude mcp add virustotal`, run `claude mcp remove virustotal`
+(use the same `--scope` if specified); see [migration and recovery details](#replace-an-existing-manual-connection).
+No Python, npm dependencies, VirusTotal API key or copied OAuth token is needed.
 
 Start a new Claude Code session or reload plugins with `/reload-plugins`. Use
 `/mcp` to authenticate the VirusTotal connection in your browser when needed.
@@ -33,27 +32,6 @@ Keep submission and receipt recovery on the same connection.
 Ask Claude to investigate a hash, URL, domain or IP address, or to inspect an
 unfamiliar local download. The plugin's threat-intelligence skill is also
 available as `/virustotal:threat-intelligence`.
-
-### Replace an existing manual connection
-
-Only if you previously added a manual VirusTotal entry, identify its exact name
-and scope with `claude mcp list` and `claude mcp get <name>`. Recover any uncertain
-submission on its original connection before removing that entry. Remove it
-from the scope in which you configured it before installing the plugin. For
-example, for an entry named `virustotal` in the current project's local scope:
-
-```sh
-claude mcp remove --scope local virustotal
-```
-
-Use `--scope user` or `--scope project` only when that is the existing entry's
-scope, and substitute its actual name. If the same manual entry exists in more
-than one scope, review each one instead of removing an unrelated server.
-[Removing a remote server](https://code.claude.com/docs/en/mcp#managing-your-servers)
-also clears its locally stored OAuth tokens and client registration, so expect
-to sign in again for the plugin. Do not manually delete credentials, revoke
-server grants, delete submission receipts or disconnect the personal claude.ai
-connection. Fresh installations need no removal command.
 
 ### Manual HTTP alternative without Node.js
 
@@ -92,14 +70,15 @@ each file. It does not obtain OAuth tokens or grant server permissions. Existing
 VTAI scopes, quotas and receipt handling still apply. Inline base64 calls pass
 through without a hook permission decision.
 
-The hook denies filenames commonly used for credentials before accessing the
-filesystem. It asks for human review and supplies no bytes. The check uses only
+The hook denies filenames commonly used for credentials before opening the
+requested file. It asks for human review and supplies no bytes. The check uses only
 the file's basename, without distinguishing letter case on any operating system:
 
-- `.env*`; `*.pem`, `*.key`, `*.kdbx`.
+- `.env*`; `*.pem`, `*.key`, `*.kdbx`, `*.p12`, `*.pfx`, `*.ppk`, `*.jks`, `*.keystore`.
 - `id_rsa*`, `id_dsa*`, `id_ecdsa*`, `id_ed25519*`, `id_xmss*` and `ssh_host_*_key*`,
   including their public-key and backup variants.
-- `.netrc`, `.npmrc`, `.pypirc`, `credentials*` and `kubeconfig`.
+- `.netrc`, `.npmrc`, `.pypirc`, `.git-credentials`, `.pgpass`, `.htpasswd`,
+  `credentials*` and `kubeconfig`.
 
 This short list is a precaution, not a universal secret detector. It can block
 public certificates and keys too; harmless names can still contain secrets.
@@ -167,6 +146,27 @@ use the existing [VirusTotal web uploader](https://www.virustotal.com/gui/home/u
 and then `get_file_report` with the file hash. A web upload has no VTAI submission
 receipt. Respect permission failures and quota delays; repeated report queries
 still count, including missing reports.
+
+### Replace an existing manual connection
+
+Only if you previously added a manual VirusTotal entry, identify its exact name
+and scope with `claude mcp list` and `claude mcp get <name>`. Recover any uncertain
+submission on its original connection before removing that entry. Remove it
+from the scope in which you configured it before using the plugin connection. For
+example, for an entry named `virustotal` in the current project's local scope:
+
+```sh
+claude mcp remove --scope local virustotal
+```
+
+Use `--scope user` or `--scope project` only when that is the existing entry's
+scope, and substitute its actual name. If the same manual entry exists in more
+than one scope, review each one instead of removing an unrelated server.
+[Removing a remote server](https://code.claude.com/docs/en/mcp#managing-your-servers)
+also clears its locally stored OAuth tokens and client registration, so expect
+to sign in again for the plugin. Do not manually delete credentials, revoke
+server grants, delete submission receipts or disconnect the personal claude.ai
+connection. Fresh installations need no removal command.
 
 ## Validation and removal
 

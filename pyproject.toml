@@ -1,6 +1,6 @@
 [project]
 name = "vt-mcp"
-version = "0.9.5"
+version = "0.9.6"
 description = "VirusTotal intelligence for MCP clients, powered by VTAI"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -54,6 +54,7 @@ source-include = [
     "docs/discovery.md",
     "docs/access.md",
     "docs/clients.md",
+    "docs/claude-code.md",
     "docs/hosted-clients.md",
     "docs/google-clients.md",
     "docs/publishing.md",

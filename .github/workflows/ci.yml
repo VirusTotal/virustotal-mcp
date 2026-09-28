@@ -54,6 +54,8 @@ jobs:
         run: |
           uv run --no-sync ruff check .
           uv run --no-sync ruff format --check .
+      - name: Check generated client contract documentation and plugin data
+        run: uv run --no-sync python scripts/client_docs.py --check
       - name: Test
         run: uv run --no-sync pytest
       - name: Build the release candidate once

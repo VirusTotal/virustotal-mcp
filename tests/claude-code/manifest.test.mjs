@@ -13,6 +13,11 @@ test('marketplace resolves to the packaged plugin and its canonical credential-f
   const marketplace = await json('.claude-plugin/marketplace.json');
   const pluginRoot = marketplace.plugins[0].source;
   const manifest = await json(`${pluginRoot}/.claude-plugin/plugin.json`);
+  const contract = await json('src/vt_mcp/client_contracts.json');
+  assert.deepEqual(await json(`${pluginRoot}/client-contracts.json`), contract);
+  assert.equal(manifest.version, contract.claude_code.plugin_version);
+  assert.equal(contract.claude_code.node_minimum_major, 22);
+  assert.deepEqual(contract.claude_code.verified_node_majors, [22, 24]);
   assert.equal(marketplace.name, 'virustotal');
   assert.equal(marketplace.plugins[0].name, manifest.name);
   assert.equal(manifest.name, 'virustotal');
