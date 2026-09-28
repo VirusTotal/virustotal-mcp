@@ -24,6 +24,11 @@ test('marketplace resolves to the packaged plugin and its canonical credential-f
   const matcher = new RegExp(entry.matcher);
   assert.ok(matcher.test('mcp__plugin_virustotal_virustotal__submit_file'));
   assert.ok(matcher.test('mcp__claude_ai_ai_virustotal_com__submit_file'));
+  for (const alias of ['VirusTotal', 'virustotal', 'VIRUSTOTAL', 'AI_VirusTotal_COM']) {
+    assert.ok(matcher.test(`mcp__claude_ai_${alias}__submit_file`));
+  }
+  assert.equal(matcher.test('mcp__claude_ai_VirusTotal_backup__submit_file'), false);
+  assert.equal(matcher.test('mcp__claude_ai_VirusTotal__get_submission'), false);
   assert.equal(matcher.test('mcp__untrusted_virustotal__submit_file'), false);
   assert.equal(matcher.test('prefix_mcp__plugin_virustotal_virustotal__submit_file_suffix'), false);
   const executable = entry.hooks[0].args[0].replace('${CLAUDE_PLUGIN_ROOT}', pluginRoot);

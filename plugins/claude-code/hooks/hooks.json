@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^mcp__(plugin_virustotal_virustotal|claude_ai_ai_virustotal_com)__submit_file$",
+        "matcher": "^mcp__(plugin_virustotal_virustotal|claude_ai_([Vv][Ii][Rr][Uu][Ss][Tt][Oo][Tt][Aa][Ll]|[Aa][Ii]_[Vv][Ii][Rr][Uu][Ss][Tt][Oo][Tt][Aa][Ll]_[Cc][Oo][Mm]))__submit_file$",
         "hooks": [
           {
             "type": "command",

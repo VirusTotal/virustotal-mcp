@@ -1,6 +1,6 @@
 {
   "name": "virustotal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official VirusTotal reports and local file submission through your OAuth MCP connection.",
   "author": {"name": "VirusTotal", "url": "https://www.virustotal.com"},
   "homepage": "https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md",

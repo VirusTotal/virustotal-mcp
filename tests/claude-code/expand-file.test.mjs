@@ -44,11 +44,72 @@ test('expands actual bytes and preserves arguments while explicitly allowing', a
   assert.deepEqual(event, original);
 });
 
-test('accepts only the exact imported provenance and tool pair', async (t) => {
+test('accepts both imported aliases with case-insensitive alias spelling', async (t) => {
   const { event, bytes } = await fixture(t);
-  event.mcp_server = { name: 'claude.ai ai.virustotal.com', source: 'claudeai' };
-  event.tool_name = 'mcp__claude_ai_ai_virustotal_com__submit_file';
-  assert.equal((await expandFile(event)).hookSpecificOutput.updatedInput.content_base64, bytes.toString('base64'));
+  for (const alias of ['ai.virustotal.com', 'AI.VirusTotal.COM', 'VirusTotal', 'virustotal', 'VIRUSTOTAL']) {
+    event.mcp_server = { name: `claude.ai ${alias}`, source: 'claudeai' };
+    event.tool_name = `mcp__claude_ai_${alias.replaceAll('.', '_')}__submit_file`;
+    assert.equal((await expandFile(event)).hookSpecificOutput.updatedInput.content_base64, bytes.toString('base64'));
+  }
+});
+
+test('imported aliases require matching tool identity and trusted source before file access', async (t) => {
+  const { event } = await fixture(t);
+  for (const [source, name, tool] of [
+    ['user', 'claude.ai VirusTotal', 'mcp__claude_ai_VirusTotal__submit_file'],
+    ['project', 'claude.ai VirusTotal', 'mcp__claude_ai_VirusTotal__submit_file'],
+    ['claudeai', 'claude.ai VirusTotal backup', 'mcp__claude_ai_VirusTotal_backup__submit_file'],
+    ['claudeai', 'claude.ai VirusTotal', 'mcp__claude_ai_ai_virustotal_com__submit_file'],
+    ['claudeai', 'claude.ai ai.virustotal.com', 'mcp__claude_ai_virustotal__submit_file'],
+    ['claudeai', 'Claude.ai VirusTotal', 'mcp__claude_ai_VirusTotal__submit_file'],
+    ['claudeai', 'claude.ai VirusTotal', 'mcp__claude_ai_VirusTotal__get_submission'],
+    ['claudeai', 'claude.ai VirusTotal', 'mcp__claude_ai_VirusTotal__submit_file_extra'],
+  ]) {
+    await assert.rejects(expandFile({ ...event, mcp_server: { source, name }, tool_name: tool }, { io: {} }));
+  }
+});
+
+test('credential filenames are denied before any filesystem access, with no changed input', async (t) => {
+  const { event, dir } = await fixture(t);
+  const names = ['.env', '.ENV.production', 'certificate.PEM', 'private.key', 'id_rsa', 'id_rsa.pub',
+    'ID_ED25519_sk', 'id_dsa.old', 'id_ecdsa_sk.pub', 'id_xmss', 'ssh_host_ed25519_key.pub',
+    '.NETRC', '.npmrc', '.pypirc', 'credentials', 'CREDENTIALS.json', 'vault.KDBX', 'KubeConfig',
+    '.env\nproduction', 'credentials\nx'];
+  const io = new Proxy({}, { get() { throw new Error('No filesystem operation is allowed'); } });
+  for (const name of names) {
+    const value = { ...event, tool_input: { ...event.tool_input, content_base64: `file:${path.join(dir, name)}` } };
+    const before = structuredClone(value);
+    const output = await expandFile(value, { io });
+    assert.equal(output.hookSpecificOutput.permissionDecision, 'deny', name);
+    assert.equal('updatedInput' in output.hookSpecificOutput, false);
+    assert.match(output.hookSpecificOutput.permissionDecisionReason, /human review/);
+    assert.ok(!JSON.stringify(output).includes(dir));
+    assert.deepEqual(value, before);
+  }
+});
+
+test('credential filename denial reaches the native launcher protocol without reading bytes', async (t) => {
+  const { event, dir } = await fixture(t);
+  event.tool_input.content_base64 = `file:${path.join(dir, '.env.nonexistent')}`;
+  const result = run(event);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const output = JSON.parse(result.stdout).hookSpecificOutput;
+  assert.equal(output.permissionDecision, 'deny');
+  assert.equal('updatedInput' in output, false);
+  assert.ok(!result.stdout.includes(dir));
+});
+
+test('ordinary filenames still expand with allow and exact original bytes', async (t) => {
+  const { event, bytes, dir } = await fixture(t);
+  for (const name of ['unfamiliar.bin', 'environment.txt', 'public-key.txt', 'public-certificate.crt']) {
+    const filename = path.join(dir, name);
+    await fs.writeFile(filename, bytes);
+    event.tool_input.content_base64 = `file:${filename}`;
+    const output = (await expandFile(event)).hookSpecificOutput;
+    assert.equal(output.permissionDecision, 'allow');
+    assert.deepEqual(Buffer.from(output.updatedInput.content_base64, 'base64'), bytes);
+  }
 });
 
 for (const source of ['project', 'user', 'local', 'sdk', 'managed', 'future-source', null]) {

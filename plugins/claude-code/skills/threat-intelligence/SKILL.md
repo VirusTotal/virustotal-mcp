@@ -32,6 +32,9 @@ For an appropriate local file submission:
    explicitly configured `VTAI_UPLOAD_ROOTS` directory. The hook allows a valid
    expansion automatically; it does not decide whether sensitive content may be
    shared.
+   If the hook blocks a possible credential filename, stop and ask the user for
+   human review. Do not rename, encode, switch tools or use the web uploader to
+   bypass that block; there is no automatic override.
 3. Retain the SHA256 and receipt. If a submission is uncertain, use
    `get_submission` with the same SHA256; never replay the upload to check it.
    When an analysis ID is available, respect `next_poll_after_seconds` before

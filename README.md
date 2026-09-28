@@ -12,7 +12,26 @@ Use **`https://ai.virustotal.com/mcp`** in a compatible remote MCP client. Sign 
 with your VTAI account and approve the connection's permissions; no local Python
 installation, static token or personal VirusTotal API key is required.
 
-For Claude Code:
+### Claude Code: install the plugin
+
+The official plugin includes the OAuth connection, a threat-intelligence skill
+and local file uploads without model-generated base64. Use Claude Code 2.1.283+
+and Node.js 22 or 24. If you already added a manual VirusTotal server, follow the
+[migration steps](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection)
+first; keep personal claude.ai connections and existing receipts.
+
+```sh
+claude plugin marketplace add VirusTotal/virustotal-mcp
+claude plugin install virustotal@virustotal
+```
+
+Start a new session or use `/reload-plugins`, then `/mcp` to complete browser
+sign-in when needed. The plugin already supplies the MCP connection; do not add
+a duplicate. See [plugin setup, file access and credential-name protection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md).
+
+### Claude Code alternative: manual HTTP without Node.js
+
+For report lookups without the local upload hook, use the direct connection:
 
 ```sh
 claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
@@ -21,15 +40,14 @@ claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
 Open Claude Code, run `/mcp`, select **virustotal** and complete browser sign-in.
 See the [Claude Code OAuth instructions](https://code.claude.com/docs/en/mcp#authenticate-with-remote-mcp-servers)
 and the [VirusTotal connection guide](https://ai.virustotal.com/connect/mcp?client=claude&transport=http).
-Adding a server configures it; complete authentication and a tool call to check
+Choose this alternative or the plugin. Adding a server configures it; complete authentication and a tool call to check
 that your connection works.
 
 OAuth connections share the signed-in VTAI account's free quota and use the
 permissions approved for each connection. Existing Agent Tokens keep their rights
 and quotas. If your client needs configurable HTTP headers, use one protected
-`Authorization: Bearer` or `x-apikey` credential instead of OAuth. For local file
-access in Claude Code, use the [VirusTotal plugin](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md)
-with OAuth. Other local clients can use the [stdio installation](#install-for-local-stdio) below.
+`Authorization: Bearer` or `x-apikey` credential instead of OAuth. Other local
+clients can use the [stdio installation](#install-for-local-stdio) below.
 
 ## Connect your client
 
