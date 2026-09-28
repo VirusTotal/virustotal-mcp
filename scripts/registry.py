@@ -39,13 +39,13 @@ IDENTITIES = {
         "id": 1361592455,
         "oidc_subject": "repo:VirusTotal@7701252/virustotal-mcp@1361592455:ref:refs/heads/main",
         "name": "io.github.VirusTotal/virustotal-mcp",
-        "version": "0.9.5",
-        "manifest_sha256": "c6e6563b26842b894d50d5b25c050e945756c27cf7bee7a1212ff9c2b8152016",
+        "version": "0.9.6",
+        "manifest_sha256": "0fe5606abbcb36344295240d90377ad1388bb600f90e75c5a04e1fff271008cd",
         "package_release": {
-            "version": "0.9.5",
-            "source_sha": "e8ea36430e765db022bc4865798d596e8d741a29",
-            "tag_object_sha": "0b80c984586920d5f95e03581d176f455204dbec",
-            "manifest_sha256": "b0fedcb58fff6b2f40a73ca5c6162e88a75c4e7c7d3342989dea702b9339fc1a",
+            "version": "0.9.6",
+            "source_sha": "5b26fa976cdf8b344908ccf499d71936cbd1196f",
+            "tag_object_sha": "ead4d647b70fc0258fd0ee5dcf0eed857dcab24d",
+            "manifest_sha256": "9abca15d6afe25270cc4a3b0dbd39e87101db01a1f2bdb77722b8e76790e8b27",
         },
     },
     "king-tero/vt-mcp": {
@@ -97,6 +97,10 @@ PREVIOUS = {
         {
             "version": "0.9.3",
             "manifest_sha256": "cd05d73567bb82d89ed000b2596c2a89b778896685b53335c0a4c95357e8c03b",
+        },
+        {
+            "version": "0.9.5",
+            "manifest_sha256": "c6e6563b26842b894d50d5b25c050e945756c27cf7bee7a1212ff9c2b8152016",
         },
     )
 }

@@ -2,7 +2,7 @@
 
 Connect to **`https://ai.virustotal.com/mcp`** with browser OAuth in a compatible
 client; no static token or local Python package is needed. Alternatively, install
-[`vt-mcp` 0.9.5 from PyPI](https://pypi.org/project/vt-mcp/0.9.5/) for local stdio.
+[`vt-mcp` 0.9.6 from PyPI](https://pypi.org/project/vt-mcp/0.9.6/) for local stdio.
 The package and the public source repository,
 [VirusTotal/virustotal-mcp](https://github.com/VirusTotal/virustotal-mcp), use
 Apache-2.0. Installation from PyPI does not require a GitHub account. The historical
@@ -36,7 +36,7 @@ public source repository. GitHub Actions OIDC establishes the corporate namespac
 publication is bound to repository ID `1361592455`. The package README carries the
 matching `mcp-name` ownership marker.
 
-Registry metadata **0.9.5** aligns its version with the existing **vt-mcp 0.9.5** package.
+Registry metadata **0.9.6** aligns its version with the existing **vt-mcp 0.9.6** package.
 The description identifies this as the official VirusTotal MCP server: “official”
 refers to VirusTotal ownership, not a Registry endorsement or compatibility badge.
 
@@ -68,16 +68,19 @@ credential for local stdio and direct REST access; MCP OAuth tokens are not REST
 API keys. Reuse credentials rather than registering again after an error or quota
 response.
 
-The Registry stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.5`,
+The Registry stdio configuration uses `uvx --python 3.12` with `vt-mcp==0.9.6`,
 so uv selects a supported interpreter. Set `VTAI_TOKEN_FILE` to the path of a protected
 file containing only your VTAI token, for example `/home/user/.config/vt-mcp/token`.
 The Registry input is the file path; the credential stays in that file. Restrict
 file access to your user. Clients that do not import Registry configuration can
 use the [manual setup](clients.md).
 
-With the compatible hosted service, there are ten remote tools, including file and
-URL submission, domain/IP reanalysis and receipt recovery. Local stdio adds
-`submit_local_file`, for eleven tools. Before a network operation, retain a canonical
+The ten common tools include file and URL submission, domain/IP reanalysis and
+receipt recovery. Local stdio adds `submit_local_file`; a hosted backend can
+separately enable `submit_chatgpt_file` through the
+[ChatGPT attachment contract](hosted-clients.md#chatgpt-attachments). Use the
+connection's advertised tools to determine which adapter is available.
+Before a network operation, retain a canonical
 lowercase UUIDv4 `request_id`; after interruption recover the same receipt, without
 automatically repeating POST. Standard sharing applies. OAuth network writes require
 `vt:reports:read` plus `vt:network-analysis:write`; existing grants do not expand
@@ -102,7 +105,7 @@ Run `publish` with the reviewed metadata commit on main. Before requesting OIDC,
 the helper checks PyPI's name, version and README ownership marker, and requires
 exactly the wheel and source distribution, neither yanked. Their SHA-256 hashes
 must match the corporate release's `SHA256SUMS` and GitHub asset digests. The
-annotated `v0.9.5` tag object, package source commit and checksum manifest are
+annotated `v0.9.6` tag object, package source commit and checksum manifest are
 pinned independently of the metadata commit. This verifies existing published
 bytes without rebuilding or uploading them. A moved tag, changed release,
 partial upload or mismatched source blocks publication.
@@ -112,20 +115,21 @@ published entry anonymously and compares its manifest and active status. No
 permanent Registry secret or VTAI token is needed. CI validates the schema and
 manifest contract without requiring an already-published PyPI package.
 
-`retire` and `restore` change only current corporate metadata version **0.9.5**.
+`retire` and `restore` change only current corporate metadata version **0.9.6**.
 Retirement preserves its manifest and status message in the `include_deleted=true`
 view; restoration reactivates the same entry and requires the matching PyPI release.
 The personal **0.8.0** entry remains retired with its corporate migration message.
-Corporate **0.9.0–0.9.3** retain their original manifests and active status; differing
+Corporate **0.9.0–0.9.3** and **0.9.5** retain their original manifests and active
+status; differing
 Registry/package version numbers in those historical entries are intentional pins,
 not evidence of a broken package. The Registry may update its computed latest flag.
 
-After publishing **0.9.5**, the same workflow can mark an individual corporate
-**0.8.2–0.8.7** entry as deprecated. Choose `deprecate-legacy`, its exact version in
-`target_version`, and the independently reviewed main SHA. This is a metadata
-warning: the entry remains visible and its manifest and package bytes are unchanged.
-The fixed message points clients to the current **0.9.5** entry. There is no bulk
-operation, package deletion or automatic deprecation during publication.
+Corporate **0.8.2–0.8.7** remain deprecated with their previously published message
+referring to **0.9.5**. This publication changes neither those messages nor their
+manifests. The `deprecate-legacy` operation accepts one exact version in
+`target_version` and the independently reviewed main SHA; its fixed message still
+refers to **0.9.5**. A deprecated entry remains visible with unchanged package bytes.
+There is no bulk operation, package deletion or automatic deprecation during publication.
 
 Each run reads all pinned entries before changing exactly one version, records its
 intent, and checks that every other entry is unchanged afterward. A failed or timed
