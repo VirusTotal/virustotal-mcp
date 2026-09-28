@@ -57,10 +57,17 @@ executes the file or adds a comment. Empty files are permitted. The 24 MB inline
 ceiling accounts for base64 expansion inside the bounded HTTP request; it is not
 32 MB of decoded content. The local/binary path retains the 32,000,000-byte limit.
 
-The MCP and API file submission paths use the same VTAI identity, rights, quota policy and existing per-account
-submission receipts. VTAI checks for a report before starting a new submission:
-only confirmed absence allows a new upload. An `exists` response describes that
-existing report; it does not establish a new analysis.
+The MCP and API file submission paths use the same VTAI identity, rights and
+per-account receipts. For a new submission attempt, VTAI verifies the original
+bytes and checks their hash before uploading: only a confirmed missing report
+allows an upload. This internal check does not charge a query when the file is
+unknown. A separate client-side hash lookup is not required.
+
+If the file is already known, VTAI does not upload it. Returning its report in
+`exists` consumes one query; if quota is exhausted, the request fails without
+returning the report or uploading the file. `exists` describes the existing report,
+not a new analysis. Authentication, sharing permission, file limits, service
+capacity and submission recovery still apply.
 
 Keep the returned SHA-256 and any analysis ID. If sending was ambiguous, use
 `get_submission(sha256)`; **do not call either submission tool again to resolve
@@ -84,6 +91,23 @@ hits and hashes with no report. The agent can make later reads according to the
 returned
 status and retry delay, within a finite task budget. No MCP call waits indefinitely
 or invents completion, and no credential is a tool argument.
+
+### Query quota for file workflows
+
+| Operation | Query cost |
+|---|---:|
+| Contribute valid file bytes after the server confirms the hash is unknown | 0 |
+| Submit a known file and receive its existing report; no upload occurs | 1 |
+| Explicit report lookup, including a missing report, cache hit or repeat | 1 |
+| Recover an owned receipt with `get_submission` | 0 |
+| Read a registered analysis with `get_analysis`, including a repeat | 1 |
+
+An explicit hash lookup that returns no report still consumes its query. A later
+contribution of that unknown file adds no query charge. Exhausted query quota
+does not prevent contributing a file confirmed unknown, but it prevents obtaining
+an existing report or reading analysis results until quota is available. Receipt
+recovery does not start another upload. Network-analysis dispatch retains its
+[separate query accounting](#network-analysis-and-recovery).
 
 ### MCP recovery state
 

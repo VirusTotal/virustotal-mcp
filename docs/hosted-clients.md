@@ -39,6 +39,12 @@ SHA256 for `get_submission`; use its registered analysis ID with `get_analysis`.
 Never replay an uncertain upload. If interrupted before receiving its SHA256,
 do not invent a receipt or retry to find out whether it was sent.
 
+VTAI verifies the attachment's bytes and checks its hash before uploading. Only a
+confirmed unknown file is uploaded, without consuming query quota. A known file
+is not uploaded; returning its existing report consumes one query and is denied
+when quota is exhausted. Owned receipt recovery costs no query, while report and
+analysis reads count on every call. See [file workflow quota](analysis.md#query-quota-for-file-workflows).
+
 Standard sharing and sensitive-content permission still apply. A supplied
 `file_name` is checked against the same short credential-name list as the Claude
 plugin. It is optional, unverified metadata, not proof of the real filename or
