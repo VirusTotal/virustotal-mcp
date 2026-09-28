@@ -160,7 +160,7 @@ For a file contribution, submit its authorized bytes under the sharing guidance 
 
 Retain the SHA256 and receipt. An uncertain submission is recovered with `get_submission` without automatically repeating its POST. Use `get_analysis` to read the registered analysis ID when available. Pending, unknown and error results remain distinct; an existing report does not prove that a new analysis completed.
 
-If the client cannot transmit file bytes, offer the user the [existing VirusTotal web upload and subsequent hash lookup](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#when-the-client-cannot-transmit-file-bytes). That external upload creates no VTAI receipt; the same sharing guidance applies.
+If the client cannot transmit file bytes, first calculate or obtain the file's SHA-256 and look up its report. Use an existing report without uploading; only a confirmed missing report permits the [VirusTotal web-upload fallback](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#when-the-client-cannot-transmit-file-bytes). Permission, quota or service errors do not establish absence. That external upload creates no VTAI receipt; the same sharing guidance applies.
 
 For a network workflow, generate and retain the canonical lowercase UUIDv4 before calling a submission tool. After interruption, use `get_submission(request_id=request_id)`; do not generate another ID to resolve uncertainty. A later intentional analysis requires a new ID. Network receipts contain no raw target. See [analysis and recovery](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#network-analysis-and-recovery).
 
@@ -189,7 +189,7 @@ The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.5/) provides the loc
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
 
-Version 0.9.5 offers the existing VirusTotal web upload when a client cannot transmit file bytes, followed by a hash report lookup. Clients that can supply bytes keep the existing submission tools. Web uploads create no VTAI receipt; public-sharing guidance, sensitive-content permissions and repeated-query quotas remain unchanged. This release also fixes the package description's documentation link. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.5/docs/releases/v0.9.5.md).
+Version 0.9.5 introduced the existing VirusTotal web-upload fallback for clients that cannot transmit file bytes; follow the current [hash-first workflow](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#when-the-client-cannot-transmit-file-bytes) before uploading. Clients that can supply bytes keep the existing submission tools. Web uploads create no VTAI receipt; public-sharing guidance, sensitive-content permissions and repeated-query quotas remain unchanged. This release also fixes the package description's documentation link. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.5/docs/releases/v0.9.5.md).
 
 Version 0.9.2 corrects `get_submission` discovery to advertise `openWorldHint: false`, reflecting its read of the current account's bounded receipt. Tool schemas and receipt behavior remain compatible.
 

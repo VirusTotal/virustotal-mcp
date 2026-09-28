@@ -128,17 +128,20 @@ upload or scan.
 ### When the client cannot transmit file bytes
 
 Use the available submission tool when the client can supply the actual bytes.
-If it cannot, offer the user the existing [VirusTotal upload page](https://www.virustotal.com/gui/home/upload)
-under the same public-sharing and sensitive-content guidance above. This is a
-transfer alternative, not a way to bypass denied permissions or quota errors.
+If it cannot, first calculate the file's SHA-256 locally, or ask the user for it,
+and call `get_file_report(hash)`. Use an existing report without uploading the
+file. Only a confirmed missing report permits offering the existing
+[VirusTotal upload page](https://www.virustotal.com/gui/home/upload), under the
+same public-sharing and sensitive-content guidance above. Permission, quota or
+service errors do not establish absence and do not permit an upload.
 Remote HTTP alone does not establish whether a host can access an attachment or
 transmit its bytes; capabilities depend on the actual client and workflow.
 
-After the user uploads through the website, obtain the file's hash and call
-`get_file_report(hash)`. A web upload creates no VTAI receipt or registered analysis
+After the user uploads the confirmed unknown file through the website, read
+`get_file_report(hash)` using the same hash. A web upload creates no VTAI receipt or registered analysis
 ID: `get_submission` and `get_analysis` cannot recover that external upload.
 The report may not be available immediately; a missing report stays unknown.
-Limit later reads to the task's time and request budget. Every repeated lookup
+Limit later reads to the task's time and request budget. Every lookup
 counts toward quota, including missing reports and cache hits. Do not upload again
 just because a report is not yet available.
 

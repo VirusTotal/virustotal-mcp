@@ -58,17 +58,20 @@ test or availability in every account.
 
 ### Existing web fallback
 
-If the client cannot transmit those bytes, offer the user the existing
-[VirusTotal upload page](https://www.virustotal.com/gui/home/upload). Standard
+If the client cannot transmit those bytes, first calculate the file's SHA-256
+locally, or ask the user for it, and call `get_file_report(hash)`. Use an existing
+report without uploading. Only a confirmed missing report permits offering the
+existing [VirusTotal upload page](https://www.virustotal.com/gui/home/upload).
+Permission, quota or service errors do not establish absence. Standard
 uploads are not confidential and share content with the security community and
 partners. Ask before sharing the user's own documents, internal code, credentials
 or personal data, including sensitive content inside an attachment or unfamiliar
 file. This alternative does not bypass host permissions or quota errors.
 
-After the user uploads through the website, obtain its file hash and use
-`get_file_report(hash)`. The report may not be available yet. Web uploads do not
+After the user uploads the confirmed unknown file through the website, use
+`get_file_report(hash)` with the same hash. The report may not be available yet. Web uploads do not
 create VTAI receipts or register analysis IDs: do not use `get_submission` or
-`get_analysis` for that external upload. Every repeated report query consumes
+`get_analysis` for that external upload. Every report query consumes
 quota, including missing reports and cache hits; keep later reads within a finite
 task budget. See [file transfer and recovery](analysis.md#when-the-client-cannot-transmit-file-bytes).
 

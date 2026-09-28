@@ -147,10 +147,13 @@ community and security partners; only submit material you have the right and
 permission to share.
 
 If a client cannot transfer the original bytes and the plugin is unavailable,
-use the existing [VirusTotal web uploader](https://www.virustotal.com/gui/home/upload)
-and then `get_file_report` with the file hash. A web upload has no VTAI submission
-receipt. Respect permission failures and quota delays; repeated report queries
-still count, including missing reports.
+first calculate the file's SHA-256 locally, or ask the user for it, and call
+`get_file_report(hash)`. Use an existing report without uploading. Only a confirmed
+missing report permits using the existing
+[VirusTotal web uploader](https://www.virustotal.com/gui/home/upload), then reading
+the same hash again. Permission, quota or service errors do not establish absence.
+A web upload has no VTAI submission receipt. Every report query counts, including
+missing reports and repeats; follow the [web fallback workflow](analysis.md#when-the-client-cannot-transmit-file-bytes).
 
 ### Replace an existing manual connection
 
