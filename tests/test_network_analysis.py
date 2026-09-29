@@ -111,15 +111,22 @@ async def test_sdk_network_flow_sends_json_once_and_recovers_selected_analysis(
         assert tools[tool].annotations.idempotent_hint
         submitted = await client.call_tool(tool, {kind: TARGETS[kind], "request_id": REQUEST_ID})
         recovered = await client.call_tool("get_submission", {"request_id": REQUEST_ID})
+        recovered_with_null = await client.call_tool(
+            "get_submission", {"request_id": REQUEST_ID, "sha256": None}
+        )
         result = await client.call_tool(
             "get_analysis", {"analysis_id": ANALYSIS_ID, "request_id": REQUEST_ID}
         )
     assert (
         not submitted.is_error
-        and submitted.structured_content == recovered.structured_content == receipt(kind)
+        and not recovered_with_null.is_error
+        and submitted.structured_content
+        == recovered.structured_content
+        == recovered_with_null.structured_content
+        == receipt(kind)
     )
     assert not result.is_error and result.structured_content == network_analysis(kind)
-    assert [method for method, _ in calls] == ["POST", "GET", "GET"]
+    assert [method for method, _ in calls] == ["POST", "GET", "GET", "GET"]
     assert not state.exists()
     assert TOKEN not in submitted.content[0].text and TARGETS[kind] not in submitted.content[0].text
 
