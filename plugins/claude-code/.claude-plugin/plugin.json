@@ -1,12 +1,13 @@
 {
   "name": "virustotal",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Official VirusTotal reports and local file submission through your OAuth MCP connection.",
   "author": {
     "name": "VirusTotal",
     "url": "https://www.virustotal.com"
   },
   "homepage": "https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md",
+  "privacyPolicyUrl": "https://cloud.google.com/terms/secops/privacy-notice",
   "repository": "https://github.com/VirusTotal/virustotal-mcp",
   "license": "Apache-2.0",
   "keywords": [
