@@ -178,13 +178,20 @@ connection. Fresh installations need no removal command.
 
 ## Validation and removal
 
-The original hook mechanism was exercised with 100,000-byte and 1,000,000-byte
-public binary fixtures in native Claude Code 2.1.283 on Linux using an imported
-connection. Their private receipts and completed analyses matched the original
-hashes. That prototype evidence does not certify every plugin installation,
-direct OAuth login, operating system, interactive dialog or maximum file size.
-The plugin has separate offline tests for file boundaries, provenance, races and
-its launcher. The CI workflow runs those tests on Linux, macOS and Windows with
+Plugin 0.1.3 was tested in Claude Code 2.1.284 on Linux with Node 22, starting
+with a fresh OAuth login to the plugin's own connection. One inert 163-byte file
+was uploaded, its original bytes verified after the hook, its receipt recovered
+and its completed analysis read with the matching SHA-256. All ten general
+VirusTotal tools were exercised, including once-only URL, domain and IP analysis
+requests, receipt recovery and completed results. An invalid IP returned the
+expected error. The ChatGPT-only attachment tool is not a Claude upload path.
+
+Earlier native Claude Code 2.1.283 tests used an imported OAuth connection for
+100,000-byte, 1,000,000-byte and 24,000,000-byte public fixtures, with matching
+receipts and completed analyses. A clean marketplace installation was verified
+separately. These results do not certify authenticated uploads on Windows,
+macOS, Cowork or Claude web chat. The CI workflow separately checks file
+boundaries, provenance, races and the launcher on Linux, macOS and Windows with
 Node 22 and 24; an offline pass does not prove a native authenticated upload.
 
 ```sh
