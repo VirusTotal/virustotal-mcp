@@ -73,6 +73,8 @@ partners. Ask before sharing your own documents, internal code, credentials or
 personal data. Only submit material you have the right and permission to share.
 Inline bytes also pass through MCP tool arguments, which the host or model
 provider may retain. Removing this plugin does not withdraw submitted content.
+URL queries disclose the complete URL, including query and fragment, to VTAI
+and VirusTotal; use domain scope when sufficient and avoid secret URLs.
 
 VTAI access is free subject to its quotas; Antigravity model access and credits
 are separate. Every report or analysis read counts, including repeats and missing

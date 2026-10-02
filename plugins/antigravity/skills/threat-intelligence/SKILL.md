@@ -8,6 +8,9 @@ or the server bundled with this plugin. Avoid duplicate connections. If it needs
 authentication, open the host's MCP manager and follow its Authenticate flow.
 Never read or copy OAuth tokens, credentials or authorization codes into chat.
 
+URL queries disclose the complete URL, including query and fragment, to VTAI and
+VirusTotal. Avoid secret URLs; query the domain when that scope is sufficient.
+
 Retrieve the appropriate existing report with `get_file_report`,
 `get_url_report`, `get_domain_report` or `get_ip_report`. Explain the source,
 analysis date, detection coverage and limitations. Missing means unknown; zero
