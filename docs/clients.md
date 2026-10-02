@@ -322,6 +322,12 @@ configuration file, tool discovery, tool calls or a model workflow against VTAI.
 The Cascade configuration editor was opened in Devin Desktop 3.10.23 on Linux;
 HTTP transport, file-token expansion and tool/model workflows remain unverified.
 
+## Gemini Apps
+
+Use the [Gemini Apps custom MCP connection and optional skill](google-clients.md#gemini-apps-custom-connection).
+The guide covers eligibility, browser consent, importing `SKILL.md`, a report-only
+check and removal. Its validation is distinct from Gemini CLI and Antigravity.
+
 ## Gemini CLI
 
 The [Gemini CLI extension](google-clients.md#gemini-cli-extension) adds the hosted
