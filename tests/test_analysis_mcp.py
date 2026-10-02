@@ -47,10 +47,13 @@ async def test_local_analysis_read_preserves_structured_parity():
         assert tool.annotations.read_only_hint and tool.annotations.idempotent_hint
         assert not tool.annotations.destructive_hint
         result = await client.call_tool("get_analysis", {"analysis_id": ANALYSIS_ID})
-    assert not result.is_error
-    assert result.structured_content == analysis_response()
+        with_null = await client.call_tool(
+            "get_analysis", {"analysis_id": ANALYSIS_ID, "request_id": None}
+        )
+    assert not result.is_error and not with_null.is_error
+    assert result.structured_content == with_null.structured_content == analysis_response()
     assert json.loads(result.content[0].text) == result.structured_content
-    assert calls == ["GET"]
+    assert calls == ["GET", "GET"]
 
 
 @pytest.mark.parametrize(

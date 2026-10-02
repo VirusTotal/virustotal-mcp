@@ -29,6 +29,7 @@ from vt_mcp.analyses import (
     validate_sha256,
 )
 from vt_mcp.client import AnalysisClient
+from vt_mcp.client_contracts import credential_filename_denied
 from vt_mcp.submission_cli import CLIError, Snapshot, copy_snapshot, persist_reference, state_path
 
 LOCAL_SUBMISSION_SECONDS = 150.0
@@ -118,7 +119,12 @@ class LocalSubmissions:
             raise AnalysisError("timeout") from None
 
     async def submit_local_file(self, path: str, expected_sha256: str | None = None) -> dict:
-        if not isinstance(path, str) or not path or "\x00" in path:
+        if (
+            not isinstance(path, str)
+            or not path
+            or "\x00" in path
+            or credential_filename_denied(path)
+        ):
             raise AnalysisError("invalid_file")
         if expected_sha256 is not None:
             validate_sha256(expected_sha256)

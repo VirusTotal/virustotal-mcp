@@ -41,6 +41,10 @@ def test_packaged_contract_plugin_copy_and_generated_guides_agree():
         ".env\nbackup",
         "ID_ED25519_sk",
         "C:\\Users\\you\\credentials.json",
+        "C:credentials.json",
+        "c:.env",
+        "D:id_rsa",
+        "D:kubeconfig",
         "/home/you/.npmrc",
     ],
 )
@@ -48,6 +52,16 @@ def test_shared_credential_filename_rule_rejects_new_patterns_and_path_styles(na
     assert credential_filename_denied(name)
 
 
-@pytest.mark.parametrize("name", ["unfamiliar.bin", "notes.txt", ".pgpass.txt", "public-cert.crt"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "unfamiliar.bin",
+        "notes.txt",
+        ".pgpass.txt",
+        "public-cert.crt",
+        "C:notes.txt",
+        "D:sample.bin",
+    ],
+)
 def test_filename_guard_does_not_claim_to_scan_contents(name):
     assert not credential_filename_denied(name)

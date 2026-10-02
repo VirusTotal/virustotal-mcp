@@ -83,13 +83,16 @@ async def _validate_arguments(ctx: ServerRequestContext, call_next: CallNext) ->
                     if not {"analysis_id"} <= set(args) <= {"analysis_id", "request_id"}:
                         raise AnalysisError("invalid_input")
                     validate_analysis_id(args["analysis_id"])
-                    if "request_id" in args:
+                    if args.get("request_id") is not None:
                         validate_request_id(args["request_id"])
                 elif tool == "get_submission":
-                    if set(args) == {"sha256"}:
-                        validate_sha256(args["sha256"])
-                    elif set(args) == {"request_id"}:
-                        validate_request_id(args["request_id"])
+                    if not set(args) <= {"sha256", "request_id"}:
+                        raise AnalysisError("invalid_input")
+                    present = {key: value for key, value in args.items() if value is not None}
+                    if set(present) == {"sha256"}:
+                        validate_sha256(present["sha256"])
+                    elif set(present) == {"request_id"}:
+                        validate_request_id(present["request_id"])
                     else:
                         raise AnalysisError("invalid_input")
                 else:

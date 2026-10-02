@@ -66,6 +66,12 @@ def test_stdio_inline_and_local_first_post_then_restart_get_only(tmp_path):
     directory.mkdir()
     local = directory / "source.bin"
     local.write_bytes(BODY)
+    credential_paths = []
+    for name in (".env", "credentials.json", "id_rsa", "kubeconfig"):
+        drive_relative = f"{directory.drive or 'C:'}{name}"
+        fixture = directory / (name if os.name == "nt" else drive_relative)
+        fixture.write_bytes(BODY)
+        credential_paths.append(drive_relative)
     inline = BODY + b"inline fixture"
     inline_sha = hashlib.sha256(inline).hexdigest()
     expected = {SHA: BODY, inline_sha: inline}
@@ -145,6 +151,12 @@ def test_stdio_inline_and_local_first_post_then_restart_get_only(tmp_path):
                     for name, tool in tools.items()
                     if name != "get_submission"
                 )
+                references_before = sorted(state.rglob("*.json"))
+                for path in credential_paths:
+                    denied = await client.call_tool("submit_local_file", {"path": path})
+                    assert denied.is_error is True
+                    assert denied.structured_content["error"]["code"] == "invalid_file"
+                assert sorted(state.rglob("*.json")) == references_before
                 for _ in range(2):
                     for tool, arguments, sha in [
                         (

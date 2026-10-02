@@ -8,6 +8,7 @@ from typing import Annotated, NotRequired, Protocol, TypedDict
 from pydantic import ConfigDict, Field
 
 from vt_mcp.analyses import AnalysisError
+from vt_mcp.client_contracts import credential_filename_denied
 
 
 class ChatGPTFile(TypedDict):
@@ -36,4 +37,6 @@ def validate_chatgpt_file(file: object) -> ChatGPTFile:
             or any(unicodedata.category(char).startswith("C") for char in value)
         ):
             raise AnalysisError("invalid_input")
+    if "file_name" in file and credential_filename_denied(file["file_name"]):
+        raise AnalysisError("invalid_input")
     return dict(file)
