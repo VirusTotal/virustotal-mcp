@@ -1,12 +1,13 @@
 ---
 name: threat-intelligence
-description: Investigate files, URLs, domains and IP addresses with VirusTotal, and submit unfamiliar files through the VirusTotal Claude Code upload hook.
+description: Investigate files, URLs, domains and IP addresses with VirusTotal. In Claude Code, submit unfamiliar local files through the bundled upload hook.
 ---
 
 Use the authenticated VirusTotal MCP connection. Prefer the already connected
 imported VirusTotal connection or the server bundled with this plugin; avoid
-creating duplicate connections. If authentication is missing, use `/mcp` to sign
-in. Never read or copy OAuth tokens.
+creating duplicate connections. If authentication is missing, use `/mcp` in
+Claude Code or connect VirusTotal from the plugin's Connectors tab in Claude
+web chat. Never read or copy OAuth tokens.
 
 Consult reports for the indicator and explain their source, date, coverage and
 limitations. A missing report means unknown; zero detections do not prove safety.
@@ -20,7 +21,11 @@ establish permission to share private content. Standard submissions are shared
 with the VirusTotal community and security partners; submit only material you
 have the right and permission to share.
 
-For an appropriate local file submission:
+The local `file:` workflow below requires Claude Code and the bundled hook.
+Claude web chat does not run this hook and cannot read a path on the user's
+computer. Do not claim that a local path has been uploaded from web chat.
+
+For an appropriate local file submission in Claude Code:
 
 1. Calculate SHA256 from the original file with an available local tool, within
    the user's authorized file scope. Do not execute the file. A previous MD5 or
@@ -35,7 +40,11 @@ For an appropriate local file submission:
    If the hook blocks a possible credential filename, stop and ask the user for
    human review. Do not rename, encode, switch tools or use the web uploader to
    bypass that block; there is no automatic override.
-3. Retain the SHA256 and receipt. If a submission is uncertain, use
+3. The server verifies the original bytes and checks their hash first. Only a
+   confirmed missing report permits an upload. A known file returns its existing
+   report without uploading again. New contributions consume no report-query
+   quota; existing reports and explicit queries remain charged.
+4. Retain the SHA256 and receipt when one is returned. If a submission is uncertain, use
    `get_submission` with the same SHA256; never replay the upload to check it.
    When an analysis ID is available, respect `next_poll_after_seconds` before
    `get_analysis`. Pending results are not completed analyses.
@@ -46,6 +55,9 @@ Do not switch connections, credentials or services to evade a permission or
 quota rejection. Honor retry delays.
 
 The `file:` convention requires this local hook. If it is unavailable and the
-host cannot transmit the original bytes, offer the existing
-https://www.virustotal.com/gui/home/upload interface, then query `get_file_report`
-with the file hash. A web upload does not create a VTAI submission receipt.
+host cannot transmit the original bytes, obtain the actual file hash and call
+`get_file_report` first. Use an existing report without uploading. Only a
+confirmed missing report permits offering the existing
+https://www.virustotal.com/gui/home/upload interface, then querying the same
+hash again. Permission, quota and service errors do not establish absence.
+A web upload does not create a VTAI submission receipt.

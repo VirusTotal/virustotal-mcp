@@ -27,7 +27,7 @@ def generated_files(root: Path = ROOT) -> dict[Path, bytes]:
     plugin = json.loads(plugin_path.read_text("utf-8"))
     plugin["version"] = data["plugin_version"]
     result[plugin_path] = (json.dumps(plugin, indent=2) + "\n").encode()
-    for name in ["README.md", "docs/claude-code.md"]:
+    for name in ["README.md", "docs/claude-code.md", "plugins/claude-code/README.md"]:
         path = root / name
         text = path.read_text("utf-8")
         if text.count(START) != 1 or text.count(END) != 1:
