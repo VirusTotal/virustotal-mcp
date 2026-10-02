@@ -2,10 +2,100 @@
 
 Start with [Agy](clients.md#antigravity-cli-agy); the other primary guides are
 [Claude Code](clients.md#claude-code) and [Codex](clients.md#codex-cli--remote-http).
-This page covers the Antigravity plugin, native remote configuration and the
-Gemini CLI extension. The existing Agy stdio setup remains available for
-unattended use. [VT Sentinel for Antigravity IDE](https://open-vsx.org/extension/virustotal/vt-sentinel)
+This page covers [Gemini Apps](#gemini-apps-custom-connection), its optional
+[importable skill](#gemini-apps-skill), the Antigravity plugin, native remote
+configuration and the Gemini CLI extension. The existing Agy stdio setup remains
+available for unattended use. [VT Sentinel for Antigravity IDE](https://open-vsx.org/extension/virustotal/vt-sentinel)
 is a separate editor extension, also linked from [ai.virustotal.com](https://ai.virustotal.com/).
+
+## Gemini Apps custom connection
+
+Google currently requires a personal account, age 18 or older, US availability,
+English and **Keep Activity** enabled for custom connected apps. Set up the
+connection in the web app; it can then be used on web and mobile. Work and school
+accounts are not eligible for this flow. Check
+[Google's current custom-app requirements](https://support.google.com/gemini/answer/17209137?hl=en).
+
+1. Open [Gemini](https://gemini.google.com/) and choose **Settings → Connected Apps**.
+2. Under **Custom apps**, add `https://ai.virustotal.com/mcp`, then continue with **Next**.
+3. Complete the browser sign-in and VTAI consent. VTAI supports dynamic client
+   registration; this recipe needs no manually entered client ID, client secret,
+   static Agent Token or premium VirusTotal API key. Authorize only the operations
+   your task needs, and keep credentials out of the conversation.
+4. In a chat, type `@` and select the connected VirusTotal app. Request an existing
+   report, for example:
+
+   > Retrieve the existing VirusTotal report for example.com. Include the source,
+   > analysis date, coverage and report link. Do not submit it or request a new analysis.
+
+Check the actual tool result before relying on the answer. An account connection
+alone does not establish a successful report query. Missing reports mean unknown;
+zero detections do not prove safety. This is a custom connection, not a claim of
+placement in Gemini's curated app directory.
+
+If **Custom apps** is absent, check eligibility and availability rather than
+pasting a token into a prompt. For a login failure, use the client's reconnect
+flow and your existing VTAI account. The Gemini model account and the VTAI
+connection are separate. VTAI access has its own quotas; Gemini plan requirements
+and model limits are controlled by Google.
+
+### Sharing and permissions
+
+Only disclose indicators you may share. URL lookups send the complete URL,
+including query and fragment, to VTAI and VirusTotal; prefer a domain lookup when
+private paths are unnecessary. Review [VTAI's connection information](https://ai.virustotal.com/connect/mcp)
+and the [privacy notice](https://cloud.google.com/terms/secops/privacy-notice).
+
+Report lookups retrieve existing intelligence. File submissions, URL analysis and
+domain/IP reanalysis use separate write tools and permissions. Standard
+submissions are shared with the VirusTotal community and security partners. Ask
+before sharing the user's own or sensitive content, and respect host confirmation
+and permission controls. The remote service cannot read a device path. A Gemini
+attachment is not a ChatGPT attachment, and a model must not invent attachment
+URLs, hashes or base64. See [submission and recovery](analysis.md) for supported
+byte transfer and the hash-first web-upload alternative.
+
+Every explicit report or analysis read consumes query quota, including repeats,
+cache hits and missing reports. New-file contributions and owned receipt recovery
+have the [separate accounting described here](analysis.md#query-quota-for-file-workflows).
+Honor retry delays; a timeout or quota refusal is not a clean result or permission
+to resubmit. Keep an uncertain operation's receipt or request ID and recover it
+using the same connection.
+
+### Remove access
+
+In Gemini's **Connected Apps**, turn the custom app off to stop using it. Use
+**More details → Disconnect** to unlink it, or **Remove app** to remove it.
+For permanent removal, also verify or revoke the grant in VTAI's
+[Your connections](https://ai.virustotal.com/oauth/connections). Deleting a skill
+does not revoke its MCP connection or withdraw previously submitted content.
+
+## Gemini Apps skill
+
+The portable [VirusTotal threat-intelligence skill](../skills/virustotal-threat-intelligence/README.md)
+adds investigation and sharing instructions. Connect the MCP app above first:
+importing a skill does not install a server, authenticate it or grant access.
+
+Skills require a personal Google account, age 18 or older and **Keep Activity**.
+Availability is gradual and does not itself require a paid subscription. These
+skill requirements are distinct from the US/English restrictions on custom apps.
+See [Google's skill import guide](https://support.google.com/gemini/answer/17094296?hl=en).
+
+1. Download the plain-text [SKILL.md](https://raw.githubusercontent.com/VirusTotal/virustotal-mcp/main/skills/virustotal-threat-intelligence/SKILL.md)
+   and review its instructions.
+2. On Gemini web, open **Settings → Skills → Upload**. Select `SKILL.md`, or a ZIP
+   with that file at its root, then review and create the skill.
+3. In a chat, type `/` to select `virustotal-threat-intelligence`, and use `@` to
+   select the connected VirusTotal app. Try the report-only prompt above.
+
+The skill contains instructions only, with no scripts, credentials or network
+helpers. Google does not support internet-accessing scripts in imported skills;
+the connected app supplies the MCP tools. Hosts may expose different tools:
+the skill uses only the available connected tools and their current schemas.
+
+To update an import, review the new file and use **Replace skill** in its menu.
+You can deactivate or delete it from **Settings → Skills** independently of the
+MCP connection. Existing imports do not change when this repository changes.
 
 ## Antigravity plugin
 
@@ -102,6 +192,13 @@ If the CLI offers a Git-clone fallback for that branch, accept it. Git is requir
 There is no Python process, package installation or token-setting prompt in this
 extension: it connects to the hosted service using OAuth.
 
+Extension version **0.9.8** includes the portable
+[`virustotal-threat-intelligence` skill](../skills/virustotal-threat-intelligence/README.md).
+Gemini CLI discovers it from the extension's `skills/` directory. Its instructions
+use the existing connection and do not change OAuth scopes or tool permissions.
+The version identifies this source distribution; it does not upgrade a local
+Python installation or identify the deployed VTAI backend version.
+
 If `virustotal` already exists in your Gemini `settings.json`, choose one
 connection and preserve unrelated entries. A manual entry can override the
 extension's server; installing the extension does not migrate existing settings.
@@ -149,6 +246,17 @@ model-access requirements; installing this extension does not provide model
 access. [Google transition notice](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
 
 ## Validation and discovery
+
+The Gemini Apps setup and skill import instructions follow Google's documentation
+checked on 2 October 2026. The skill's format and archive contents were checked
+locally. A complete Gemini Apps browser login, imported-skill report query,
+token renewal and write workflow have not been exercised in this validation.
+Historical server-side OAuth activity does not establish that end-to-end workflow.
+Do not infer Gemini Apps support from the separate Agy check below.
+
+Gemini CLI 0.58.0's skill loader discovered the new portable skill in a local
+read-only check, with network calls and filesystem writes disabled. This checks
+format and discovery, not extension installation, OAuth or model use of the skill.
 
 On 2 October 2026, Agy 1.2.14 validated and installed the Antigravity plugin.
 The manifest contains only the documented `name` and `description` fields; its

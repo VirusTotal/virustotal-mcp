@@ -72,6 +72,7 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 | Windsurf / Devin Desktop | [Cascade HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cascade&transport=http) |
 | Antigravity IDE | [Local stdio configuration](#antigravity-ide) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
 | Gemini CLI | [Install the OAuth extension](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-cli-extension) |
+| Gemini Apps | [Custom MCP connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-apps-custom-connection) and optional [importable skill](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#gemini-apps-skill), subject to Google's account and regional availability; complete hosted workflow validation pending |
 
 Remote OAuth configuration for [GitHub Copilot CLI](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) and [Devin CLI](https://docs.devin.ai/cli/extensibility/mcp/configuration) follows their official documentation; an OAuth-authenticated VirusTotal tool workflow has not yet been verified in either client.
 
