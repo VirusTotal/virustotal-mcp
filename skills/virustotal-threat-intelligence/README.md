@@ -4,13 +4,16 @@ Portable instructions for an already connected VirusTotal MCP app. The skill
 contains no scripts, credentials or server configuration. It does not install
 or authenticate the connection and does not grant submission permissions.
 
-For Gemini Apps, [connect the custom app and import the skill](../../docs/google-clients.md#gemini-apps-skill).
-Download the plain-text [SKILL.md](https://raw.githubusercontent.com/VirusTotal/virustotal-mcp/main/skills/virustotal-threat-intelligence/SKILL.md)
-and use **Settings → Skills → Upload**. A ZIP containing only `SKILL.md` at its
-root is also accepted: use the reviewed [skill ZIP and checksum](https://github.com/VirusTotal/virustotal-mcp/releases/tag/gemini-skill-v0.1.0).
-The repository's full source ZIP is not a skill archive.
-Review the instructions before importing. Eligibility and hosted validation
-limits are recorded in the guide.
+For Gemini Apps, follow the [connection and import guide](../../docs/google-clients.md#gemini-apps-skill).
+Download the plain-text [SKILL.md](https://github.com/VirusTotal/virustotal-mcp/releases/download/gemini-skill-v0.1.0/SKILL.md),
+keep its filename and use **Settings → Skills → Upload**. Select `SKILL.md`,
+review the instructions and choose **Create**. If you already downloaded the
+[skill ZIP](https://github.com/VirusTotal/virustotal-mcp/releases/tag/gemini-skill-v0.1.0),
+extract its single `SKILL.md` and select that file. Some upload dialogs accept
+only `SKILL.md`; ZIP acceptance is not guaranteed. Checksums are on the release.
+The repository's full source ZIP is not a skill archive. You can import the
+instructions separately, but live reports require the connected MCP app.
+Eligibility and hosted validation limits are recorded in the guide.
 
 The [Gemini CLI extension](../../docs/google-clients.md#gemini-cli-extension)
 bundles this directory. Other skill-compatible hosts can reuse `SKILL.md` with
