@@ -306,8 +306,10 @@ access. [Google transition notice](https://developers.googleblog.com/an-importan
 The Gemini Apps setup and skill import instructions follow Google's documentation
 checked on 3 October 2026 and an upload dialog that accepts only `SKILL.md`.
 The plain-text download is identical to the file in the skill release ZIP;
-its format and archive contents were checked locally. A complete Gemini Apps
-browser login, imported-skill report query,
+its format and archive contents were checked locally. A manual upload on that
+date showed `virustotal-threat-intelligence` under **Active** in Gemini web.
+This verifies import and listing, independently of the MCP connection.
+A complete Gemini Apps MCP login, imported-skill report query,
 token renewal and write workflow have not been exercised in this validation.
 Historical server-side OAuth activity does not establish that end-to-end workflow.
 Do not infer Gemini Apps support from the separate Agy check below.
