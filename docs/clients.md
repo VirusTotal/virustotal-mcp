@@ -418,7 +418,7 @@ Do not repeat submission to resolve an ambiguous response.
 
 For an authorized network operation, generate and persist a lowercase UUIDv4 before calling `submit_url`, `reanalyze_domain` or `reanalyze_ip`. Recover with `get_submission(request_id=request_id)` using the same connection, then read `get_analysis(analysis_id, request_id=request_id)`. Do not generate a new ID to resolve uncertainty. Follow the [network workflow](analysis.md#network-analysis-and-recovery), including standard sharing, rejected receipts and finite polling.
 
-Ask your client to query an existing report for `example.com`, `https://example.com/`, or an IP you are authorized to disclose. For file regression, use the SHA-256 of the empty file: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+For a first query, ask: “Use VirusTotal to get the domain report for virustotal.com. Show the source, analysis date, coverage and report link.” In ChatGPT, prefix the prompt with `@VirusTotal`. For file regression, use the SHA-256 of the empty file: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 
 Ask for the source, analysis date and coverage, with missing data stated explicitly. A 404 is a valid unknown result. These lookups send no explicit analysis POST from VTAI; VirusTotal controls upstream processing. A URL query discloses the complete URL to VTAI and VirusTotal; use domain scope when sufficient. Removing a client configuration does not revoke the VTAI credential.
 

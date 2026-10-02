@@ -26,8 +26,10 @@ claude plugin install virustotal@virustotal
 Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
 <!-- client-contract:claude-code:end -->
 
-If you previously used `claude mcp add virustotal`, run `claude mcp remove virustotal`
-(use the same `--scope` if specified); see [migration and recovery details](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection).
+If you are replacing an existing manual connection with the plugin, read the
+[migration and recovery guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection)
+before removing anything. Recover uncertain submissions through the original
+connection first; keep a working manual connection if you choose that alternative.
 
 Start a new session or use `/reload-plugins`, then `/mcp` to complete browser
 sign-in when needed. The plugin already supplies the MCP connection; do not add
@@ -82,16 +84,16 @@ In ChatGPT, creating a plugin/application and connecting your personal account a
 
 For a first query, ask your agent:
 
-> Use VirusTotal to look up the SHA-256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855. Explain the source, analysis date, coverage and limitations.
+> Use VirusTotal to get the domain report for virustotal.com. Show the source, analysis date, coverage and report link.
 
-This is the empty-file hash. A report lookup does not read or upload local files. A missing report remains unknown, and zero detections do not establish safety.
+In ChatGPT, prefix the prompt with `@VirusTotal`. A report lookup does not read or upload local files. A missing report remains unknown, and zero detections do not establish safety.
 
 ## Install for local stdio
 
 For local stdio, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run:
 
 ```bash
-uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.5'
+uv tool install --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.8'
 vt-mcp --version
 ```
 
@@ -108,7 +110,7 @@ Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the config
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
 ```sh
-uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.5'
+uv tool install --upgrade --python 3.12 --default-index https://pypi.org/simple 'vt-mcp==0.9.8'
 vt-mcp --version
 ```
 
@@ -134,7 +136,7 @@ In the agent panel, open **MCP Servers → Manage MCP Servers → View raw confi
 }
 ```
 
-Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation. For browser sign-in without a local process, use the [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth), whose hosted login and tool workflow remain unverified. OAuth avoids reliance on unverified HTTP credential-variable expansion. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
+Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation. For browser sign-in without a local process, use the [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth), which completed browser OAuth and a domain query in Antigravity CLI 1.2.14/1.2.15 on 2026-10-02. That CLI result does not verify OAuth in the IDE, renewal or file submissions. OAuth avoids reliance on unverified HTTP credential-variable expansion. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
 
 The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. Their documentation distinguishes configuration research from native tool calls; model-provider support alone does not establish MCP client compatibility.
 
@@ -147,7 +149,7 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_domain_report(domain)` | Retrieve domain intelligence; no scheme, path or port. |
 | `get_ip_report(ip)` | Retrieve intelligence for one IPv4 or IPv6 address. |
 | `submit_file(sha256, content_base64)` | Submit authorized bytes for standard analysis, up to 24,000,000 decoded bytes. |
-| `submit_chatgpt_file(file)` | **Hosted adapter when enabled:** submit a ChatGPT-provided attachment, up to 24,000,000 bytes; returns its SHA256 for recovery. |
+| `submit_chatgpt_file(file)` | **Hosted HTTP adapter:** submit a ChatGPT-provided attachment object, up to 24,000,000 bytes; returns its SHA256 for recovery. |
 | `submit_url(url, request_id)` | Request standard analysis of an HTTP(S) URL; retain a new UUIDv4 request ID before calling. |
 | `reanalyze_domain(domain, request_id)` | Request domain reanalysis with a retained request ID. |
 | `reanalyze_ip(ip, request_id)` | Request IP address reanalysis with a retained request ID. |
@@ -155,7 +157,7 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_analysis(analysis_id, request_id=None)` | Read a registered analysis; pass the network receipt's request ID to distinguish operations. |
 | `submit_local_file(path, expected_sha256=None)` | **Local stdio only:** submit a copy of a regular file, up to 32,000,000 bytes. An expected digest must match that copy. |
 
-With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio additionally has `submit_local_file`. A hosted backend can also enable `submit_chatgpt_file` with the [ChatGPT attachment contract](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-attachments). It is available after that backend deploys the binding; protocol tests do not establish a native ChatGPT attachment workflow. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
+With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio additionally has `submit_local_file`. The public hosted backend additionally exposes `submit_chatgpt_file` with the [ChatGPT attachment contract](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-attachments); it is absent from local stdio. The server binding is verified, while native ChatGPT attachment handling remains unverified. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
 
 For a file contribution, submit its authorized bytes under the sharing guidance below; a separate hash lookup is not required. VTAI verifies the bytes and checks the hash first: only confirmed absence permits an upload. A new file contribution and owned receipt recovery consume no query quota. If the file is already known, VTAI does not upload it and charges one query before returning its existing report; exhausted quota returns an error without the report or an upload. Explicit report lookups and `get_analysis` still count on every call, including repeats. See [file workflow quota](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#query-quota-for-file-workflows).
 
@@ -188,9 +190,11 @@ For integrations beyond MCP client setup, see the [embedding guide](https://gith
 
 ## Distribution and source
 
-The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.5/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
+The [PyPI distribution](https://pypi.org/project/vt-mcp/0.9.8/) provides the local server and a source archive with consumer documentation and examples. The MCP Registry identity is **`io.github.VirusTotal/virustotal-mcp`**; its [published versions](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.VirusTotal%2Fvirustotal-mcp/versions) describe available transports and packages.
 
 The [official source repository](https://github.com/VirusTotal/virustotal-mcp) contains the full development checkout, including tests, scripts and `uv.lock`; the PyPI source archive is an installation distribution.
+
+Version 0.9.8 recognizes contribution-limit errors separately from report-query quota and preserves their retry delay. It keeps the existing receipt recovery policy and never automatically retries a submission POST. See the [0.9.8 release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.8/docs/releases/v0.9.8.md).
 
 Version 0.9.5 introduced the existing VirusTotal web-upload fallback for clients that cannot transmit file bytes; follow the current [hash-first workflow](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#when-the-client-cannot-transmit-file-bytes) before uploading. Clients that can supply bytes keep the existing submission tools. Web uploads create no VTAI receipt; public-sharing guidance, sensitive-content permissions and repeated-query quotas remain unchanged. This release also fixes the package description's documentation link. See the [release notes](https://github.com/VirusTotal/virustotal-mcp/blob/v0.9.5/docs/releases/v0.9.5.md).
 
