@@ -2,8 +2,40 @@
 
 Start with [Agy](clients.md#antigravity-cli-agy); the other primary guides are
 [Claude Code](clients.md#claude-code) and [Codex](clients.md#codex-cli--remote-http).
-This page adds native remote configuration for Antigravity and a Gemini CLI
-extension. The existing Agy stdio setup remains available for unattended use.
+This page covers the Antigravity plugin, native remote configuration and the
+Gemini CLI extension. The existing Agy stdio setup remains available for
+unattended use. [VT Sentinel for Antigravity IDE](https://open-vsx.org/extension/virustotal/vt-sentinel)
+is a separate editor extension, also linked from [ai.virustotal.com](https://ai.virustotal.com/).
+
+## Antigravity plugin
+
+The [VirusTotal plugin](../plugins/antigravity/README.md) bundles the remote OAuth
+MCP configuration and a threat-intelligence skill. Install its local directory
+from the official source repository:
+
+```sh
+git clone https://github.com/VirusTotal/virustotal-mcp.git
+agy plugin validate ./virustotal-mcp/plugins/antigravity
+agy plugin install ./virustotal-mcp/plugins/antigravity
+agy plugin list
+```
+
+Agy 1.2.14 expects a local directory for this source installation. Use the plugin
+subdirectory, not the repository root or a GitHub subdirectory URL. In the
+interactive `/plugin` manager, choose **Install from local directory**.
+[Google's plugin installation guide](https://antigravity.google/docs/plugins/).
+
+If you already have a working `virustotal` connection, choose one active
+connection and preserve unrelated configuration. Recover uncertain submissions
+before switching identities. Existing stdio and VT Sentinel installations remain
+available; this plugin does not add an execution interception or local upload
+hook. Its remote MCP server cannot read a local file path.
+
+Follow the authentication steps below, then request an existing report such as
+example.com without submitting it for analysis. See the plugin's
+[permissions, sharing, costs and removal instructions](../plugins/antigravity/README.md).
+An installed plugin is not evidence of a successful OAuth flow or a Marketplace
+listing.
 
 ## Antigravity native OAuth
 
@@ -113,6 +145,12 @@ model-access requirements; installing this extension does not provide model
 access. [Google transition notice](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/).
 
 ## Validation and discovery
+
+On 2 October 2026, Agy 1.2.14 validated the local Antigravity plugin directory.
+The manifest contains only the documented `name` and `description` fields; its
+remote connection uses `serverUrl`. Validation checks the package format, not
+OAuth consent, tool execution or Marketplace acceptance. The plugin's native
+connection workflow remains unverified.
 
 On 23 September 2026, Gemini CLI 0.58.0 installed the exact extension manifest
 from a local checkout in an isolated client configuration. Its native extension
