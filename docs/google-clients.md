@@ -39,6 +39,9 @@ listing.
 
 ## Antigravity native OAuth
 
+If you installed the plugin above, authenticate its existing
+`virustotal_virustotal` server in `/mcp`; skip the manual configuration below.
+
 Merge [antigravity-oauth.json](../examples/client-configs/antigravity-oauth.json)
 into the configuration opened by your application's MCP manager:
 
@@ -63,9 +66,10 @@ For Agy, the equivalent command is:
 agy mcp add --type http virustotal https://ai.virustotal.com/mcp
 ```
 
-Reload the server in `/mcp`. In Antigravity's graphical MCP settings, use
-**Authenticate**, complete the browser consent, and finish any callback/code step
-shown by your application. Approve only permissions needed for your tasks. An
+Reload the server in `/mcp`, select it and choose **Authenticate**. Complete the
+browser consent and copy the callback page's code into the authentication dialog,
+not the conversation. Antigravity's graphical MCP settings also provide an
+**Authenticate** action. Approve only permissions needed for your tasks. An
 Antigravity model login does not itself grant VTAI access.
 
 If your installed client has no working OAuth action, use the
@@ -146,11 +150,20 @@ access. [Google transition notice](https://developers.googleblog.com/an-importan
 
 ## Validation and discovery
 
-On 2 October 2026, Agy 1.2.14 validated the local Antigravity plugin directory.
+On 2 October 2026, Agy 1.2.14 validated and installed the Antigravity plugin.
 The manifest contains only the documented `name` and `description` fields; its
-remote connection uses `serverUrl`. Validation checks the package format, not
-OAuth consent, tool execution or Marketplace acceptance. The plugin's native
-connection workflow remains unverified.
+remote connection uses `serverUrl`. The native OAuth flow completed browser
+sign-in, explicit consent, Google's callback page and code entry in Agy's own
+authentication dialog. A fresh Agy 1.2.15 session then used that connection for
+one `get_domain_report` lookup of example.com, returning an existing report with
+source, analysis date, coverage and a VirusTotal link. The client updated between
+sessions; the installed MCP configuration and skill were unchanged. The lookup
+used a one-call permission, without changing persistent tool permissions.
+
+This verifies the plugin's initial OAuth and report workflow in the CLI.
+Automatic token renewal, file submissions, network reanalysis and the graphical
+applications have not been exercised with this plugin. Marketplace acceptance
+is a separate review process.
 
 On 23 September 2026, Gemini CLI 0.58.0 installed the exact extension manifest
 from a local checkout in an isolated client configuration. Its native extension
@@ -161,8 +174,8 @@ and [MCP OAuth configuration](https://geminicli.com/docs/tools/mcp-server/).
 
 Antigravity's OAuth fragment follows Google's current documentation. Agy 1.2.2
 help accepts the HTTP add command; its `mcp list` command did not list a temporary
-workspace-only fixture. Global configuration was preserved. Native remote login,
-tool calls, renewal and revocation remain unverified; the earlier
+workspace-only fixture. Global configuration was preserved. These older
+configuration checks are separate from the plugin workflow above; the earlier
 [stdio workflow evidence](clients.md#validation-levels) retains its original scope.
 
 The public repository's root `gemini-extension.json` provides gallery metadata.

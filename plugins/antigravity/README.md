@@ -37,10 +37,11 @@ working local stdio or VT Sentinel installation does not need to be replaced.
 
 The bundled server is `https://ai.virustotal.com/mcp`. It uses the host's OAuth
 flow; the plugin contains no API key, static token or Google ADC configuration.
-Start a new session and inspect `/mcp`. In Antigravity's graphical settings,
-open **Customizations → Authenticate** for VirusTotal. Complete browser sign-in
-and consent, then finish the callback or code step shown by the host. Enter an
-authorization code only in its authentication dialog, never in the conversation.
+Start a new Agy session and open `/mcp`. Select `virustotal_virustotal`, choose
+**Authenticate**, and complete browser sign-in and consent. Copy the code shown
+by Google's callback page into Agy's authentication dialog, never into the
+conversation. In Antigravity's graphical settings, use **Customizations →
+Authenticate** and follow the callback step shown by that application.
 Follow Google's [MCP authentication guide](https://antigravity.google/docs/mcp/).
 
 Authorize only the operations your task needs. Report access, file submission
@@ -56,8 +57,9 @@ Try a report-only request:
 
 Inspect the actual tool result. Installation, validation and a connected status
 alone do not prove a successful query. Missing reports mean unknown; zero
-detections do not establish safety. Native OAuth, renewal and tool calls for
-this plugin have not yet been verified; see [validation status](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#validation-and-discovery).
+detections do not establish safety. Native browser sign-in and a report query
+have been verified in Agy; token renewal, write operations and the graphical
+applications have separate validation requirements. See [validation status](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#validation-and-discovery).
 
 ## Files, sharing and costs
 
