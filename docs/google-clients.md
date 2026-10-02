@@ -82,6 +82,7 @@ skill requirements are distinct from the US/English restrictions on custom apps.
 See [Google's skill import guide](https://support.google.com/gemini/answer/17094296?hl=en).
 
 1. Download the plain-text [SKILL.md](https://raw.githubusercontent.com/VirusTotal/virustotal-mcp/main/skills/virustotal-threat-intelligence/SKILL.md)
+   or the [skill ZIP](https://github.com/VirusTotal/virustotal-mcp/releases/tag/gemini-skill-v0.1.0)
    and review its instructions.
 2. On Gemini web, open **Settings → Skills → Upload**. Select `SKILL.md`, or a ZIP
    with that file at its root, then review and create the skill.
