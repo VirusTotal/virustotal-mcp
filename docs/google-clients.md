@@ -4,7 +4,8 @@ Start with [Agy](clients.md#antigravity-cli-agy); the other primary guides are
 [Claude Code](clients.md#claude-code) and [Codex](clients.md#codex-cli--remote-http).
 This page covers [Gemini Apps](#gemini-apps-custom-connection), its optional
 [importable skill](#gemini-apps-skill), the Antigravity plugin, native remote
-configuration and the Gemini CLI extension. The existing Agy stdio setup remains
+configuration, [Gemini API managed agents](#gemini-api-antigravity-managed-agent)
+and the Gemini CLI extension. The existing Agy stdio setup remains
 available for unattended use. [VT Sentinel for Antigravity IDE](https://open-vsx.org/extension/virustotal/vt-sentinel)
 is a separate editor extension, also linked from [ai.virustotal.com](https://ai.virustotal.com/).
 
@@ -177,6 +178,50 @@ Remove it through the manager or `agy mcp remove virustotal`. Also revoke the
 connection in [Your connections](https://ai.virustotal.com/oauth/connections) when
 disconnecting permanently; removing a local entry alone does not revoke access.
 
+## Gemini API: Antigravity managed agent
+
+Developers can connect Google's managed `antigravity-preview-09-2026` agent to
+the remote MCP service. This runs through the Gemini API, separately from Agy,
+the Antigravity IDE and Gemini Apps. You need Gemini API access to this preview
+agent and a [VTAI credential](access.md) with report access. The verified setup
+used an OAuth access token with only `vt:reports:read`.
+
+For `POST https://generativelanguage.googleapis.com/v1beta/interactions`, send
+`Content-Type: application/json` and `Api-Revision: 2026-05-20`. Your application
+reads `GEMINI_API_KEY` from its protected environment for Google's
+`x-goog-api-key` header. Construct the request body in memory:
+
+| Field | Value |
+|---|---|
+| `agent` | `antigravity-preview-09-2026` |
+| `environment` | `remote` — a fresh Google sandbox, with no mounted sources or reused environment |
+| `background`, `store` | Both `true` |
+| `input` | Ask for exactly one existing `get_domain_report` for `example.com`, then a brief summary with source, dates and the limit that unknown does not mean safe |
+| `tools` | Array containing one object: `type: "mcp_server"`, `name: "virustotal"`, `url: "https://ai.virustotal.com/mcp"` |
+| `tools[0].allowed_tools` | `[{"tools":["get_domain_report"]}]` |
+| `tools[0].headers.Authorization` | `Bearer ` plus the VTAI access token read from a protected `VTAI_MCP_TOKEN` environment variable |
+
+Resolve credential environment variables in your application before constructing
+headers. Keep both credentials out of prompts, command arguments and logs.
+Your application manages OAuth consent and token lifetime; an inline MCP bearer
+does not provide automatic renewal during a managed run.
+[Google's agent guide](https://ai.google.dev/gemini-api/docs/antigravity-agent)
+and [Interactions schema](https://ai.google.dev/api/interactions-api) describe
+this contract. The explicit tool list excludes search, URL context and code
+execution; Google automatically enables sandbox filesystem tools when an
+environment is present. No local files or repositories are supplied here.
+
+Save the returned interaction ID before polling its GET endpoint. Verify the
+actual MCP call and matching report result, not only the generated answer.
+Bound the polling period; cancel a still-running interaction with
+`POST /v1beta/interactions/{id}/cancel`. An accepted create followed by an error
+does not justify another create. At completion, delete the exact returned
+environment with `DELETE /v1beta/environments/{environment_id}` and verify its
+absence. Google documents automatic stop after 15 minutes idle and deletion
+after seven days of retention; see [environment lifecycle and cleanup](https://ai.google.dev/gemini-api/docs/agent-environment#environment-lifecycle).
+Revoke temporary VTAI grants after use. Google's billing is independent of VTAI
+access and query quotas. Check [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing).
+
 ## Gemini CLI extension
 
 Gemini CLI users with an eligible model account can install the extension from
@@ -255,9 +300,30 @@ token renewal and write workflow have not been exercised in this validation.
 Historical server-side OAuth activity does not establish that end-to-end workflow.
 Do not infer Gemini Apps support from the separate Agy check below.
 
-Gemini CLI 0.58.0's skill loader discovered the new portable skill in a local
-read-only check, with network calls and filesystem writes disabled. This checks
-format and discovery, not extension installation, OAuth or model use of the skill.
+On 2 October 2026, Gemini CLI 0.58.0 installed extension 0.9.8 from this public
+repository, discovered the portable skill and uninstalled the extension in an
+isolated client configuration. A separate read-only skill-loader check verified
+its format. These checks do not establish OAuth or a model-driven report query.
+
+In a separate session on that date, Gemini CLI 0.58.0 used Gemini API-key model
+authentication with `gemini-3.5-flash` and a separately supplied VTAI OAuth
+access token in a Bearer header. It completed one remote `get_domain_report`
+call for example.com, received a matching `found` report and recorded no error
+events. The temporary grant was revoked and the isolated client profile removed.
+Extensions and skills were disabled during this query. Native CLI OAuth login
+and automatic token renewal remain unverified.
+
+On 2 October 2026, Gemini API's `antigravity-preview-09-2026` completed one
+`get_domain_report` call for example.com over remote MCP and returned a matching
+`found` report. The interaction recorded no other tool steps, and the temporary
+VTAI OAuth grant was revoked with confirmation. The run's sandbox was deleted
+and a subsequent GET confirmed its absence. This validates one domain lookup;
+other reports, writes and automatic token renewal were not exercised.
+
+Deep Research remains unverified: `deep-research-preview-04-2026` accepted an
+interaction, then its status reads returned a Google processing error. A domain
+query reached VTAI, but Google's tool steps and report output could not be
+recovered. This does not establish MCP incompatibility or a completed workflow.
 
 On 2 October 2026, Agy 1.2.14 validated and installed the Antigravity plugin.
 The manifest contains only the documented `name` and `description` fields; its
@@ -291,3 +357,6 @@ The public repository's root `gemini-extension.json` provides gallery metadata.
 Google's [gallery discovery process](https://geminicli.com/docs/extensions/releasing/)
 uses the `gemini-cli-extension` repository topic and a periodic crawl. A published
 manifest or topic is not proof of gallery acceptance or Antigravity Store placement.
+On 2 October 2026, the public [gallery feed](https://geminicli.com/extensions.json)
+listed `VirusTotal/virustotal-mcp` at version 0.9.8. This confirms that listing,
+not Antigravity Store acceptance or usage.
