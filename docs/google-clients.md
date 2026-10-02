@@ -34,8 +34,10 @@ alone does not establish a successful report query. Missing reports mean unknown
 zero detections do not prove safety. This is a custom connection, not a claim of
 placement in Gemini's curated app directory.
 
-If **Custom apps** is absent, check eligibility and availability rather than
-pasting a token into a prompt. For a login failure, use the client's reconnect
+If **Custom apps** is absent, check eligibility and availability. Google currently
+limits this connection flow to the US; seeing **Skills** in another country does
+not establish custom-app access. Installing the skill does not enable this
+connection. For a login failure, use the client's reconnect
 flow and your existing VTAI account. The Gemini model account and the VTAI
 connection are separate. VTAI access has its own quotas; Gemini plan requirements
 and model limits are controlled by Google.
@@ -74,21 +76,29 @@ does not revoke its MCP connection or withdraw previously submitted content.
 ## Gemini Apps skill
 
 The portable [VirusTotal threat-intelligence skill](../skills/virustotal-threat-intelligence/README.md)
-adds investigation and sharing instructions. Connect the MCP app above first:
-importing a skill does not install a server, authenticate it or grant access.
+adds investigation and sharing instructions. You can import its instructions
+independently, but live VirusTotal queries require the MCP app above to be
+connected. Importing a skill does not install a server, authenticate it or grant
+access.
 
 Skills require a personal Google account, age 18 or older and **Keep Activity**.
 Availability is gradual and does not itself require a paid subscription. These
 skill requirements are distinct from the US/English restrictions on custom apps.
 See [Google's skill import guide](https://support.google.com/gemini/answer/17094296?hl=en).
 
-1. Download the plain-text [SKILL.md](https://raw.githubusercontent.com/VirusTotal/virustotal-mcp/main/skills/virustotal-threat-intelligence/SKILL.md)
-   or the [skill ZIP](https://github.com/VirusTotal/virustotal-mcp/releases/tag/gemini-skill-v0.1.0)
-   and review its instructions.
-2. On Gemini web, open **Settings → Skills → Upload**. Select `SKILL.md`, or a ZIP
-   with that file at its root, then review and create the skill.
-3. In a chat, type `/` to select `virustotal-threat-intelligence`, and use `@` to
-   select the connected VirusTotal app. Try the report-only prompt above.
+1. Download the plain-text [SKILL.md](https://github.com/VirusTotal/virustotal-mcp/releases/download/gemini-skill-v0.1.0/SKILL.md)
+   and review its instructions. Keep the filename `SKILL.md`.
+2. On Gemini web, open **Settings → Skills → Upload**, select `SKILL.md`, then
+   review it and choose **Create**. Some upload dialogs accept only this file;
+   use it directly when the dialog rejects a ZIP.
+3. In a chat, type `/` to select `virustotal-threat-intelligence`. If you have
+   connected the VirusTotal app, use `@` to select it and try the report-only
+   prompt above. Without that connection, the skill cannot retrieve live reports.
+
+The [release](https://github.com/VirusTotal/virustotal-mcp/releases/tag/gemini-skill-v0.1.0)
+also provides a ZIP and checksums. If you downloaded the ZIP, extract its single
+`SKILL.md` and select that file. Google's guide describes ZIP and folder imports,
+but available upload formats can differ between interfaces.
 
 The skill contains instructions only, with no scripts, credentials or network
 helpers. Google does not support internet-accessing scripts in imported skills;
@@ -294,8 +304,10 @@ access. [Google transition notice](https://developers.googleblog.com/an-importan
 ## Validation and discovery
 
 The Gemini Apps setup and skill import instructions follow Google's documentation
-checked on 2 October 2026. The skill's format and archive contents were checked
-locally. A complete Gemini Apps browser login, imported-skill report query,
+checked on 3 October 2026 and an upload dialog that accepts only `SKILL.md`.
+The plain-text download is identical to the file in the skill release ZIP;
+its format and archive contents were checked locally. A complete Gemini Apps
+browser login, imported-skill report query,
 token renewal and write workflow have not been exercised in this validation.
 Historical server-side OAuth activity does not establish that end-to-end workflow.
 Do not infer Gemini Apps support from the separate Agy check below.
