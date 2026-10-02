@@ -49,9 +49,7 @@ class DistributionTests(unittest.TestCase):
         for request in calls:
             self.assertEqual(
                 request.get_header("Authorization"),
-                "Bearer synthetic-secret"
-                if request.full_url in monitor.PULL_REQUESTS.values()
-                else None,
+                "Bearer synthetic-secret" if request.full_url in monitor.GITHUB_URLS else None,
             )
 
     def test_redirects_never_create_a_followup_request(self):
@@ -140,6 +138,20 @@ class DistributionTests(unittest.TestCase):
                 json.dumps({"url": url, "state": "open", "merged": "false"}), url
             )
 
+    def test_issue_state_is_informational_and_not_a_pull_request_approval(self):
+        url = monitor.ISSUES["adk_recipe_proposal"]
+        for state, expected in (("open", "pending"), ("closed", "closed")):
+            status, details = monitor.check_issue(json.dumps({"url": url, "state": state}), url)
+            self.assertEqual(status, expected)
+            self.assertIn("not_acceptance", details["reason"])
+        for invalid in (
+            {"url": url, "state": "accepted"},
+            {"url": url + "1", "state": "open"},
+            {"url": url, "state": "closed", "pull_request": {}},
+        ):
+            with self.assertRaises(ValueError):
+                monitor.check_issue(json.dumps(invalid), url)
+
     def test_one_failure_does_not_hide_other_targets_or_echo_response_data(self):
         visited = []
 
@@ -147,7 +159,7 @@ class DistributionTests(unittest.TestCase):
             visited.append(url)
             if url == monitor.FEED:
                 raise monitor.CheckFailure("transient", "http_error", 429)
-            if url in monitor.PULL_REQUESTS.values():
+            if url in monitor.GITHUB_URLS:
                 return json.dumps({"url": url, "state": "open", "merged": False}), {}
             # Includes an error payload that must never reach the report.
             return b'{"unexpected":"synthetic-secret"}', {}
@@ -170,7 +182,7 @@ class DistributionTests(unittest.TestCase):
                         "extensionVersion": "0.9.2",
                     }
                 ]
-            elif url in monitor.PULL_REQUESTS.values():
+            elif url in monitor.GITHUB_URLS:
                 data = {"url": url, "state": "open", "merged": False}
             elif url == monitor.METADATA:
                 data = {

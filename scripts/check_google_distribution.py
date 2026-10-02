@@ -23,6 +23,11 @@ PULL_REQUESTS = {
     "adk_pull_request": "https://api.github.com/repos/google/adk-docs/pulls/2315",
     "google_mcp_pull_request": "https://api.github.com/repos/google/mcp/pulls/67",
 }
+ISSUES = {
+    "adk_recipe_proposal": "https://api.github.com/repos/google/adk-recipes/issues/2755",
+    "gemini_cookbook_proposal": "https://api.github.com/repos/google-gemini/cookbook/issues/1404",
+}
+GITHUB_URLS = {*PULL_REQUESTS.values(), *ISSUES.values()}
 PUBLIC_FILES = {
     "gemini_manifest": "gemini-extension.json",
     "antigravity_manifest": "plugins/antigravity/plugin.json",
@@ -30,7 +35,7 @@ PUBLIC_FILES = {
     "google_guide": "docs/google-clients.md",
     "antigravity_guide": "plugins/antigravity/README.md",
 }
-ALLOWED_URLS = {FEED, METADATA, *PULL_REQUESTS.values(), *(RAW + p for p in PUBLIC_FILES.values())}
+ALLOWED_URLS = {FEED, METADATA, *GITHUB_URLS, *(RAW + p for p in PUBLIC_FILES.values())}
 MAX_BYTES = 4 * 1024 * 1024
 MAX_FEED_ENTRIES = 10_000
 SOCKET_TIMEOUT = 10
@@ -58,7 +63,7 @@ def fetch(url, *, token=None):
     if url not in ALLOWED_URLS:
         raise CheckFailure("error", "url_not_allowed")
     headers = {"Accept": "application/json", "User-Agent": "virustotal-distribution-monitor/1"}
-    if url in PULL_REQUESTS.values():
+    if url in GITHUB_URLS:
         headers["Accept"] = "application/vnd.github+json"
         headers["X-GitHub-Api-Version"] = "2026-03-10"
         if token:
@@ -175,6 +180,15 @@ def check_pull_request(body, url):
     return "error", {"reason": "pull_request_closed_without_merge"}
 
 
+def check_issue(body, url):
+    data = object_json(body)
+    if data["url"] != url or data["state"] not in {"open", "closed"} or "pull_request" in data:
+        raise ValueError("unexpected_issue")
+    if data["state"] == "open":
+        return "pending", {"reason": "proposal_open_not_acceptance"}
+    return "closed", {"reason": "proposal_closed_not_acceptance"}
+
+
 def inspect(name, url, body, version):
     if name in {"gemini_manifest", "antigravity_manifest", "antigravity_mcp"}:
         return check_manifest(name, body, version)
@@ -182,6 +196,8 @@ def inspect(name, url, body, version):
         return check_feed(body, version)
     if name in PULL_REQUESTS:
         return check_pull_request(body, url)
+    if name in ISSUES:
+        return check_issue(body, url)
     if name == "oauth_metadata":
         data = object_json(body)
         if data["issuer"] != "https://ai.virustotal.com" or data["registration_endpoint"] != (
@@ -197,7 +213,7 @@ def inspect(name, url, body, version):
 def collect(version, *, token=None, reader=fetch):
     started = now()
     targets = {name: RAW + path for name, path in PUBLIC_FILES.items()}
-    targets.update(oauth_metadata=METADATA, gemini_gallery=FEED, **PULL_REQUESTS)
+    targets.update(oauth_metadata=METADATA, gemini_gallery=FEED, **PULL_REQUESTS, **ISSUES)
     results = []
     for name, url in targets.items():
         result = {"name": name, "url": url, "checked_at": now()}
