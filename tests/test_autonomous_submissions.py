@@ -228,14 +228,25 @@ async def test_invalid_local_file_never_creates_reference_or_calls_vtai(local, k
 @pytest.mark.anyio
 @pytest.mark.parametrize(
     "name",
-    ["id_rsa", ".env", "credentials.json", "kubeconfig", "C:\\Users\\you\\credentials.json"],
+    [
+        "id_rsa",
+        ".env",
+        "credentials.json",
+        "kubeconfig",
+        "C:\\Users\\you\\credentials.json",
+        "C:credentials.json",
+        "c:.env",
+        "D:id_rsa",
+        "D:kubeconfig",
+    ],
 )
 async def test_credential_filename_denied_before_snapshot_state_or_http(
     tmp_path, monkeypatch, name
 ):
     state = tmp_path / "state"
-    target = tmp_path / name if "\\" not in name else name
-    if "\\" not in name:
+    windows_path = len(name) > 1 and name[1] == ":"
+    target = name if windows_path else tmp_path / name
+    if not windows_path:
         target.write_bytes(BODY)
     monkeypatch.setattr(
         submissions, "copy_snapshot", lambda *_, **__: pytest.fail("Credential file opened")

@@ -104,6 +104,8 @@ def test_host_must_supply_receipt_and_analysis_recovery(bindings):
         {"file": {**FILE, "file_name": "id_rsa"}},
         {"file": {**FILE, "file_name": ".env"}},
         {"file": {**FILE, "file_name": "C:\\Users\\you\\credentials.json"}},
+        {"file": {**FILE, "file_name": "C:credentials.json"}},
+        {"file": {**FILE, "file_name": "c:.env"}},
         {"file": {**FILE, "file_name": "/home/you/.npmrc"}},
         {"file": {**FILE, "file_id": "file\x00secret"}},
         {"file": {**FILE, "extra": FILE["download_url"]}},
