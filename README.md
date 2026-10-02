@@ -61,7 +61,7 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 
 | Client | Setup |
 |---|---|
-| Antigravity CLI (`agy`) | [Local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
+| Antigravity CLI (`agy`) | [Plugin with MCP and skill](https://github.com/VirusTotal/virustotal-mcp/tree/main/plugins/antigravity), [local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
 | Claude Code | [OAuth plugin with local file uploads](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md), [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
 | Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
 | ChatGPT Work | [Personal OAuth connection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-public-connection-and-individual-oauth) |
