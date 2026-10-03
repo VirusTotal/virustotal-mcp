@@ -3,7 +3,7 @@
 The tested client guides remain [Agy](clients.md#antigravity-cli-agy),
 [Claude Code](clients.md#claude-code), then [Codex](clients.md#codex-cli--remote-http).
 This page covers separate hosted connections. ChatGPT setup and validation were
-updated on 2026-09-24; the Claude setup review remains dated 2026-09-08.
+verified on 2026-09-24; the status descriptions were reconciled on 2026-10-03.
 The [validation scope](#validation-scope) records the verified ChatGPT connection,
 IP reports and automatic renewal, earlier staging checks and remaining hosted workflows.
 
@@ -12,8 +12,10 @@ and also accepts a static VTAI Agent Token through one credential header,
 including `Authorization: Bearer`. The service's ten common tools cover four report
 lookups, file and URL submission, domain/IP reanalysis, and receipt and analysis
 reads. Protected-resource and authorization-server metadata, DCR and CIMD are
-live. A backend with the ChatGPT attachment binding additionally exposes
-`submit_chatgpt_file`. Local stdio instead adds `submit_local_file`; remote HTTP
+live. The public hosted backend advertises eleven tools, including
+`submit_chatgpt_file` to all remote clients. Only a ChatGPT-provided attachment
+object satisfies that adapter's input contract; discovery does not establish
+that another host can supply it. Local stdio instead adds `submit_local_file`; remote HTTP
 cannot read local paths. A successful CLI session does not establish a different
 hosted account or model workflow.
 
@@ -213,7 +215,11 @@ observation does not prove immediate rejection of an unexpired token.
 Those staged flows establish their stated operations, not a hosted production
 login, every tool or a commercial-model workflow. They predate the new network
 tools and permission. The later ChatGPT result above has its own limited scope;
-Claude hosted account and model workflows remain unverified.
+Claude hosted chat workflows remain unverified. An existing claude.ai connection
+was imported into Claude Code and used for MCP calls on 28 September 2026.
+That observation does not establish a report conversation, renewal or uploads
+inside Claude web chat or Desktop. Claude Code's later fresh plugin-owned OAuth
+and tool checks on 1 October have their [own validation scope](claude-code.md#validation-and-removal).
 
 ## First hosted acceptance query
 

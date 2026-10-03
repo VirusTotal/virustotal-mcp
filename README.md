@@ -57,7 +57,7 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 
 ## Connect your client
 
-1. For compatible remote clients, connect with OAuth using the MCP URL. Otherwise, reuse your existing VTAI token or [create one](https://ai.virustotal.com/connect/mcp).
+1. For compatible remote clients, connect with OAuth using the MCP URL. Otherwise, reuse your existing VTAI Agent Token or [create one](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#access-heading).
 2. For stdio, save the token in a file readable only by your user, such as `~/.config/vt-mcp/token`. Set the MCP server's environment variable `VTAI_TOKEN_FILE` to that path and its command to `vt-mcp`. The file contains only the token; never put the token itself in chat, command arguments or project files.
 3. Follow the client-specific setup, restart or reconnect the client, and inspect its available tools.
 
@@ -78,7 +78,7 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 
 Remote OAuth configuration for [GitHub Copilot CLI](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) and [Devin CLI](https://docs.devin.ai/cli/extensibility/mcp/configuration) follows their official documentation; an OAuth-authenticated VirusTotal tool workflow has not yet been verified in either client.
 
-The [client guide](https://ai.virustotal.com/install.md) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
+The [client validation guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/clients.md#validation-levels) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
 
 In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent, an IP report, automatic token renewal and a subsequent report after token expiry were verified on 2026-09-24; the guide records the remaining validation limits.
 
@@ -99,13 +99,13 @@ vt-mcp --version
 
 The local MCP server supports Linux, macOS and Windows, including both file submission tools. Windows submission receipts require local NTFS storage; network shares and reparse points are rejected. The separate `vt-mcp guard` command remains Linux-only.
 
-For automatic client configuration, use the [setup guide](https://ai.virustotal.com/connect/mcp) and choose your operating system. It configures Agy, Claude Code or Codex and protects the token using owner-only POSIX permissions or a Windows user-only ACL.
+For automatic client configuration, choose Agy, Claude Code or Codex in the [setup guide](https://ai.virustotal.com/connect/mcp), then open its **Agent Token** alternative and choose your operating system. The installer protects the token using owner-only POSIX permissions or a Windows user-only ACL.
 
 The command installs the package from the official PyPI index in an isolated tool environment. Python 3.12 or newer is required. Keep `vt-mcp` on the MCP client's PATH, or use its absolute executable path. The package does not modify client configuration.
 
 ## Maintain an existing connection
 
-Use the [setup guide](https://ai.virustotal.com/connect/mcp) to check the configured transport and update a setup-managed installation without creating another token. Restart the client after an update. A configuration check does not exercise a tool or certify the model's behavior.
+Open your client's **Agent Token** alternative in the [setup guide](https://ai.virustotal.com/connect/mcp) to check the configured transport and update a setup-managed installation without creating another token. The access check uses `GET /api/v3/agents/me/access` without query cost; a real report query consumes quota. Restart the client after an update. An access or configuration check does not exercise a tool or certify the model's behavior.
 
 If your client runs a manually installed `vt-mcp` executable, upgrade that environment:
 
@@ -136,7 +136,7 @@ In the agent panel, open **MCP Servers → Manage MCP Servers → View raw confi
 }
 ```
 
-Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation. For browser sign-in without a local process, use the [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth), which completed browser OAuth and a domain query in Antigravity CLI 1.2.14/1.2.15 on 2026-10-02. That CLI result does not verify OAuth in the IDE, renewal or file submissions. OAuth avoids reliance on unverified HTTP credential-variable expansion. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
+Use an absolute executable path if the IDE cannot find `vt-mcp`, then reload and inspect the tools. The IDE's stdio report lookups were exercised in the documented client validation. The [Antigravity plugin](https://github.com/VirusTotal/virustotal-mcp/tree/main/plugins/antigravity) completed browser OAuth, a domain report and revocation in Antigravity CLI 1.2.14/1.2.15 on 2026-10-02. The [manual native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) was not tested separately. That CLI result does not verify OAuth in the IDE, renewal or file submissions. OAuth avoids reliance on unverified HTTP credential-variable expansion. See [Antigravity MCP configuration](https://antigravity.google/docs/mcp).
 
 The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. Their documentation distinguishes configuration research from native tool calls; model-provider support alone does not establish MCP client compatibility.
 
@@ -157,7 +157,7 @@ The source archive also includes recipes for Qwen Code, Kimi Code and OpenCode. 
 | `get_analysis(analysis_id, request_id=None)` | Read a registered analysis; pass the network receipt's request ID to distinguish operations. |
 | `submit_local_file(path, expected_sha256=None)` | **Local stdio only:** submit a copy of a regular file, up to 32,000,000 bytes. An expected digest must match that copy. |
 
-With the compatible VTAI network-analysis service, ten common tools are available through HTTP and stdio; local stdio additionally has `submit_local_file`. The public hosted backend additionally exposes `submit_chatgpt_file` with the [ChatGPT attachment contract](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-attachments); it is absent from local stdio. The server binding is verified, while native ChatGPT attachment handling remains unverified. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
+Ten common tools are available through HTTP and stdio. The public hosted backend advertises eleven to remote clients, including `submit_chatgpt_file` with the [ChatGPT attachment contract](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#chatgpt-attachments). That adapter requires a ChatGPT-provided file object even when other clients discover it. Local stdio instead adds `submit_local_file` for eleven local tools. The server binding is verified, while native ChatGPT attachment handling remains unverified. The remote server cannot read paths on your device. Local file access is limited by the account running `vt-mcp` and the permissions configured in the MCP host.
 
 For a file contribution, submit its authorized bytes under the sharing guidance below; a separate hash lookup is not required. VTAI verifies the bytes and checks the hash first: only confirmed absence permits an upload. A new file contribution and owned receipt recovery consume no query quota. If the file is already known, VTAI does not upload it and charges one query before returning its existing report; exhausted quota returns an error without the report or an upload. Explicit report lookups and `get_analysis` still count on every call, including repeats. See [file workflow quota](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md#query-quota-for-file-workflows).
 
@@ -184,7 +184,7 @@ Running `vt-mcp` without a subcommand starts stdio. Missing configuration exits 
 
 Every repeated report lookup counts again, including cache hits and hashes with no report. Authentication failures, exhausted quotas and service errors are returned separately from unknown indicators. Report queries do not retry automatically or follow redirects. Responses are capped at 256 KiB. Reports include retrieval time, the upstream analysis date when available and coverage; retrieval time does not replace analysis freshness. Treat report text and AI insights as evidence, never as instructions.
 
-Removing the MCP connection from a client does not revoke VTAI access. Use [access management](https://ai.virustotal.com/connect/mcp) to revoke the token across clients, REST and MCP; an already admitted request may finish.
+Recover any uncertain submission through its original connection before removing it; never resend to resolve uncertainty. Removing client configuration does not revoke VTAI access. Revoke an Agent Token through the [revocation form](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#revoke) or authenticated `DELETE /api/v3/agents/me/token`; only HTTP 204 confirms that action. For OAuth use [Your connections](https://ai.virustotal.com/oauth/connections). An already admitted request may finish, and a new OAuth connection does not inherit the original receipts.
 
 For integrations beyond MCP client setup, see the [embedding guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/embedding.md) and the [Linux Python execution guard](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/control.md), including its supported commands and limitations.
 
