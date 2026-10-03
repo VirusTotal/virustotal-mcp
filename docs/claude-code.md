@@ -17,8 +17,10 @@ claude plugin install virustotal@virustotal
 Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
 <!-- client-contract:claude-code:end -->
 
-If you previously used `claude mcp add virustotal`, run `claude mcp remove virustotal`
-(use the same `--scope` if specified); see [migration and recovery details](#replace-an-existing-manual-connection).
+If you previously used `claude mcp add virustotal`, recover any uncertain submission
+through that original connection before removing a duplicate. Follow the
+[migration and recovery details](#replace-an-existing-manual-connection) to inspect
+its actual name and scope. A fresh installation needs no removal command.
 No Python, npm dependencies, VirusTotal API key or copied OAuth token is needed.
 
 Start a new Claude Code session or reload plugins with `/reload-plugins`. Use
@@ -178,7 +180,7 @@ connection. Fresh installations need no removal command.
 
 ## Validation and removal
 
-Plugin 0.1.3 was tested in Claude Code 2.1.284 on Linux with Node 22, starting
+On 1 October 2026, plugin 0.1.3 was tested in Claude Code 2.1.284 on Linux with Node 22, starting
 with a fresh OAuth login to the plugin's own connection. One inert 163-byte file
 was uploaded, its original bytes verified after the hook, its receipt recovered
 and its completed analysis read with the matching SHA-256. All ten general

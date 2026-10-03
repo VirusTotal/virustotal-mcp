@@ -2,9 +2,9 @@
 
 For automatic setup on Linux, macOS or Windows, choose your system in the [setup guide](https://ai.virustotal.com/connect/mcp). Manual shell examples below use POSIX syntax. Native package tests cover file handling and MCP protocol behavior; historical client/model validation keeps its original platform and version scope.
 
-Current setup targets **vt-mcp 0.9.2** and the compatible VTAI service: ten common tools over remote HTTP or local stdio, plus `submit_local_file` over stdio for eleven. The common tools are four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. HTTP needs no local Python installation and supports an Agent Token or browser OAuth; stdio uses the installed package and an Agent Token. Inline file submission accepts up to 24,000,000 decoded bytes; local file submission accepts up to 32,000,000 bytes. See [installation](../README.md#install-for-local-stdio) and [submission and recovery](analysis.md).
+Current setup targets **vt-mcp 0.9.8** and the compatible VTAI service. Ten common tools cover four report lookups, `get_analysis`, `get_submission`, `submit_file`, `submit_url`, `reanalyze_domain` and `reanalyze_ip`. The hosted service advertises eleven tools, adding `submit_chatgpt_file` to all remote clients; only a ChatGPT-provided attachment object satisfies that adapter's contract. Local stdio instead adds `submit_local_file` for eleven local tools. HTTP needs no local Python installation and supports an Agent Token or browser OAuth; stdio uses the installed package and an Agent Token. Inline file submission accepts up to 24,000,000 decoded bytes; local file submission accepts up to 32,000,000 bytes. See [installation](../README.md#install-for-local-stdio) and [submission and recovery](analysis.md).
 
-The current instructions were synchronized on 2026-09-21. Dated validation records below retain their original client versions, tools and transport scope; they do not certify every current tool in each client. OAuth network writes require `vt:reports:read` plus `vt:network-analysis:write`; existing file-write grants do not expand automatically. Reconnect to approve that permission when needed. Host tool permissions and OAuth scopes are separate.
+The current instructions were synchronized on 2026-10-03. Dated validation records below retain their original client versions, tools and transport scope; they do not certify every current tool in each client. OAuth network writes require `vt:reports:read` plus `vt:network-analysis:write`; existing file-write grants do not expand automatically. Reconnect to approve that permission when needed. Host tool permissions and OAuth scopes are separate.
 
 Submission tools have no per-call human confirmation or consent argument. Configure the specific host permissions for files, URLs and network indicators you authorize for standard sharing; host permissions still apply. **The 0.8 submission cycle has been exercised in staging and against a production candidate. The public rollout is accepted, with separate direct SDK checks.** The [historical native-client validation](client-validation-2026-09-07.md) covers five read-only tools in 0.7, not autonomous submission. Set up protected access using the [access guide](access.md), or the [README](../README.md#connect-your-client).
 
@@ -102,7 +102,7 @@ For authorized URL submission and domain/IP reanalysis, append these optional gr
 mcp__virustotal__submit_url,mcp__virustotal__reanalyze_domain,mcp__virustotal__reanalyze_ip
 ```
 
-For **stdio only**, append `mcp__virustotal__submit_local_file` when local file submission is needed. The ten HTTP tools do not read a local path. Keep `--permission-mode dontAsk`, `--tools ""` and the explicit MCP configuration if using the previously documented unattended pattern; a denied tool is a permission failure, not successful completion. Do not replace specific grants with a general permission bypass. The three-tool 0.8 submission cycle ran with specific grants through both transports in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below. The same per-run configuration flags accept the HTTP fragment. In the historical v0.7.0 sessions, CLI 2.1.263 completed all five read-only tools through stdio and public HTTP using a native Claude subscription. The runs used a terminal PTY; this observation does not establish that PTY is required. See the [session evidence](client-validation-2026-09-07.md).
+For **stdio only**, append `mcp__virustotal__submit_local_file` when local file submission is needed. Remote HTTP tools do not read a local path. Keep `--permission-mode dontAsk`, `--tools ""` and the explicit MCP configuration if using the previously documented unattended pattern; a denied tool is a permission failure, not successful completion. Do not replace specific grants with a general permission bypass. The three-tool 0.8 submission cycle ran with specific grants through both transports in [staging and a production candidate](#version-08-submission-evidence). The accepted public rollout has separate direct SDK evidence below. The same per-run configuration flags accept the HTTP fragment. In the historical v0.7.0 sessions, CLI 2.1.263 completed all five read-only tools through stdio and public HTTP using a native Claude subscription. The runs used a terminal PTY; this observation does not establish that PTY is required. See the [session evidence](client-validation-2026-09-07.md).
 
 ## Codex CLI — remote HTTP
 
@@ -257,7 +257,7 @@ below; `.vscode/mcp.json` and `~/.copilot/mcp-config.json` are not interchangeab
 
 **Status:** VS Code 1.107.1 completed native HTTP tool calls against a local
 server, including password input resolution, GET 405 handling and restart.
-A Copilot model workflow against VTAI remains unverified. See the
+A VS Code Copilot model workflow against VTAI remains unverified. See the
 [additional-client matrix](#additional-client-validation) for the scope.
 
 ## GitHub Copilot CLI
@@ -407,7 +407,8 @@ Claude's fixed-header organization beta can use VTAI Bearer when an eligible org
 
 ## Try the tools
 
-Current discovery has ten common tools, or eleven for local stdio. For an
+Current discovery has eleven hosted HTTP tools (including the ChatGPT attachment
+adapter), or eleven local stdio tools (including `submit_local_file`). For an
 existing report, use the read-only examples below. For an authorized file, use
 `submit_file` with SHA-256 and base64 bytes, or local stdio `submit_local_file`
 with its path. Follow the [autonomous workflow](analysis.md#autonomous-mcp-workflow):
@@ -435,11 +436,27 @@ To read a selected analysis, use the exact `analysis_id` returned by an authoriz
 | 429 | Wait for the supplied retry delay; REST and MCP share the agent's query quota |
 | Tool error or timeout | Read the structured error without exposing credentials; a service failure is not a safety verdict |
 
-The optional check on [the connection page](https://ai.virustotal.com/connect/mcp) consumes query quota and checks the VTAI report endpoint, not your model's use of MCP. Confirm tool discovery and one explicit call in the client separately. For stdio startup failures, inspect PATH and stderr; stdout belongs to MCP.
+The optional check on the [Agent Token page](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#access-heading) calls `GET /api/v3/agents/me/access` without consuming query quota. It checks authentication, not a report or your model's use of MCP. Confirm tool discovery and one explicit report call in the client separately; that report consumes quota. For stdio startup failures, inspect PATH and stderr; stdout belongs to MCP.
 
-Use the connection page to revoke the credential when required. Only HTTP 204 confirms revocation; clearing the page or deleting client settings does not. Revocation disables that credential across REST and MCP, while an already admitted request may finish. Keep a protected copy while the revocation outcome is unconfirmed.
+Use the [Agent Token revocation form](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#revoke) or authenticated `DELETE /api/v3/agents/me/token` when required. Only HTTP 204 confirms that revocation; clearing the page or deleting client settings does not. For OAuth use [Your connections](https://ai.virustotal.com/oauth/connections). Recover any uncertain submission through its original connection before removing it. Revocation disables that credential across REST and MCP, while an already admitted request may finish. Keep a protected copy while the revocation outcome is unconfirmed.
 
 ## Validation levels
+
+### Current browser OAuth and Google scope
+
+Reconciled on 3 October 2026. These observations are separate from the historical
+Agent Token, local transport and submission records below.
+
+| Client | Verified observation | Remaining scope |
+|---|---|---|
+| Claude Code 2.1.284 / plugin 0.1.3, Linux, 1 Oct | Fresh plugin OAuth; reports, one file upload, network analysis and receipt recovery | Authenticated Windows/macOS uploads and hosted Claude chat; see [plugin validation](claude-code.md#validation-and-removal) |
+| ChatGPT Work, 24 Sep | Browser consent, IP reports and automatic token renewal | Hosted revocation, incremental permissions and writes; see [hosted validation](hosted-clients.md#validation-scope) |
+| Claude web / Desktop | Existing claude.ai connection imported and used in Claude Code on 28 Sep | No hosted chat report, renewal or write workflow is established by that imported connection |
+| Antigravity CLI 1.2.14/1.2.15, 2 Oct | Plugin installation, native OAuth, one domain report and revocation | Manual `serverUrl` entry, renewal, writes and graphical IDE OAuth; see [Google validation](google-clients.md#validation-and-discovery) |
+| Gemini CLI 0.58.0, 2 Oct | OAuth extension 0.9.8 installation/skill discovery; separate domain query with supplied Bearer and Gemini API-key model access | Native browser OAuth and renewal; extension and skill were disabled during the query |
+| Gemini Apps, 3 Oct | Manual skill import appeared under Active | MCP login, report query, renewal and writes; skill import does not enable Custom apps |
+| Cursor, VS Code, Copilot CLI, Devin Local / CLI | OAuth setup documented by each client | VTAI browser OAuth and model query remain unverified; separate token observations below do not establish them |
+
 
 ### Additional-client validation
 
@@ -485,7 +502,7 @@ and whether subsequent POST tool calls work; a separate helper's GET does not
 prove the client handled it. Do not select legacy SSE transport for this endpoint.
 [MCP transport specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
 
-For a current client check, confirm discovery of ten HTTP tools (eleven with
+For a current client check, confirm discovery of eleven hosted HTTP tools (eleven with
 local stdio), then ask the model to use `get_domain_report` for `virustotal.com`
 and preserve the returned source, analysis date and coverage. Check the actual
 tool result, not only the final answer. Repeat a report lookup after any observed
@@ -707,8 +724,9 @@ are not covered.
 | Staging service and connection page | Existing MCP/browser checks with test identities and real read-only reports; rollback and denial checks | No new staging run is claimed by these instructions |
 | Other listed clients | Individual schema, documentation or synthetic-health levels above | Actual report calls and model workflows where marked pending |
 
-A browser download request is not proof of saved storage or permissions. Connection
-checks consume query quota and exercise the report endpoint; they do not prove a
+A browser download request is not proof of saved storage or permissions. The historical
+report-endpoint checks above consumed query quota. Today's access check uses
+`GET /api/v3/agents/me/access` at zero query cost; neither check proves a
 model called MCP. Registration can have succeeded after a connection failure;
 only HTTP 204 confirms revocation.
 

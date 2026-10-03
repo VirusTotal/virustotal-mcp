@@ -10,7 +10,7 @@ Keep registration, credential entry, diagnosis and revocation outside model conv
 
 Reuse an existing VTAI credential if you have one. Registration is an explicit setup action; it is not a tool and does not run when vt-mcp starts.
 
-Use [Connect to VirusTotal MCP](https://ai.virustotal.com/connect/mcp) for browser setup. Reuse existing access; reconnecting or changing transport does not register another agent. Its flow lets you register explicitly, request a token-file download, check access and revoke a credential. A download request does not prove the file was saved; confirm protected storage yourself. Checking access consumes query quota and tests the report endpoint, not your model's use of MCP. Registration may have succeeded if the connection fails; do not register again automatically.
+Use the [Agent Token setup](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#access-heading) for browser registration or reuse. Reconnecting or changing transport does not register another agent. This page lets you register explicitly, request a token-file download, check access and revoke a credential. A download request does not prove the file was saved; confirm protected storage yourself. Checking access calls `GET /api/v3/agents/me/access` and consumes no query quota. It checks authentication, not a report or your model's use of MCP; an actual report query is a separate, charged check. Registration may have succeeded if the connection fails; do not register again automatically.
 
 The [browser acceptance table](clients.md#distribution-and-browser-acceptance) records the real flow through a route pinned to the production candidate, separately from ordinary public navigation and package release acceptance. If the page is unavailable, check the exact endpoint/prefix and [service validation](clients.md#service-and-workflow-validation). For a terminal setup, the explicit API example below is an alternative; opening the API URL alone does not register an agent.
 
@@ -35,7 +35,7 @@ if path.exists() or path.is_symlink():
     raise SystemExit("An existing credential path is already configured.")
 request = Request(
     "https://ai.virustotal.com/api/v3/agents/register",
-    data=json.dumps({"agent_family": "vt-mcp", "agent_version": "0.9.2"}).encode(),
+    data=json.dumps({"agent_family": "vt-mcp", "agent_version": "0.9.8"}).encode(),
     headers={"Content-Type": "application/json"},
     method="POST",
 )
@@ -156,13 +156,13 @@ Authentication failures use `Cache-Control: no-store`. Bearer challenges retain 
 
 ## Disconnect and reconnect
 
-Remove or disable the `virustotal` entry in the client and restart/reload it. [Client setup](clients.md) lists removal commands. Verify that its tools disappear. This removes that connection; it does not revoke VTAI access or delete VTAI history.
+Before removing a connection, recover any uncertain submission through that same connection and preserve its receipt identifiers. Do not replay a submission to resolve uncertainty. Then remove or disable the `virustotal` entry in the client and restart/reload it. [Client setup](clients.md) lists removal commands. Verify that its tools disappear. This removes the local configuration; it does not revoke VTAI access or delete VTAI history. A new OAuth connection does not inherit the original connection's receipts.
 
 Do not remove a credential file shared by other clients unless you intend to remove their local access too. After a local disconnect, a still-valid credential can be used to reconnect without registering again.
 
 ## Revoke access
 
-Use the revocation form at [the VTAI connection page](https://ai.virustotal.com/connect/mcp) when its deployment enables revocation. Enter the credential in that human-facing form and confirm the action. Its API is `DELETE /api/v3/agents/me/token`, authenticated with `x-apikey` or, on VTAI 0.8.1, the alternative Bearer header; this is an advanced setup operation, not an MCP tool.
+For an Agent Token, use the [revocation form](https://ai.virustotal.com/connect/mcp?client=other&transport=http&auth=token#revoke). Enter the credential in that human-facing form and confirm the action. Its API is `DELETE /api/v3/agents/me/token`, authenticated with one `Authorization: Bearer` or `x-apikey` header; this is an access-management operation, not an MCP tool. For OAuth, use [Your connections](https://ai.virustotal.com/oauth/connections) instead. Recover uncertain submissions before revoking their connection when possible.
 
 A confirmed revocation returns 204. A timeout or service error does not confirm success; retain protected access to the credential so you can diagnose or retry. A 401/403 means it was not accepted, not proof that this particular action revoked it.
 

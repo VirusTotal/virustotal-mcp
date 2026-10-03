@@ -281,8 +281,11 @@ Run an actual report query to verify the connection:
 > source, analysis date and coverage. Do not request a new analysis.
 
 Inspect the tool result. A connected status or successful install alone does not
-establish that a model called a tool. The remote service has ten tools; the local
-`submit_local_file` tool requires stdio.
+establish that a model called a tool. The hosted service advertises eleven tools:
+ten common report, submission and recovery tools, plus `submit_chatgpt_file`.
+The attachment adapter appears in remote discovery but requires a file object
+supplied by ChatGPT; it is not a Gemini upload path. Local stdio instead adds
+`submit_local_file` to the ten common tools.
 
 Maintain or remove the extension with:
 
@@ -349,7 +352,10 @@ source, analysis date, coverage and a VirusTotal link. The client updated betwee
 sessions; the installed MCP configuration and skill were unchanged. The lookup
 used a one-call permission, without changing persistent tool permissions.
 
-This verifies the plugin's initial OAuth and report workflow in the CLI.
+The temporary grant was then revoked; a fresh initialization was rejected and
+the client no longer had the report tool. This verifies the plugin's initial
+OAuth, report and revocation workflow in the CLI. The manual `serverUrl` entry
+was not tested as a separate connection.
 Automatic token renewal, file submissions, network reanalysis and the graphical
 applications have not been exercised with this plugin. Marketplace acceptance
 is a separate review process.
