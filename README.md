@@ -78,6 +78,9 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 
 Remote OAuth configuration for [GitHub Copilot CLI](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference) and [Devin CLI](https://docs.devin.ai/cli/extensibility/mcp/configuration) follows their official documentation; an OAuth-authenticated VirusTotal tool workflow has not yet been verified in either client.
 
+See [additional remote client recipes](docs/additional-clients.md) for Qwen Code,
+Mistral Vibe Work, Grok web and the xAI Responses API, with their validation limits.
+
 The [client validation guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/clients.md#validation-levels) distinguishes documented configuration, local transport checks and workflows exercised with a model. A recipe is not a claim of full validation in every client. Other agents can use the same MCP endpoint or the [VTAI API directly](https://ai.virustotal.com/skills/BASIC.md).
 
 In ChatGPT, creating a plugin/application and connecting your personal account are separate steps. The [ChatGPT setup guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) covers both, then a first MCP query in a new Work chat. Initial OAuth consent, an IP report, automatic token renewal and a subsequent report after token expiry were verified on 2026-09-24; the guide records the remaining validation limits.
