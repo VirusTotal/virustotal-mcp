@@ -101,23 +101,27 @@ from urllib.request import Request, urlopen
 
 payload = {
     "model": os.environ["XAI_MODEL"],
-    "input": [{
-        "role": "user",
-        "content": (
-            "Use VirusTotal get_domain_report once for example.com. "
-            "Explain its source, analysis date, coverage and report link. "
-            "Do not request a new analysis."
-        ),
-    }],
-    "tools": [{
-        "type": "mcp",
-        "server_label": "virustotal",
-        "server_url": "https://ai.virustotal.com/mcp",
-        "allowed_tools": ["get_domain_report"],
-        "headers": {
-            "Authorization": "Bearer " + os.environ["VTAI_AGENT_TOKEN"],
-        },
-    }],
+    "input": [
+        {
+            "role": "user",
+            "content": (
+                "Use VirusTotal get_domain_report once for example.com. "
+                "Explain its source, analysis date, coverage and report link. "
+                "Do not request a new analysis."
+            ),
+        }
+    ],
+    "tools": [
+        {
+            "type": "mcp",
+            "server_label": "virustotal",
+            "server_url": "https://ai.virustotal.com/mcp",
+            "allowed_tools": ["get_domain_report"],
+            "headers": {
+                "Authorization": "Bearer " + os.environ["VTAI_AGENT_TOKEN"],
+            },
+        }
+    ],
 }
 request = Request(
     "https://api.x.ai/v1/responses",
