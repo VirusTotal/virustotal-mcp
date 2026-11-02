@@ -1,6 +1,6 @@
 # Google client connections
 
-Start with [Agy](clients.md#antigravity-cli-agy); the other primary guides are
+Start with the [Antigravity plugin](#antigravity-plugin); the other primary guides are
 [Claude Code](clients.md#claude-code) and [Codex](clients.md#codex-cli--remote-http).
 This page covers [Gemini Apps](#gemini-apps-custom-connection), its optional
 [importable skill](#gemini-apps-skill), the Antigravity plugin, native remote
@@ -113,20 +113,21 @@ MCP connection. Existing imports do not change when this repository changes.
 ## Antigravity plugin
 
 The [VirusTotal plugin](../plugins/antigravity/README.md) bundles the remote OAuth
-MCP configuration and a threat-intelligence skill. Install its local directory
-from the official source repository:
+MCP configuration and a threat-intelligence skill. With a current Antigravity
+CLI and an active `agy` sign-in session, install its partner Marketplace listing
+from your terminal shell:
 
 ```sh
-git clone https://github.com/VirusTotal/virustotal-mcp.git
-agy plugin validate ./virustotal-mcp/plugins/antigravity
-agy plugin install ./virustotal-mcp/plugins/antigravity
+agy plugin install virustotal@antigravity-plugins-partners
 agy plugin list
 ```
 
-Agy 1.2.14 expects a local directory for this source installation. Use the plugin
-subdirectory, not the repository root or a GitHub subdirectory URL. In the
-interactive `/plugin` manager, choose **Install from local directory**.
-[Google's plugin installation guide](https://antigravity.google/docs/plugins/).
+If it is already installed, continue to authorization. In the App, use
+**Customizations → Marketplace**. Google includes VirusTotal in its
+[29 October Marketplace announcement](https://antigravity.google/blog/plugin-marketplace-in-antigravity).
+The plugin README also provides an [installation from source](../plugins/antigravity/README.md#install-from-source-instead)
+alternative if VirusTotal is absent from your catalog or an install command
+reports **plugin not found**. See [Google's Marketplace guide](https://antigravity.google/docs/marketplace).
 
 If you already have a working `virustotal` connection, choose one active
 connection and preserve unrelated configuration. Recover uncertain submissions
@@ -134,11 +135,12 @@ before switching identities. Existing stdio and VT Sentinel installations remain
 available; this plugin does not add an execution interception or local upload
 hook. Its remote MCP server cannot read a local file path.
 
-Follow the authentication steps below, then request an existing report such as
-example.com without submitting it for analysis. See the plugin's
+Follow the plugin's [connection steps](../plugins/antigravity/README.md#connect-and-verify),
+then try a downloaded file, suspicious link or IP from your logs using its
+[starter tasks](../plugins/antigravity/README.md#try-your-first-task). See its
 [permissions, sharing, costs and removal instructions](../plugins/antigravity/README.md).
-An installed plugin is not evidence of a successful OAuth flow or a Marketplace
-listing.
+An installed plugin still needs VirusTotal authorization and a successful tool
+query before the connection is ready for your task.
 
 ## Antigravity native OAuth
 
@@ -358,8 +360,9 @@ the client no longer had the report tool. This verifies the plugin's initial
 OAuth, report and revocation workflow in the CLI. The manual `serverUrl` entry
 was not tested as a separate connection.
 Automatic token renewal, file submissions, network reanalysis and the graphical
-applications have not been exercised with this plugin. Marketplace acceptance
-is a separate review process.
+applications have not been exercised with this plugin. Those checks did not
+establish Marketplace availability; use the [installation guide above](#antigravity-plugin)
+for the current distribution channel.
 
 On 14 October 2026, Agy 1.2.15 and 1.3.5 validated and installed plugin 0.1.0
 with its single root manifest, packaged icon and three suggested report prompts.
@@ -370,6 +373,19 @@ hidden and combined manifest layouts; only the root layout worked in both
 versions without competing manifests. They did not repeat OAuth or queries,
 verify graphical rendering of the icon and prompts, or establish Marketplace
 acceptance.
+
+On 2 November 2026, Agy 1.4.12 passed strict validation and a local installation
+of plugin 0.1.1 in an isolated environment without network access. It listed the
+plugin as enabled with one skill and one MCP server; all installed package files
+matched the source. This validates the source package, not the version currently
+distributed by Marketplace or the outcome of its suggested tasks.
+
+On the same date, Agy 1.4.12 installed the Marketplace package with
+`agy plugin install virustotal@antigravity-plugins-partners`. The partner listing
+contained version 0.1.0. The unqualified name searched the default official
+catalog and returned **plugin not found**. Use the full partner catalog suffix;
+publication of new source here does not establish that Google's packaged copy
+has updated.
 
 On 23 September 2026, Gemini CLI 0.58.0 installed the exact extension manifest
 from a local checkout in an isolated client configuration. Its native extension

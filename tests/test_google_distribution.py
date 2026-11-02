@@ -227,6 +227,11 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(report["errors"], 0)
         self.assertEqual(report["outcome"], "observed")
         self.assertIn("stale-feed", [row["status"] for row in report["checks"]])
+        marketplace = next(
+            row for row in report["checks"] if row["name"] == "antigravity_marketplace"
+        )
+        self.assertEqual(marketplace["status"], "not_checked")
+        self.assertEqual(marketplace["reason"], "marketplace_catalog_not_queried")
 
 
 if __name__ == "__main__":

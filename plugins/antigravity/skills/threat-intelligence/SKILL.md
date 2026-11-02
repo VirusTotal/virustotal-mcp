@@ -5,8 +5,27 @@ description: Investigates file hashes, URLs, domains and IP addresses with Virus
 
 Use the authenticated VirusTotal MCP connection already available in Antigravity
 or the server bundled with this plugin. Avoid duplicate connections. If it needs
-authentication, open the host's MCP manager and follow its Authenticate flow.
-Never read or copy OAuth tokens, credentials or authorization codes into chat.
+authentication in the CLI, guide the user to `/mcp`, select
+`virustotal_virustotal`, then choose Authenticate. The user completes browser
+sign-in and consent. If the browser displays an authorization code, the user
+must return to the same Agy terminal session and enter it in the authentication
+dialog, not the conversation. Wait for the connection result before retrying.
+Never ask for an authorization code in chat or read the host's credential files.
+Keep OAuth tokens, credentials and authorization codes out of the conversation.
+
+For a downloaded file or a request to check a file before running it, ask for its
+local path if missing. Use a local hashing tool to compute SHA-256 within the
+user's authorized file scope, without executing the file, then call
+`get_file_report` with that hash. Quote file paths safely; do not interpret a
+filename as a shell command. If local file access is unavailable, ask for the
+actual hash. A missing report leaves the file unknown and does not authorize
+uploading it or running it. This plugin does not intercept execution.
+
+For a suspicious link, explain the URL disclosure below before requesting a
+full URL; offer a domain-only lookup when sufficient. Do not open the link to
+investigate it. For an IP from logs, request the IP and only the relevant,
+redacted context, not an entire private log. Never invent an indicator when the
+user has not provided one. Use existing reports for these starter tasks.
 
 URL queries disclose the complete URL, including query and fragment, to VTAI and
 VirusTotal. Avoid secret URLs; query the domain when that scope is sufficient.
