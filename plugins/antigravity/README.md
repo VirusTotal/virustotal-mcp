@@ -26,9 +26,6 @@ agy
 
 The catalog suffix selects VirusTotal's partner listing. `agy plugin list` should
 show `virustotal` enabled. If it is disabled, run `agy plugin enable virustotal`.
-Inside an Agy conversation, use
-`/plugin install virustotal@antigravity-plugins-partners`. You can also inspect
-installed plugins with `/plugin` → **Installed**.
 
 Already installed? Continue to [Connect and verify](#connect-and-verify).
 
@@ -58,7 +55,7 @@ sign-in and consent. If Google's callback page shows an authorization code:
 
 1. Copy the code from the browser page.
 2. Return to the **same terminal window running Agy**.
-3. Paste it into the authentication dialog's code field and press `Enter`.
+3. Paste it into the authentication dialog's code field and submit it there.
    The code goes in this dialog, never in the conversation or a shell command.
 4. Wait for the connection result before starting another authentication attempt.
    Once connected, return to the conversation and try a task below.
@@ -117,8 +114,7 @@ agy plugin list
 
 Review the directory before installing. Pass the `plugins/antigravity`
 subdirectory, not the repository root. If you already have a checkout, use its
-local path. The interactive `/plugin` manager also accepts **Install from local
-directory**. See Google's [plugin guide](https://antigravity.google/docs/plugins?tab=cli).
+local path. See Google's [plugin guide](https://antigravity.google/docs/plugins?tab=cli).
 Marketplace and source versions may differ; `agy plugin list` shows the version
 and source actually installed.
 
@@ -152,9 +148,10 @@ repeating them. [Quota and recovery details](https://github.com/VirusTotal/virus
 
 ## Update, disable or remove
 
-For a local installation, update your reviewed checkout and reinstall the plugin
-directory using `/plugin`. Preserve the existing connection until any uncertain
-submissions have been recovered. Manage the installation with:
+For a local installation, update your reviewed checkout and reinstall its plugin
+directory with `agy plugin install` from your shell. Preserve the existing
+connection until any uncertain submissions have been recovered. Manage the
+installation with:
 
 ```sh
 agy plugin disable virustotal

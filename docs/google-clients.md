@@ -122,7 +122,6 @@ agy plugin install virustotal@antigravity-plugins-partners
 agy plugin list
 ```
 
-Inside Agy, use `/plugin install virustotal@antigravity-plugins-partners`.
 If it is already installed, continue to authorization. In the App, use
 **Customizations → Marketplace**. Google includes VirusTotal in its
 [29 October Marketplace announcement](https://antigravity.google/blog/plugin-marketplace-in-antigravity).
