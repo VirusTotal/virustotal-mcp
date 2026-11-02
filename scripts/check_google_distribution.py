@@ -134,13 +134,22 @@ def check_manifest(name, body, version):
         prompts = data.get("suggestedPrompts")
         valid = (
             set(data)
-            == {"name", "displayName", "version", "description", "logo", "suggestedPrompts"}
+            == {
+                "name",
+                "displayName",
+                "version",
+                "description",
+                "author",
+                "logo",
+                "suggestedPrompts",
+            }
             and data["name"] == "virustotal"
             and data["displayName"] == "VirusTotal"
             and isinstance(data["version"], str)
             and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", data["version"]) is not None
             and isinstance(data["description"], str)
             and bool(data["description"].strip())
+            and data["author"] == {"name": "VirusTotal", "url": "https://www.virustotal.com"}
             and data["logo"] == "assets/virustotal-icon-512.png"
             and isinstance(prompts, list)
             and len(prompts) == 3
@@ -248,8 +257,8 @@ def collect(version, *, token=None, reader=fetch):
         {
             "name": "antigravity_marketplace",
             "checked_at": now(),
-            "status": "pending",
-            "reason": "review_status_not_publicly_verified_no_marketplace_api_check",
+            "status": "not_checked",
+            "reason": "marketplace_catalog_not_queried",
         }
     )
     errors = sum(item["status"] == "error" for item in results)

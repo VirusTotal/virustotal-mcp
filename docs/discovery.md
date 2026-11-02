@@ -9,10 +9,16 @@ Apache-2.0. Installation from PyPI does not require a GitHub account. The histor
 [0.8.0 release](https://github.com/king-tero/vt-mcp/releases/tag/v0.8.0) retains its
 original MIT license and files.
 
-Start with the setup for [Antigravity CLI (`agy`)](clients.md#antigravity-cli-agy),
+Start with the setup for [Antigravity CLI (`agy`)](google-clients.md#antigravity-plugin),
 [Claude Code](clients.md#claude-code), or [Codex](clients.md#codex-cli--remote-http).
 
 ## Google client distribution
+
+Install the [VirusTotal plugin for Antigravity](../plugins/antigravity/README.md)
+with `agy plugin install virustotal@antigravity-plugins-partners`, then complete
+its VirusTotal authorization. The guide includes a source installation if
+VirusTotal is absent from your catalog. Google includes VirusTotal in the
+[Marketplace launch announcement](https://antigravity.google/blog/plugin-marketplace-in-antigravity).
 
 The [Gemini CLI extension](google-clients.md#gemini-cli-extension) configures the
 hosted OAuth endpoint from the root `gemini-extension.json`. Install from `main`
@@ -23,8 +29,8 @@ and preserves the existing stdio setup.
 Google's [extension gallery](https://geminicli.com/docs/extensions/releasing/)
 discovers public repositories carrying `gemini-cli-extension` and validates their
 root manifests during its periodic crawl. Configuration publication, gallery
-listing and an actual authenticated tool workflow are distinct results; this
-does not establish Antigravity Store placement.
+listing and an actual authenticated tool workflow are distinct results. That
+gallery is separate from the Antigravity Marketplace.
 
 ## MCP Registry
 
