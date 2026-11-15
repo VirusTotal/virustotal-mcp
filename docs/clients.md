@@ -359,6 +359,36 @@ with its separate validation limits. [Official Antigravity MCP documentation](ht
 
 If discovery succeeds but lookups return `unavailable`, check the MCP process's HTTPS configuration. In the tested Linux environment, Antigravity supplied an incomplete `SSL_CERT_FILE` bundle. Setting `SSL_CERT_FILE` to `/etc/ssl/certs/ca-certificates.crt` in this server's `env` and reloading resolved certificate verification errors. Use the trusted CA bundle appropriate to your machine; this Linux path is not portable. TLS verification remained enabled and proxy settings were preserved.
 
+## DeepSeek Harness
+
+Install the [DSH plugin](../plugins/dsh/README.md) to add the hosted server, a
+`virustotal-threat-intelligence` skill and a `virustotal_submit_local_file` tool to
+DeepSeek Harness. The DSH MCP client supports `stdio` and `streamable-http` with
+static headers but has **no OAuth flow**, so this client cannot use the browser
+sign-in documented for Claude Code, Antigravity and Gemini CLI. The plugin instead
+sends a static `x-apikey` header whose value it reads at startup from a protected
+token file (`~/.config/vt-mcp/token`, or the path named by `VTAI_TOKEN_FILE`). The
+token is not stored in the plugin, in this repository or in the conversation.
+Follow the [plugin README](../plugins/dsh/README.md) for the credential steps, the
+tested configuration and the local stdio alternative.
+
+Ask the plugin's own skill for a report-only check once the tools appear:
+
+> Use VirusTotal to retrieve the existing report for `virustotal.com`. Show the
+> source, analysis date, coverage and report link. Do not request a new analysis.
+
+**Status:** Bundle installation and activation, skill registration, the
+missing-credential failure mode, discovery of the eleven hosted tools,
+`get_domain_report`, `get_url_report` and `get_file_report` calls, a disable/enable
+cycle, and the plugin's own `virustotal_submit_local_file` were verified on Windows
+with DSH Desktop 2.0.17 on 2026-10-15. In a running session the upload tool read a
+650,752-byte Windows executable, returned the existing report and published nothing
+new, and refused a credential-like filename before reading it. It appears in a
+running session only after a Harness restart, because a profile bundle caches its
+imported module. A genuinely new upload, reanalysis and receipt recovery were not
+exercised. Over HTTP `submit_local_file` is absent; the plugin supplies its own
+equivalent rather than an upload hook.
+
 ## Qwen Code
 
 Proposed command, documented but not executed here:
