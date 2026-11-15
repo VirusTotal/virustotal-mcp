@@ -80,8 +80,7 @@ selects keychain storage where available or an encrypted file. See
 
 The default browser callback is local to the machine running Qwen. For SSH or a
 cloud terminal, follow Qwen's redirect configuration before signing in. This
-recipe adds MCP directly and does not install the Claude Code plugin or its
-local file-upload hook.
+recipe adds MCP directly and does not install the Claude Code plugin.
 
 ## Mistral Vibe Work
 

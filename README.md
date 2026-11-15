@@ -15,7 +15,8 @@ installation, static token or personal VirusTotal API key is required.
 ### Claude Code: install the plugin
 
 The official plugin includes the OAuth connection, a threat-intelligence skill
-and local file uploads without model-generated base64.
+and existing reports for file hashes, URLs, domains and IP addresses. It includes
+no hooks or bundled scripts; local files are checked by hash.
 
 <!-- client-contract:claude-code:start -->
 ```sh
@@ -23,7 +24,7 @@ claude plugin marketplace add VirusTotal/virustotal-mcp
 claude plugin install virustotal@virustotal
 ```
 
-Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
+Requires Claude Code **2.1.283 or later**. The plugin needs no separate Node.js installation and runs no hooks or bundled scripts. The plugin includes `https://ai.virustotal.com/mcp`.
 <!-- client-contract:claude-code:end -->
 
 If you are replacing an existing manual connection with the plugin, read the
@@ -33,11 +34,11 @@ connection first; keep a working manual connection if you choose that alternativ
 
 Start a new session or use `/reload-plugins`, then `/mcp` to complete browser
 sign-in when needed. The plugin already supplies the MCP connection; do not add
-a duplicate. See [plugin setup, file access and credential-name protection](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md).
+a duplicate. See [plugin setup, file checks and submission options](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md).
 
 ### Claude Code alternative: manual HTTP without Node.js
 
-For report lookups without the local upload hook, use the direct connection:
+For the remote connection without the plugin skill, use:
 
 ```sh
 claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
@@ -64,7 +65,7 @@ clients can use the [stdio installation](#install-for-local-stdio) below.
 | Client | Setup |
 |---|---|
 | Antigravity CLI (`agy`) | [Marketplace plugin with MCP and skill](https://github.com/VirusTotal/virustotal-mcp/tree/main/plugins/antigravity), [local stdio](https://ai.virustotal.com/connect/mcp?client=agy&transport=stdio) or [native OAuth recipe](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/google-clients.md#antigravity-native-oauth) |
-| Claude Code | [OAuth plugin with local file uploads](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md), [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
+| Claude Code | [OAuth plugin with threat-intelligence skill](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md), [HTTP](https://ai.virustotal.com/connect/mcp?client=claude&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=claude&transport=stdio) |
 | Codex | [HTTP](https://ai.virustotal.com/connect/mcp?client=codex&transport=http) or [local stdio](https://ai.virustotal.com/connect/mcp?client=codex&transport=stdio) |
 | ChatGPT | [Install the published VirusTotal plugin](https://chatgpt.com/plugins/plugin_asdk_app_6abadac2d9a08191ae2307c047bb3806) · [Connection guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/hosted-clients.md#connect-chatgpt-work) |
 | Cursor | [HTTP recipe](https://ai.virustotal.com/connect/mcp?client=cursor&transport=http) |

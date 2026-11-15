@@ -1,10 +1,10 @@
 # VirusTotal
 
-Investigate file hashes, URLs, domains and IP addresses using VirusTotal threat
-intelligence. Read existing reports, submit previously unknown files, request
-network analyses and recover submission receipts through the authenticated
-VirusTotal MCP connection. Reports include their analysis date and coverage;
-zero detections do not establish that an item is safe.
+Investigate a downloaded file before running it, a suspicious link, or an IP from
+a log using VirusTotal reports. The plugin connects to the authenticated
+VirusTotal MCP server and includes a threat-intelligence skill. Reports provide
+analysis dates and detection coverage. Missing reports and zero detections do
+not establish safety.
 
 ## Install in Claude Code
 
@@ -14,77 +14,76 @@ claude plugin marketplace add VirusTotal/virustotal-mcp
 claude plugin install virustotal@virustotal
 ```
 
-Requires Claude Code **2.1.283 or later** and **Node.js 22 or later** on its `PATH`. Node.js 22 and 24 are verified by the plugin CI. The plugin includes `https://ai.virustotal.com/mcp`.
+Requires Claude Code **2.1.283 or later**. The plugin needs no separate Node.js installation and runs no hooks or bundled scripts. The plugin includes `https://ai.virustotal.com/mcp`.
 <!-- client-contract:claude-code:end -->
 
 Start a new session or run `/reload-plugins`, then use `/mcp` to sign in to
-VirusTotal in your browser. No VirusTotal API key is required. If you previously
-used `claude mcp add virustotal`, recover any uncertain submission before
-removing that manual connection with `claude mcp remove virustotal` in its
-original scope. Fresh installations need no removal command.
+VirusTotal in your browser. No VirusTotal API key is required. If you already
+have a working VirusTotal connection, avoid creating a duplicate; see the
+[migration guide](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md#replace-an-existing-manual-connection).
 
-For a connection without the local upload hook or Node.js, use this alternative:
+For a direct connection without the plugin's skill, use this alternative:
 
 ```sh
 claude mcp add --transport http virustotal https://ai.virustotal.com/mcp
 ```
 
-## Use VirusTotal
+## Useful first tasks
 
-- “Look up the VirusTotal report for 8.8.8.8. Include its analysis date and
-  detection coverage. Do not request a reanalysis.”
-- “Investigate this file hash. If there is no report, explain what is unknown.”
-- In Claude Code: “Check this unfamiliar download without executing it. Submit
-  it only if VirusTotal does not already know its hash.”
+- “Check this downloaded file before I run it. Calculate its SHA-256 and look up
+  its VirusTotal report. Do not execute or upload it.” Provide the local path in
+  Claude Code, or the actual hash when local file access is unavailable.
+- “Investigate this suspicious link using its existing report.” URL lookups
+  disclose the full URL, including query parameters and fragments. Remove
+  credentials and private data, or request a domain-only lookup.
+- “Look up the existing VirusTotal report for this IP from my log. Show its
+  analysis date and coverage.” Share only the IP and relevant redacted context.
 
-The `threat-intelligence` skill guides these workflows. In Claude web chat,
-connect the remote server from the plugin's Connectors tab. Web chat does not
-run the local file hook: a path on your computer is not an attachment, and this
-plugin does not provide a native Claude web attachment transfer mechanism.
-Cowork can load hooks, but authenticated uploads through this plugin have not
-been validated there.
+Use `/virustotal:threat-intelligence` in Claude Code to invoke the skill directly.
+In Claude web chat, connect the remote server from the plugin's Connectors tab.
+Local hashing depends on the host's file access and permissions. The plugin
+does not execute samples, intercept execution or grant filesystem permissions.
 
-## Local file handling and permissions
+## File submission and sharing
 
-In Claude Code, a `PreToolUse` hook runs the bundled
-`scripts/expand-file.mjs` with Node.js. It reads an original file only for the
-supported VirusTotal `submit_file` tool, verifies its SHA-256 and replaces the
-`file:` argument with base64 bytes. It does not execute the sample, install
-dependencies, obtain OAuth tokens or make its own network requests. Claude Code
-sends the resulting tool input to `https://ai.virustotal.com/mcp`.
+The remote connector cannot read local paths. This plugin includes no hooks,
+scripts, automatic permission approvals or local file transfer mechanism.
+Version 0.1.6 removes the upload hook from earlier releases; `file:<path>` is no
+longer expanded and must not be sent to a remote submission tool. Native Claude
+attachment transfer is not provided by this plugin.
 
-The reader accepts regular files of 1 to 24,000,000 bytes within the session's
-working directory or explicitly configured `VTAI_UPLOAD_ROOTS`. It rejects
-out-of-scope paths, symlinks below a permitted root, changing files and common
-credential filenames. This filename check is not a content-based secret
-detector. The reader has its own path scope; it does not implement Claude Code's
-Read/Bash path rules or provide an operating-system sandbox.
+When explicitly requested, `submit_attachment` can submit a file from a public
+HTTPS download link. The server downloads the original bytes, computes SHA-256
+and checks for an existing report before uploading. The download limit is
+24,000,000 bytes. These standard submissions are shared with the VirusTotal
+community and security partners, like other standard submissions.
+Do not supply links containing credentials or private data.
 
-A valid expansion returns `permissionDecision: allow` automatically. The agent
-checks the user explicitly requested submission and authorized sharing; the hook does not add a confirmation for
-each file. Ask before sharing the user's own documents, internal code,
-credentials or personal data. If a credential filename is blocked, stop for
-human review; do not rename, encode or switch upload methods to bypass it.
+For a local file, look up its hash first. If a submission was explicitly
+requested and the report is confirmed missing, the skill can direct the user to
+the [VirusTotal web uploader](https://www.virustotal.com/gui/home/upload), then
+query that same hash. A web upload creates no VTAI submission receipt.
 
-## Sharing, quota and recovery
+Submit files or request URL, domain or IP analyses only when explicitly asked.
+Ask before sharing the user's own documents, internal code, credentials or
+personal data. Submit only material the user has the right and permission to
+share. Host permissions remain in force.
 
-Standard submissions are shared with the VirusTotal community and security
-partners. Submit only when the user explicitly requests that action and has the
-right and permission to share the material.
-The server verifies the original bytes and checks the hash before uploading;
-only a confirmed missing report permits a new contribution. New-file
-contributions and receipt recovery use no report-query quota. Returning an
-existing report and explicit report or analysis queries consume quota on every
-call, including repeats. Separate contribution rate limits apply.
+## Quota and recovery
 
-Keep the original SHA-256 or request ID and use `get_submission` to recover an
-uncertain outcome on the same connection. Do not repeat an uncertain upload.
-Respect the returned analysis polling and retry delays. Disabling the plugin
+Every explicit report or analysis query consumes quota, including repeats and
+missing reports. New-file contributions and owned receipt recovery use no
+report-query quota; returning a known file's report uses one query. Separate
+contribution limits apply.
+
+Keep the file's SHA-256 or network request ID and use `get_submission` on the
+same connection to recover an uncertain outcome. Do not repeat an uncertain
+submission. Respect returned polling and retry delays. Disabling the plugin
 does not remove submissions from VirusTotal.
 
 ## Documentation and support
 
-- [Setup, supported paths, credential checks and troubleshooting](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md)
+- [Setup, updates and troubleshooting](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/claude-code.md)
 - [Analysis and contribution workflow](https://github.com/VirusTotal/virustotal-mcp/blob/main/docs/analysis.md)
 - [Privacy policy](https://cloud.google.com/terms/secops/privacy-notice)
 - [Terms of Service](https://cloud.google.com/terms/secops)

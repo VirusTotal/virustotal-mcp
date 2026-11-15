@@ -46,8 +46,8 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ matrix.node }}
-      - name: Test file boundaries, provenance and packaged hook without credentials
-        run: node --test tests/claude-code/expand-file.test.mjs tests/claude-code/manifest.test.mjs
+      - name: Check the declarative plugin package without credentials
+        run: node --test tests/claude-code/manifest.test.mjs
       - name: Validate packaged plugin with the native CLI
         run: npm exec --yes --package=@anthropic-ai/claude-code@2.1.283 -- claude plugin validate plugins/claude-code --strict
       - name: Validate marketplace with the native CLI

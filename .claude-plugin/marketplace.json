@@ -6,7 +6,7 @@
     {
       "name": "virustotal",
       "source": "./plugins/claude-code",
-      "description": "Official VirusTotal threat intelligence and local file submission through OAuth."
+      "description": "Investigate file hashes, suspicious links and IP addresses with VirusTotal reports through OAuth."
     }
   ]
 }
