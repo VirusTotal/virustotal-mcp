@@ -1,7 +1,7 @@
 {
   "name": "virustotal",
-  "version": "0.1.5",
-  "description": "Official VirusTotal reports and local file submission through your OAuth MCP connection.",
+  "version": "0.1.6",
+  "description": "Investigate file hashes, suspicious links and IP addresses with VirusTotal reports through OAuth.",
   "author": {
     "name": "VirusTotal",
     "url": "https://www.virustotal.com"

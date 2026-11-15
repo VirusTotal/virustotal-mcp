@@ -1,6 +1,6 @@
 # Copyright 2026 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-"""Small packaged contract shared by client guides, the hook and hosted setup."""
+"""Small packaged contract shared by client guides and hosted setup."""
 
 import json
 import ntpath
@@ -13,7 +13,12 @@ def _manifest() -> dict:
 
 
 def claude_code_contract() -> dict:
-    """Return independent setup data; this first segment does not describe every client."""
+    """Return independent setup data; this segment does not describe every client.
+
+    The node_* fields are retained for older hosted-setup consumers. They describe
+    the retired upload hook, not requirements of the current declarative plugin.
+    Remove them only alongside an update to those consumers.
+    """
     return _manifest()["claude_code"]
 
 

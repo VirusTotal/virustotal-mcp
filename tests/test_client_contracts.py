@@ -1,6 +1,6 @@
 # Copyright 2026 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-"""A packaged contract drives generated setup and the two filename guards."""
+"""A packaged contract drives generated setup and server filename guards."""
 
 import json
 import subprocess
@@ -15,10 +15,10 @@ from vt_mcp.client_contracts import claude_code_contract, credential_filename_de
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_packaged_contract_plugin_copy_and_generated_guides_agree():
+def test_packaged_contract_and_generated_guides_agree():
     canonical = files("vt_mcp").joinpath("client_contracts.json").read_bytes()
-    assert (ROOT / "plugins/claude-code/client-contracts.json").read_bytes() == canonical
     contract = claude_code_contract()
+    # Keep legacy fields compatible with older hosted-setup consumers.
     assert contract["node_minimum_major"] == 22
     assert contract["verified_node_majors"] == [22, 24]
     contract["install_commands"].clear()

@@ -1,6 +1,6 @@
 # Copyright 2026 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-"""Generate or check the small shared Claude setup block and plugin data copy."""
+"""Generate or check the shared Claude setup block and plugin version."""
 
 import argparse
 import json
@@ -14,15 +14,13 @@ END = "<!-- client-contract:claude-code:end -->"
 def generated_files(root: Path = ROOT) -> dict[Path, bytes]:
     canonical = root / "src/vt_mcp/client_contracts.json"
     data = json.loads(canonical.read_text("utf-8"))["claude_code"]
-    versions = " and ".join(str(value) for value in data["verified_node_majors"])
     block = (
         START + "\n```sh\n" + "\n".join(data["install_commands"]) + "\n```\n\n"
-        f"Requires Claude Code **{data['minimum_version']} or later** and "
-        f"**Node.js {data['node_minimum_major']} or later** on its `PATH`. "
-        f"Node.js {versions} are verified by the plugin CI. "
+        f"Requires Claude Code **{data['minimum_version']} or later**. "
+        "The plugin needs no separate Node.js installation and runs no hooks or bundled scripts. "
         f"The plugin includes `{data['server_url']}`.\n" + END
     )
-    result = {root / "plugins/claude-code/client-contracts.json": canonical.read_bytes()}
+    result = {}
     plugin_path = root / "plugins/claude-code/.claude-plugin/plugin.json"
     plugin = json.loads(plugin_path.read_text("utf-8"))
     plugin["version"] = data["plugin_version"]
